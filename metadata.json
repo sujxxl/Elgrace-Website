@@ -1,0 +1,11 @@
+{
+  "name": "Copy of Elgrace Talents",
+  "description": "A premium modeling and talent management firm featuring high-end animations and a modern dark aesthetic.",
+  "requestFramePermissions": [],
+  "dependencies": {
+    "lucide-react": "^0.555.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "framer-motion": "^12.23.24"
+  }
+}
