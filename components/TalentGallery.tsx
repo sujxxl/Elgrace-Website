@@ -21,14 +21,7 @@ interface Talent {
 
 const talentData: Talent[] = [
   { id: 1, name: "Aarav S.", category: "Models", image: "https://picsum.photos/600/800?random=20", height: "6'1\"", heightCm: 185, weight: "75 kg", eyes: "Brown", hair: "Black", location: "Mumbai", age: 24, gender: 'Male' },
-  { id: 2, name: "Elena R.", category: "Models", image: "https://picsum.photos/600/800?random=21", height: "5'9\"", heightCm: 175, weight: "58 kg", eyes: "Green", hair: "Blonde", location: "New Delhi", age: 21, gender: 'Female' },
-  { id: 3, name: "Vikram J.", category: "Actors", image: "https://picsum.photos/600/800?random=22", height: "5'11\"", heightCm: 180, weight: "70 kg", eyes: "Black", hair: "Black", location: "Mumbai", age: 28, gender: 'Male' },
-  { id: 4, name: "Sophie M.", category: "Creatives", image: "https://picsum.photos/600/800?random=23", height: "N/A", heightCm: 0, weight: "N/A", eyes: "N/A", hair: "N/A", location: "Bangalore", age: 30, gender: 'Female' },
-  { id: 5, name: "Rohan K.", category: "Models", image: "https://picsum.photos/600/800?random=24", height: "6'0\"", heightCm: 183, weight: "78 kg", eyes: "Brown", hair: "Brown", location: "Delhi", age: 25, gender: 'Male' },
-  { id: 6, name: "Priya D.", category: "Actors", image: "https://picsum.photos/600/800?random=25", height: "5'6\"", heightCm: 168, weight: "52 kg", eyes: "Dark Brown", hair: "Black", location: "Mumbai", age: 23, gender: 'Female' },
-  { id: 7, name: "Zara L.", category: "Models", image: "https://picsum.photos/600/800?random=26", height: "5'10\"", heightCm: 178, weight: "60 kg", eyes: "Hazel", hair: "Brunette", location: "Goa", age: 22, gender: 'Female' },
-  { id: 8, name: "Kabir S.", category: "Creatives", image: "https://picsum.photos/600/800?random=27", height: "N/A", heightCm: 0, weight: "N/A", eyes: "N/A", hair: "N/A", location: "Mumbai", age: 32, gender: 'Male' },
-];
+  ];
 
 const useScreenSize = () => {
     const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');

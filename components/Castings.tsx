@@ -18,34 +18,15 @@ interface Gig {
 const initialGigs: Gig[] = [
   {
     id: 1,
-    title: "Summer Fashion Campaign",
-    description: "Looking for fresh faces for our upcoming summer collection shoot. Beach vibes, casual wear.",
-    location: "Mumbai, India",
-    budget: "₹50,000",
-    date: "Oct 15, 2023",
-    requirements: "Age 18-25, Female, Min 5'7\"",
-    clientName: "Zara India"
+    title: "",
+    description: "",
+    location: "",
+    budget: "",
+    date: "",
+    requirements: "",
+    clientName: ""
   },
-  {
-    id: 2,
-    title: "Tech Startup Commercial",
-    description: "Corporate video shoot for a new fintech app. Professional attire, speaking role required.",
-    location: "Bangalore, India",
-    budget: "₹35,000",
-    date: "Oct 20, 2023",
-    requirements: "Age 25-35, Any Gender, Fluent English",
-    clientName: "Cred"
-  },
-  {
-    id: 3,
-    title: "Athletic Wear Catalog",
-    description: "High energy photoshoot for gym wear. Must be fit and comfortable with movement.",
-    location: "New Delhi, India",
-    budget: "₹45,000",
-    date: "Nov 01, 2023",
-    requirements: "Athletic build, 6ft+ for Males",
-    clientName: "Boldfit"
-  }
+  
 ];
 
 export const Castings: React.FC = () => {
