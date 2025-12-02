@@ -19,6 +19,7 @@ const brands = [
   { name: 'HB Makeovers', tier: 2 },
   { name: 'Dolly Nagpal', tier: 2 },
   { name: 'Shashank Arya', tier: 2 },
+  { name: '+1000 more', tier: 2 }
 ];
 
 export const Brands: React.FC = () => {

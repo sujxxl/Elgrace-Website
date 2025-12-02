@@ -35,11 +35,11 @@ export const Mission: React.FC = () => {
              </p>
              <div className="flex gap-8">
                 <div>
-                   <span className="block text-3xl font-bold font-['Syne']">200+</span>
+                   <span className="block text-3xl font-bold font-['Syne']">1200+</span>
                    <span className="text-sm text-zinc-500 uppercase tracking-wider">Models</span>
                 </div>
                 <div>
-                   <span className="block text-3xl font-bold font-['Syne']">50+</span>
+                   <span className="block text-3xl font-bold font-['Syne']">1000+</span>
                    <span className="text-sm text-zinc-500 uppercase tracking-wider">Brands</span>
                 </div>
              </div>
