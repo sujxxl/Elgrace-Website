@@ -12,7 +12,7 @@ import { AuthPage } from './components/AuthPage';
 import { AuthProvider } from './context/AuthContext';
 
 const AppContent: React.FC = () => {
-  const [currentView, setCurrentView] = useState<'home' | 'talents' | 'castings' | 'auth'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'services' | 'talents' | 'castings' | 'auth'>('home');
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white selection:bg-white selection:text-black">
@@ -23,6 +23,12 @@ const AppContent: React.FC = () => {
           <Hero />
           <Mission />
           <Brands />
+          <ContactGrid />
+        </main>
+      )}
+
+      {currentView === 'services' && (
+        <main>
           <Services />
           <ContactGrid />
         </main>

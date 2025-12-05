@@ -18,15 +18,14 @@ interface Gig {
 const initialGigs: Gig[] = [
   {
     id: 1,
-    title: "",
-    description: "",
-    location: "",
-    budget: "",
-    date: "",
-    requirements: "",
-    clientName: ""
-  },
-  
+    title: "Summer 2025 Campaign",
+    description: "Looking for fresh faces for our upcoming beachwear collection. Shoot will take place over 3 days in Goa. We need energetic, athletic models comfortable with swimwear.",
+    location: "Goa, India",
+    budget: "₹45,000 - ₹60,000",
+    date: "2024-11-15",
+    requirements: "Male/Female, 20-28, Athletic Build",
+    clientName: "Boldfit"
+  }
 ];
 
 export const Castings: React.FC = () => {

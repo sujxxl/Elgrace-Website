@@ -21,7 +21,7 @@ interface Talent {
 
 const talentData: Talent[] = [
   { id: 1, name: "Aarav S.", category: "Models", image: "https://picsum.photos/600/800?random=20", height: "6'1\"", heightCm: 185, weight: "75 kg", eyes: "Brown", hair: "Black", location: "Mumbai", age: 24, gender: 'Male' },
-  ];
+];
 
 const useScreenSize = () => {
     const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');

@@ -49,6 +49,12 @@ export const ContactGrid: React.FC = () => {
                                     business@elgrace.in
                                 </a>
                             </div>
+                            <div>
+                                <p className="text-zinc-500 text-sm uppercase tracking-wider mb-1">New talent?</p>
+                                <a href="mailto:talent@elgrace.in" className="text-lg text-white hover:text-zinc-300 transition-colors border-b border-white/20 pb-1 inline-block">
+                                    talent@elgrace.in
+                                </a>
+                            </div>
                         </div>
                     </div>
 
@@ -92,9 +98,8 @@ export const ContactGrid: React.FC = () => {
                             <h3 className="text-xl font-bold font-['Syne']">Location</h3>
                         </div>
                         <div className="pl-10">
-                             <p className="text-zinc-300 leading-relaxed">
-                                 Serving clients globally with headquarters in<br />
-                                 <span className="text-white font-medium">New Delhi, India</span>
+                             <p className="text-white text-lg font-medium">
+                                 Pan India
                              </p>
                         </div>
                     </div>

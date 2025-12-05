@@ -4,8 +4,8 @@ import { Menu, X, UserCircle, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
-  onNavigate: (view: 'home' | 'talents' | 'castings' | 'auth') => void;
-  currentView: 'home' | 'talents' | 'castings' | 'auth';
+  onNavigate: (view: 'home' | 'services' | 'talents' | 'castings' | 'auth') => void;
+  currentView: 'home' | 'services' | 'talents' | 'castings' | 'auth';
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
@@ -21,7 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, target: string, view: 'home' | 'talents' | 'castings' | 'auth') => {
+  const handleLinkClick = (e: React.MouseEvent<HTMLElement>, target: string, view: 'home' | 'services' | 'talents' | 'castings' | 'auth') => {
     e.preventDefault();
     setMobileMenuOpen(false);
     onNavigate(view);
@@ -42,7 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
 
   const navLinks = [
     { name: 'Mission', href: '#mission', view: 'home' as const },
-    { name: 'Services', href: '#services', view: 'home' as const },
+    { name: 'Services', href: '#', view: 'services' as const },
     { name: 'Talents', href: '#', view: 'talents' as const },
     { name: 'Castings', href: '#', view: 'castings' as const },
   ];
@@ -62,7 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
             onClick={(e) => handleLinkClick(e, '#', 'home')}
             className="text-2xl font-bold font-['Syne'] tracking-wider z-50 relative"
         >
-          ELGRACE<span className="text-zinc-500">.</span>
+          ELGRACE TALENTS
         </a>
 
         {/* Desktop Menu */}
@@ -73,14 +73,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
               href={link.href}
               onClick={(e) => handleLinkClick(e, link.href, link.view)}
               className={`text-sm uppercase tracking-widest transition-colors duration-300 relative group ${
-                currentView === link.view && (link.view !== 'home' || link.name === 'Mission' || link.name === 'Services') 
+                currentView === link.view && (link.view !== 'home' || link.name === 'Mission') 
                   ? 'text-white font-bold' 
                   : 'text-zinc-400 hover:text-white'
               }`}
             >
               {link.name}
               <span className={`absolute -bottom-1 left-0 h-[1px] bg-white transition-all duration-300 ${
-                  currentView === link.view && (link.view !== 'home' || link.name === 'Mission' || link.name === 'Services') 
+                  currentView === link.view && (link.view !== 'home' || link.name === 'Mission') 
                   ? 'w-full' 
                   : 'w-0 group-hover:w-full'}`} 
               />

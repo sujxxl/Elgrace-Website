@@ -1,5 +1,32 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useRef } from 'react';
+import { motion, useInView, animate } from 'framer-motion';
+
+const Counter: React.FC<{ to: number; label: string }> = ({ to, label }) => {
+  const nodeRef = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(nodeRef, { once: true, margin: "-50px" });
+
+  useEffect(() => {
+    const node = nodeRef.current;
+    if (!node || !isInView) return;
+
+    const controls = animate(0, to, {
+      duration: 2,
+      ease: "easeOut",
+      onUpdate(value) {
+        node.textContent = Math.floor(value).toString() + "+";
+      },
+    });
+
+    return () => controls.stop();
+  }, [to, isInView]);
+
+  return (
+    <div>
+      <span ref={nodeRef} className="block text-3xl font-bold font-['Syne']">0+</span>
+      <span className="text-sm text-zinc-500 uppercase tracking-wider">{label}</span>
+    </div>
+  );
+};
 
 export const Mission: React.FC = () => {
   const images = [
@@ -34,14 +61,8 @@ export const Mission: React.FC = () => {
                At ELGRACE TALENTS, our mission is to connect exceptional talent with world-class brands. We are a premier modeling firm dedicated to scouting, developing, and managing careers with a focus on longevity and professional excellence.
              </p>
              <div className="flex gap-8">
-                <div>
-                   <span className="block text-3xl font-bold font-['Syne']">1200+</span>
-                   <span className="text-sm text-zinc-500 uppercase tracking-wider">Models</span>
-                </div>
-                <div>
-                   <span className="block text-3xl font-bold font-['Syne']">1000+</span>
-                   <span className="text-sm text-zinc-500 uppercase tracking-wider">Brands</span>
-                </div>
+                <Counter to={1200} label="Models" />
+                <Counter to={1000} label="Brands" />
              </div>
           </motion.div>
 
