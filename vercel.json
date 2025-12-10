@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/employee-portal/:path*",
-      "destination": "https://portal.elgrace.in/:path*"
+      "destination": "https://admin.elgrace.in/:path*"
     },
     {
       "source": "/employee-portal",
-      "destination": "https://portal.elgrace.in/"
+      "destination": "https://admin.elgrace.in/"
     }
   ]
 }
