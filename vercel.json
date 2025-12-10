@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/employee-portal/:path*",
+      "destination": "https://elgrace-employee-portal.vercel.app/:path*"
+    },
+    {
+      "source": "/employee-portal",
+      "destination": "https://elgrace-employee-portal.vercel.app/"
+    }
+  ]
+}
