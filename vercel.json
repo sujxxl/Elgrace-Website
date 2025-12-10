@@ -2,11 +2,13 @@
   "rewrites": [
     {
       "source": "/employee-portal/:path*",
-      "destination": "https://elgrace-employee-portal.vercel.app/:path*"
+      "destination": "https://portal.elgrace.in/:path*"
+ 
     },
     {
       "source": "/employee-portal",
-      "destination": "https://elgrace-employee-portal.vercel.app/"
+      "destination": "https://portal.elgrace.in/"
+
     }
   ]
 }
