@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Clock, Phone, MapPin } from 'lucide-react';
+import { Mail, Clock, Phone, MapPin, Instagram } from 'lucide-react';
 
 export const ContactGrid: React.FC = () => {
   return (
-    <section id="contact" className="py-24 bg-zinc-950">
+    <section id="contact" className="py-24 bg-zinc-950 relative z-10">
       <div className="container mx-auto px-6">
         <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -72,6 +72,19 @@ export const ContactGrid: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Socials */}
+                    <div>
+                        <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-white/5 rounded-full"><Instagram className="w-5 h-5 text-white" /></div>
+                        <h3 className="text-xl font-bold font-['Syne']">Follow Us</h3>
+                        </div>
+                        <div className="pl-10">
+                            <a href="https://www.instagram.com/elgracetalents/" target="_blank" rel="noopener noreferrer" className="text-xl font-medium text-white hover:text-zinc-300 transition-colors">
+                            @elgracetalents
+                            </a>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -100,6 +113,9 @@ export const ContactGrid: React.FC = () => {
                         <div className="pl-10">
                              <p className="text-white text-lg font-medium">
                                  Pan India
+                             </p>
+                             <p className="text-zinc-500 text-sm mt-1">
+                                 Home office - New Delhi
                              </p>
                         </div>
                     </div>

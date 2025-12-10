@@ -3,12 +3,10 @@
     {
       "source": "/employee-portal/:path*",
       "destination": "https://portal.elgrace.in/:path*"
- 
     },
     {
       "source": "/employee-portal",
       "destination": "https://portal.elgrace.in/"
-
     }
   ]
 }

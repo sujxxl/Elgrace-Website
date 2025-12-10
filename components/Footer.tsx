@@ -12,7 +12,7 @@ export const Footer: React.FC = () => {
         <div className="flex gap-6">
             <a href="#" className="text-zinc-500 hover:text-white transition-colors text-sm">Privacy Policy</a>
             <a href="#" className="text-zinc-500 hover:text-white transition-colors text-sm">Terms of Service</a>
-            <a href="#" className="text-zinc-500 hover:text-white transition-colors text-sm">Instagram</a>
+            <a href="https://www.instagram.com/elgracetalents/" target="_blank" rel="noopener noreferrer" className="text-zinc-500 hover:text-white transition-colors text-sm">Instagram</a>
         </div>
       </div>
     </footer>

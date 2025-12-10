@@ -1,130 +1,110 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { supabase } from '../services/supabaseClient';
+import type { User as SupaUser } from '@supabase/supabase-js';
 
 type UserRole = 'guest' | 'model' | 'client';
 
 interface User {
   id: string;
-  name: string;
-  role: UserRole;
-  email: string;
-  avatar?: string;
+  email: string | null;
+  name?: string | null;
+  avatar?: string | null;
+  role?: UserRole;
 }
 
 interface AuthContextType {
   user: User | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
-  register: (role: UserRole, name: string, email: string, password: string) => Promise<{ success: boolean; message?: string }>;
-  logout: () => void;
-  isLoading: boolean;
+  loginWithMagicLink: (email: string) => Promise<{ success: boolean; message?: string }>;
+  signup: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Helper: Hash password using Web Crypto API
-const hashPassword = async (password: string): Promise<string> => {
-  const msgBuffer = new TextEncoder().encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+const mapUser = (u: SupaUser | null): User | null => {
+  if (!u) return null;
+  const meta = (u.user_metadata ?? {}) as Record<string, any>;
+  return {
+    id: u.id,
+    email: u.email ?? null,
+    name: meta.name ?? null,
+    avatar: meta.avatar ?? null,
+    role: (meta.role as UserRole) ?? 'guest',
+  };
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  // Initialize from LocalStorage
   useEffect(() => {
-    const storedSession = localStorage.getItem('elgrace_session');
-    if (storedSession) {
-      try {
-        const parsedUser = JSON.parse(storedSession);
-        setUser(parsedUser);
-      } catch (e) {
-        localStorage.removeItem('elgrace_session');
-      }
-    }
-    setIsLoading(false);
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+      setUser(data.session?.user ? mapUser(data.session.user) : null);
+      setLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ? mapUser(session.user) : null);
+    });
+
+    return () => {
+      mounted = false;
+      // unsubscribe if available
+      if (listener?.subscription) listener.subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const storedUsers = JSON.parse(localStorage.getItem('elgrace_users') || '[]');
-    const hashedPassword = await hashPassword(password);
-
-    const foundUser = storedUsers.find((u: any) => u.email === email && u.password === hashedPassword);
-
-    if (foundUser) {
-      const sessionUser: User = {
-        id: foundUser.id,
-        name: foundUser.name,
-        role: foundUser.role,
-        email: foundUser.email,
-        avatar: `https://i.pravatar.cc/150?u=${foundUser.email}`
-      };
-      
-      setUser(sessionUser);
-      localStorage.setItem('elgrace_session', JSON.stringify(sessionUser));
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) return { success: false, message: error.message };
+      setUser(data.user ? mapUser(data.user) : null);
       return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err?.message ?? 'Login failed' };
     }
-
-    return { success: false, message: "Invalid email or password." };
   };
 
-  const register = async (role: UserRole, name: string, email: string, password: string) => {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    const storedUsers = JSON.parse(localStorage.getItem('elgrace_users') || '[]');
-    
-    if (storedUsers.some((u: any) => u.email === email)) {
-      return { success: false, message: "Email already exists." };
+  const loginWithMagicLink = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({ email });
+      if (error) return { success: false, message: error.message };
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err?.message ?? 'Magic link failed' };
     }
-
-    const hashedPassword = await hashPassword(password);
-    
-    const newUser = {
-      id: Date.now().toString(),
-      role,
-      name,
-      email,
-      password: hashedPassword
-    };
-
-    storedUsers.push(newUser);
-    localStorage.setItem('elgrace_users', JSON.stringify(storedUsers));
-
-    // Auto-login after register
-    const sessionUser: User = {
-        id: newUser.id,
-        name: newUser.name,
-        role: newUser.role,
-        email: newUser.email,
-        avatar: `https://i.pravatar.cc/150?u=${newUser.email}`
-    };
-    setUser(sessionUser);
-    localStorage.setItem('elgrace_session', JSON.stringify(sessionUser));
-
-    return { success: true };
   };
 
-  const logout = () => {
+  const signup = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) return { success: false, message: error.message };
+      setUser(data.user ? mapUser(data.user) : null);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err?.message ?? 'Signup failed' };
+    }
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('elgrace_session');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithMagicLink, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
+  return ctx;
 };
