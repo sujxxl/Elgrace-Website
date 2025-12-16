@@ -94,7 +94,7 @@ export const Castings: React.FC = () => {
           
           <button 
             onClick={handlePostGigClick}
-            className="mt-6 md:mt-0 flex items-center gap-2 px-6 py-3 bg-white text-black font-bold uppercase tracking-widest hover:bg-zinc-200 transition-colors"
+            className="mt-6 md:mt-0 flex items-center gap-2 px-6 py-3 text-white font-bold uppercase tracking-widest transition-colors rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md"
           >
             <Plus className="w-4 h-4" /> Post a Gig
           </button>
@@ -141,11 +141,11 @@ export const Castings: React.FC = () => {
                     <button 
                         onClick={() => handleApplyClick(gig.id)}
                         disabled={appliedGigs.includes(gig.id)}
-                        className={`w-full py-3 font-bold uppercase tracking-widest text-xs transition-colors flex items-center justify-center gap-2
-                            ${appliedGigs.includes(gig.id) 
-                                ? 'bg-emerald-900/50 text-emerald-400 cursor-default' 
-                                : 'bg-white text-black hover:bg-zinc-200'
-                            }`}
+                      className={`w-full py-3 font-bold uppercase tracking-widest text-xs transition-colors flex items-center justify-center gap-2 rounded-2xl
+                        ${appliedGigs.includes(gig.id) 
+                          ? 'bg-emerald-900/50 text-emerald-400 cursor-default' 
+                          : 'text-white bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md'
+                        }`}
                     >
                         {appliedGigs.includes(gig.id) ? (
                             <><Check className="w-4 h-4" /> Applied</>
@@ -248,8 +248,8 @@ export const Castings: React.FC = () => {
                         </div>
                         
                         <div className="pt-4 flex gap-4">
-                            <button type="button" onClick={() => setIsPostModalOpen(false)} className="flex-1 py-3 border border-zinc-700 hover:bg-zinc-800 transition-colors uppercase tracking-widest font-bold text-xs">Cancel</button>
-                            <button type="submit" className="flex-1 py-3 bg-white text-black hover:bg-zinc-200 transition-colors uppercase tracking-widest font-bold text-xs">Post Gig</button>
+                          <button type="button" onClick={() => setIsPostModalOpen(false)} className="flex-1 py-3 border-2 border-[#dfcda5] hover:bg-white/5 transition-colors uppercase tracking-widest font-bold text-xs rounded-xl backdrop-blur-md">Cancel</button>
+                          <button type="submit" className="flex-1 py-3 text-white uppercase tracking-widest font-bold text-xs rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md">Post Gig</button>
                         </div>
                     </form>
                 </motion.div>

@@ -35,6 +35,7 @@ export const Brands: React.FC = () => {
           >
             Trusted By
           </motion.h3>
+          <div className="w-12 h-px bg-[#dfcda5]/60 mx-auto mt-4" />
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12 md:gap-16 items-center justify-items-center">
@@ -46,16 +47,18 @@ export const Brands: React.FC = () => {
               transition={{ delay: i * 0.05, duration: 0.5 }}
               className="w-full flex justify-center group"
             >
-              {/* 
-                Placeholder Logo 
-                Replace `src` with actual logo assets. 
-                Using `placehold.co` with custom text to simulate logos.
-              */}
-              <img 
-                src={`https://placehold.co/400x150/09090b/ffffff?text=${encodeURIComponent(brand.name)}&font=montserrat`} 
-                alt={`${brand.name} logo`}
-                className="w-auto h-6 md:h-12 object-contain opacity-40 group-hover:opacity-100 transition-all duration-500 grayscale group-hover:grayscale-0 filter"
-              />
+              <div className="px-4 py-3 rounded-xl border border-white/10 group-hover:border-[#dfcda5] transition-colors duration-500 backdrop-blur-sm bg-white/0">
+                {/* 
+                  Placeholder Logo 
+                  Replace src with actual logo assets. 
+                  Using placehold.co with custom text to simulate logos.
+                */}
+                <img 
+                  src={`https://placehold.co/400x150/09090b/ffffff?text=${encodeURIComponent(brand.name)}&font=montserrat`} 
+                  alt={`${brand.name} logo`}
+                  className="w-auto h-6 md:h-12 object-contain opacity-100 transition-all duration-500 grayscale group-hover:grayscale-0"
+                />
+              </div>
             </motion.div>
           ))}
         </div>

@@ -135,7 +135,7 @@ const Card: React.FC<{
              </div>
 
              <div className="relative z-10 pt-6 border-t border-white/5">
-                <button className="group flex items-center gap-2 text-white font-bold uppercase tracking-widest text-sm hover:text-zinc-300 transition-colors">
+               <button className="group flex items-center gap-2 text-white font-bold uppercase tracking-widest text-sm transition-colors border-b border-transparent hover:border-[#dfcda5] pb-1">
                     Explore Services 
                     <ArrowUpRight className="w-4 h-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
                 </button>

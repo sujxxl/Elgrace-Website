@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/employee-portal/:path*",
+      "destination": "https://admin.elgrace.in/:path*"
+    },
+    {
+      "source": "/employee-portal",
+      "destination": "https://admin.elgrace.in/"
+    }
+  ]
+}

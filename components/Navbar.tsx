@@ -4,8 +4,8 @@ import { Menu, X, UserCircle, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
-  onNavigate: (view: 'home' | 'services' | 'talents' | 'castings' | 'auth') => void;
-  currentView: 'home' | 'services' | 'talents' | 'castings' | 'auth';
+  onNavigate: (view: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile') => void;
+  currentView: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile';
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
@@ -21,7 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLinkClick = (e: React.MouseEvent<HTMLElement>, target: string, view: 'home' | 'services' | 'talents' | 'castings' | 'auth') => {
+  const handleLinkClick = (e: React.MouseEvent<HTMLElement>, target: string, view: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile') => {
     e.preventDefault();
     setMobileMenuOpen(false);
     onNavigate(view);
@@ -67,11 +67,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex gap-8 items-center">
-          {navLinks.map((link) => (
+          {[...navLinks, ...(user ? [{ name: 'Profile', href: '#', view: 'profile' as const }] : [])].map((link) => (
             <a
               key={link.name}
               href={link.href}
-              onClick={(e) => handleLinkClick(e, link.href, link.view)}
+              onClick={(e) => handleLinkClick(e, link.view === 'home' ? link.href : '#', link.view)}
               className={`text-sm uppercase tracking-widest transition-colors duration-300 relative group ${
                 currentView === link.view && (link.view !== 'home' || link.name === 'Mission') 
                   ? 'text-white font-bold' 
@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
               }`}
             >
               {link.name}
-              <span className={`absolute -bottom-1 left-0 h-[1px] bg-white transition-all duration-300 ${
+              <span className={`absolute -bottom-1 left-0 h-[1px] bg-[#dfcda5] transition-all duration-300 ${
                   currentView === link.view && (link.view !== 'home' || link.name === 'Mission') 
                   ? 'w-full' 
                   : 'w-0 group-hover:w-full'}`} 
@@ -96,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
                   </span>
                   <button 
                     onClick={logout}
-                    className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded text-xs font-bold uppercase tracking-widest transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 rounded text-xs font-bold uppercase tracking-widest transition-colors border-2 border-[#dfcda5] hover:bg-white/5 backdrop-blur-md"
                   >
                     <LogOut className="w-4 h-4" /> Logout
                   </button>
@@ -104,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
             ) : (
                 <button 
                     onClick={(e) => handleLinkClick(e, '#', 'auth')}
-                    className="px-6 py-2 bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-zinc-200 transition-colors duration-300 flex items-center gap-2"
+                    className="px-6 py-2 text-white text-xs font-bold uppercase tracking-widest transition-colors duration-300 flex items-center gap-2 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md"
                 >
                     <UserCircle className="w-4 h-4" /> Login
                 </button>
@@ -129,20 +129,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
             exit={{ opacity: 0, height: 0 }}
             className="fixed inset-0 bg-zinc-950 flex flex-col items-center justify-center gap-8 md:hidden overflow-hidden"
           >
-            {navLinks.map((link) => (
+            {[...navLinks, ...(user ? [{ name: 'Profile', href: '#', view: 'profile' as const }] : [])].map((link) => (
               <a
                 key={link.name}
                 href={link.href}
-                onClick={(e) => handleLinkClick(e, link.href, link.view)}
+                onClick={(e) => handleLinkClick(e, link.view === 'home' ? link.href : '#', link.view)}
                 className="text-3xl font-['Syne'] font-bold text-zinc-300 hover:text-white"
               >
                 {link.name}
               </a>
             ))}
              {!user ? (
-                 <button onClick={(e) => handleLinkClick(e, '#', 'auth')} className="w-3/4 py-4 bg-white text-black font-bold uppercase tracking-widest">
-                    Login / Sign Up
-                 </button>
+               <button onClick={(e) => handleLinkClick(e, '#', 'auth')} className="w-3/4 py-4 text-white font-bold uppercase tracking-widest rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md">
+                Login / Sign Up
+               </button>
              ) : (
                  <div className="flex flex-col items-center gap-4 w-full">
                      <p className="text-zinc-500 uppercase tracking-widest text-sm">Hi, {user.name}</p>

@@ -39,19 +39,19 @@ export const ContactGrid: React.FC = () => {
                         <div className="space-y-6 pl-10">
                             <div>
                                 <p className="text-zinc-500 text-sm uppercase tracking-wider mb-1">General Inquiries</p>
-                                <a href="mailto:hardik@elgrace.in" className="text-lg text-white hover:text-zinc-300 transition-colors border-b border-white/20 pb-1 inline-block">
+                                <a href="mailto:hardik@elgrace.in" className="text-lg text-white transition-colors border-b border-[#dfcda5]/40 hover:border-[#dfcda5] pb-1 inline-block">
                                     hardik@elgrace.in
                                 </a>
                             </div>
                             <div>
                                 <p className="text-zinc-500 text-sm uppercase tracking-wider mb-1">Business & Productions</p>
-                                <a href="mailto:business@elgrace.in" className="text-lg text-white hover:text-zinc-300 transition-colors border-b border-white/20 pb-1 inline-block">
+                                <a href="mailto:business@elgrace.in" className="text-lg text-white transition-colors border-b border-[#dfcda5]/40 hover:border-[#dfcda5] pb-1 inline-block">
                                     business@elgrace.in
                                 </a>
                             </div>
                             <div>
                                 <p className="text-zinc-500 text-sm uppercase tracking-wider mb-1">New talent?</p>
-                                <a href="mailto:talent@elgrace.in" className="text-lg text-white hover:text-zinc-300 transition-colors border-b border-white/20 pb-1 inline-block">
+                                <a href="mailto:talent@elgrace.in" className="text-lg text-white transition-colors border-b border-[#dfcda5]/40 hover:border-[#dfcda5] pb-1 inline-block">
                                     talent@elgrace.in
                                 </a>
                             </div>
@@ -124,7 +124,7 @@ export const ContactGrid: React.FC = () => {
                     <div className="pt-8 mt-8 border-t border-zinc-800">
                         <a 
                             href="mailto:business@elgrace.in"
-                            className="flex items-center justify-center w-full py-4 bg-white text-black font-bold uppercase tracking-widest hover:bg-zinc-200 transition-colors rounded-sm"
+                            className="flex items-center justify-center w-full py-4 text-white font-bold uppercase tracking-widest transition-colors rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md"
                         >
                             Start a Project
                         </a>

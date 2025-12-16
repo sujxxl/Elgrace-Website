@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Key } from 'lucide-react';
+import { Mail, Lock, Key, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuccess }) => {
@@ -8,9 +8,12 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState(''); // only used for signup
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'model' | 'client'>('model'); // NEW
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isSignup, setIsSignup] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +41,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
     e.preventDefault();
     setMsg(null);
     setLoading(true);
-    const res = await signup(email, password);
+    const res = await signup(email, password, displayName, role); // pass role
     setLoading(false);
     if (res.success) {
       onLoginSuccess?.();
@@ -56,8 +59,9 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
           <div className="hidden md:flex flex-col justify-center p-10 rounded-2xl bg-zinc-900/60 border border-zinc-800 backdrop-blur-sm">
             <h1 className="text-4xl font-['Syne'] font-bold mb-4">Elgrace Talents</h1>
             <p className="text-zinc-400 leading-relaxed">
-              Sign in to manage your profile, view castings and apply for gigs. New here? Create an account
-              with email and password or request a magic link.
+              {isSignup
+                ? 'Create an account to manage your profile, view castings, and apply for gigs.'
+                : 'Sign in to manage your profile, view castings and apply for gigs.'}
             </p>
 
             <div className="mt-8 space-y-4">
@@ -65,7 +69,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                 <div className="p-2 bg-white/5 rounded-full"><Mail className="w-4 h-4" /></div>
                 <div>
                   <div className="text-sm text-zinc-500 uppercase tracking-wider">Support</div>
-                  <div className="text-sm">hardik@elgrace.in</div>
+                  <div className="text-sm">info@elgrace.in</div>
                 </div>
               </div>
 
@@ -81,10 +85,14 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
 
           {/* Right - Form */}
           <div className="p-8 rounded-2xl bg-zinc-900/60 border border-zinc-800 backdrop-blur-sm">
-            <h2 className="text-2xl font-['Syne'] font-bold mb-2">Welcome back</h2>
-            <p className="text-zinc-400 mb-6">Log in to continue — or request a magic link.</p>
+            <h2 className="text-2xl font-['Syne'] font-bold mb-2">
+              {isSignup ? 'Create account' : 'Welcome back'}
+            </h2>
+            <p className="text-zinc-400 mb-6">
+              {isSignup ? 'Sign up to get started.' : 'Log in to continue — or request a magic link.'}
+            </p>
 
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
               <label className="block">
                 <div className="flex items-center gap-3 mb-2 text-zinc-400">
                   <Mail className="w-4 h-4" />
@@ -95,11 +103,30 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
-                  className="w-full bg-zinc-800/50 border border-zinc-800 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-zinc-300/60 text-white placeholder:text-zinc-400"
                   placeholder="you@domain.com"
                 />
               </label>
 
+              {/* Display name field: ONLY show during signup */}
+              {isSignup && (
+                <label className="block">
+                  <div className="flex items-center gap-3 mb-2 text-zinc-400">
+                    <User className="w-4 h-4" />
+                    <span className="text-sm">Display name</span>
+                  </div>
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={e => setDisplayName(e.target.value)}
+                    required
+                    className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-zinc-300/60 text-white placeholder:text-zinc-400"
+                    placeholder="Your public name"
+                  />
+                </label>
+              )}
+
+              {/* Password */}
               <label className="block">
                 <div className="flex items-center gap-3 mb-2 text-zinc-400">
                   <Lock className="w-4 h-4" />
@@ -109,44 +136,98 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                   type="password"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-zinc-800/50 border border-zinc-800 px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-zinc-300/60 text-white placeholder:text-zinc-400"
                   placeholder="••••••••"
                 />
               </label>
 
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-lg font-semibold"
-                >
-                  {loading ? 'Working…' : 'Login'}
-                </button>
+              {/* Role selector: ONLY show during signup */}
+              {isSignup && (
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRole('model')}
+                    className={`px-4 py-3 rounded-xl font-medium border transition-all backdrop-blur-md ${
+                      role === 'model'
+                        ? 'bg-white/10 border-[#dfcda5] text-white shadow-lg shadow-black/30'
+                        : 'bg-white/5 border-white/10 text-white hover:border-[#dfcda5]'
+                    }`}
+                  >
+                    I’m a model
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleMagic}
-                  disabled={loading || !email}
-                  className="px-4 py-3 bg-amber-600 hover:bg-amber-500 rounded-lg font-medium"
-                >
-                  Magic link
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setRole('client')}
+                    className={`px-4 py-3 rounded-xl font-medium border transition-all backdrop-blur-md ${
+                      role === 'client'
+                        ? 'bg-white/10 border-[#dfcda5] text-white shadow-lg shadow-black/30'
+                        : 'bg-white/5 border-white/10 text-white hover:border-[#dfcda5]'
+                    }`}
+                  >
+                    I’m a client
+                  </button>
+                </div>
+              )}
 
-                <button
-                  type="button"
-                  onClick={handleSignup}
-                  disabled={loading}
-                  className="px-4 py-3 bg-zinc-700 hover:bg-zinc-600 rounded-lg font-medium"
-                >
-                  Sign up
-                </button>
-              </div>
+              {/* Message */}
+              {msg && (
+                <div className="text-sm text-red-500 mt-4">
+                  {msg}
+                </div>
+              )}
 
-              {msg && <p className="text-sm text-zinc-300 mt-2">{msg}</p>}
+              {/* Submit button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-semibold transition-all hover:from-zinc-700 hover:to-zinc-500 disabled:opacity-50 shadow-xl shadow-black/30 border-2 border-[#dfcda5] backdrop-blur-md"
+              >
+                {loading ? 'Loading...' : isSignup ? 'Sign up' : 'Log in'}
+              </button>
             </form>
 
-            <div className="mt-6 text-xs text-zinc-500">
-              By continuing you agree to our <a className="underline" href="#">terms</a> &amp; <a className="underline" href="#">privacy</a>.
+            {/* Divider with magic link option */}
+            {!isSignup && (
+              <div className="mt-6 relative">
+                <div className="h-px bg-zinc-700" />
+                
+              </div>
+            )}
+
+            {/* Magic link button: ONLY show for login */}
+            {!isSignup && (
+              <button
+                onClick={handleMagic}
+                className="w-full mt-4 px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-semibold transition-all hover:from-zinc-700 hover:to-zinc-500 shadow-xl shadow-black/30 border-2 border-[#dfcda5] backdrop-blur-md"
+              >
+                Send magic link
+              </button>
+            )}
+
+            {/* Footer */}
+            <div className="mt-6 text-center text-sm text-zinc-400">
+              {isSignup ? (
+                <>
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => setIsSignup(false)}
+                    className="text-[#dfcda5] hover:underline"
+                  >
+                    Log in
+                  </button>
+                </>
+              ) : (
+                <>
+                  Don’t have an account yet?{' '}
+                  <button
+                    onClick={() => setIsSignup(true)}
+                    className="text-[#dfcda5] hover:underline"
+                  >
+                    Sign up
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
