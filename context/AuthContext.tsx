@@ -23,6 +23,9 @@ interface AuthContextType {
     displayName?: string,
     role?: 'model' | 'client'
   ) => Promise<{ success: boolean; message?: string }>;
+  requestPasswordReset: (email: string) => Promise<{ success: boolean; message?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; message?: string }>;
+  verifyAndUpdatePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -68,7 +71,7 @@ const signup = async (
       return { success: false, message: 'User not returned from signup' };
     }
 
-    // 2️⃣ Create / upsert profile (NO ROLE HERE)
+    // 2️⃣ Create / upsert profile (role stored in auth metadata, not here)
     const { error: profileError } = await supabase
       .from('profiles')
       .upsert(
@@ -134,13 +137,73 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const requestPasswordReset = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?reset=1`,
+      });
+      if (error) return { success: false, message: error.message };
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err?.message ?? 'Password reset failed' };
+    }
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) return { success: false, message: error.message };
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err?.message ?? 'Update password failed' };
+    }
+  };
+
+  const verifyAndUpdatePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      if (!user?.email) {
+        return { success: false, message: 'User email not found' };
+      }
+
+      // Verify current password by attempting to re-authenticate
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+
+      if (authError) {
+        return { success: false, message: 'Current password is incorrect' };
+      }
+
+      // If verification succeeds, update to new password
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) return { success: false, message: updateError.message };
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, message: err?.message ?? 'Password update failed' };
+    }
+  };
+
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithMagicLink, signup, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        loginWithMagicLink,
+        signup,
+        requestPasswordReset,
+        updatePassword,
+        verifyAndUpdatePassword,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -1,84 +1,109 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Briefcase, MapPin, DollarSign, Calendar, Plus, Check, Lock } from 'lucide-react';
+import { MapPin, DollarSign, Calendar, Plus, Check, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { AuthPage } from './AuthPage';
-
-interface Gig {
-  id: number;
-  title: string;
-  description: string;
-  location: string;
-  budget: string;
-  date: string;
-  requirements: string;
-  clientName: string;
-}
-
-const initialGigs: Gig[] = [
-  {
-    id: 1,
-    title: "Summer 2025 Campaign",
-    description: "Looking for fresh faces for our upcoming beachwear collection. Shoot will take place over 3 days in Goa. We need energetic, athletic models comfortable with swimwear.",
-    location: "Goa, India",
-    budget: "₹45,000 - ₹60,000",
-    date: "2024-11-15",
-    requirements: "Male/Female, 20-28, Athletic Build",
-    clientName: "Boldfit"
-  }
-];
+import { Casting, createCasting, listCastings, getBrandProfileByUserId } from '../services/ProfileService';
 
 export const Castings: React.FC = () => {
   const { user } = useAuth();
-  const [gigs, setGigs] = useState<Gig[]>(initialGigs);
+  const { showToast } = useToast();
+  const [castings, setCastings] = useState<Casting[]>([]);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
-  const [appliedGigs, setAppliedGigs] = useState<number[]>([]);
+  const [appliedCastings, setAppliedCastings] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Form State
-  const [newGig, setNewGig] = useState({
+  const [newCasting, setNewCasting] = useState({
     title: '',
     description: '',
     location: '',
-    budget: '',
-    date: '',
+    budget_min: '',
+    budget_max: '',
+    application_deadline: '',
     requirements: ''
   });
 
-  const handlePostGigClick = () => {
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await listCastings();
+        setCastings(data);
+      } catch (err) {
+        console.error('Failed to load castings', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const handlePostCastingClick = () => {
     if (!user) {
         setIsAuthPromptOpen(true);
     } else if (user.role === 'client') {
         setIsPostModalOpen(true);
     } else {
-        alert("Only clients can post gigs.");
+        alert("Only clients can post castings.");
     }
   };
 
-  const handleApplyClick = (gigId: number) => {
+  const handleApplyClick = (castingId?: string) => {
     if (!user) {
         setIsAuthPromptOpen(true);
     } else if (user.role === 'model') {
-        setAppliedGigs([...appliedGigs, gigId]);
+        if (castingId) {
+          setAppliedCastings([...appliedCastings, castingId]);
+          showToast('✅ Application submitted successfully!');
+        }
     } else {
-        alert("Only models can apply for gigs.");
+        alert("Only models can apply for castings.");
     }
   };
 
-  const handlePostGig = (e: React.FormEvent) => {
+  const handlePostCasting = async (e: React.FormEvent) => {
     e.preventDefault();
-    const gig: Gig = {
-      id: gigs.length + 1,
-      ...newGig,
-      clientName: user?.name || "My Brand"
-    };
-    setGigs([gig, ...gigs]);
-    setIsPostModalOpen(false);
-    setNewGig({ title: '', description: '', location: '', budget: '', date: '', requirements: '' });
+    if (!user) {
+      setIsAuthPromptOpen(true);
+      return;
+    }
+    try {
+      const brandProfile = await getBrandProfileByUserId(user.id);
+      if (!brandProfile) {
+        alert('Please complete your brand profile before posting a casting.');
+        return;
+      }
+      const created = await createCasting({
+        user_id: user.id,
+        brand_profile_id: brandProfile?.id ?? null,
+        title: newCasting.title,
+        description: newCasting.description || null,
+        location: newCasting.location || null,
+        budget_min: newCasting.budget_min ? Number(newCasting.budget_min) : null,
+        budget_max: newCasting.budget_max ? Number(newCasting.budget_max) : null,
+        requirements: newCasting.requirements || null,
+        status: 'open',
+        application_deadline: newCasting.application_deadline || null,
+      });
+      setCastings([created, ...castings]);
+      setIsPostModalOpen(false);
+      setNewCasting({ title: '', description: '', location: '', budget_min: '', budget_max: '', application_deadline: '', requirements: '' });
+      showToast('🎬 Casting posted successfully!');
+    } catch (err: any) {
+      alert(`Failed to post casting: ${err.message ?? err}`);
+    }
   };
 
   const onAuthSuccess = () => {
       setIsAuthPromptOpen(false);
+  };
+
+  const formatBudget = (min?: number | null, max?: number | null) => {
+    if (!min && !max) return 'Budget TBA';
+    if (min && max) return `₹${min.toLocaleString()} - ₹${max.toLocaleString()}`;
+    if (min) return `From ₹${min.toLocaleString()}`;
+    return `Up to ₹${max?.toLocaleString()}`;
   };
 
   return (
@@ -90,21 +115,25 @@ export const Castings: React.FC = () => {
           <div>
             <h2 className="text-zinc-500 uppercase tracking-widest text-sm mb-2">Opportunities</h2>
             <h3 className="text-4xl md:text-5xl font-['Syne'] font-bold">Casting Calls</h3>
+            {loading && <p className="text-zinc-500 text-sm mt-2">Loading castings...</p>}
           </div>
           
           <button 
-            onClick={handlePostGigClick}
+            onClick={handlePostCastingClick}
             className="mt-6 md:mt-0 flex items-center gap-2 px-6 py-3 text-white font-bold uppercase tracking-widest transition-colors rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md"
           >
-            <Plus className="w-4 h-4" /> Post a Gig
+            <Plus className="w-4 h-4" /> Post a Casting
           </button>
         </div>
 
-        {/* Gig List */}
+        {/* Casting List */}
         <div className="grid gap-6">
-          {gigs.map((gig) => (
+          {!loading && castings.length === 0 && (
+            <div className="text-zinc-500 text-sm">No castings posted yet.</div>
+          )}
+          {castings.map((casting) => (
             <motion.div 
-              key={gig.id}
+              key={casting.id ?? casting.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-zinc-900/50 border border-zinc-800 p-6 md:p-8 rounded-xl hover:border-zinc-600 transition-colors group"
@@ -113,25 +142,28 @@ export const Castings: React.FC = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-xs font-bold bg-zinc-800 text-zinc-300 px-2 py-1 rounded uppercase tracking-wider">
-                        {gig.clientName}
+                        {casting.brand_profile_id ? 'Brand' : 'Brand'}
                     </span>
-                    <span className="text-xs text-zinc-500 uppercase tracking-wider">{gig.date}</span>
+                    <span className="text-xs text-zinc-500 uppercase tracking-wider">{casting.application_deadline ?? 'TBD'}</span>
                   </div>
-                  <h4 className="text-2xl font-bold text-white mb-3 group-hover:text-zinc-200">{gig.title}</h4>
-                  <p className="text-zinc-400 mb-6 max-w-2xl">{gig.description}</p>
+                  <h4 className="text-2xl font-bold text-white mb-3 group-hover:text-zinc-200">{casting.title}</h4>
+                  <p className="text-zinc-400 mb-6 max-w-2xl">{casting.description}</p>
                   
                   <div className="flex flex-wrap gap-4 md:gap-8 text-sm text-zinc-300">
                     <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-zinc-500" />
-                        {gig.location}
+                        {casting.location || 'Location TBA'}
                     </div>
                     <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-zinc-500" />
-                        {gig.budget}
+                        {formatBudget(
+                          casting.budget_min !== undefined && casting.budget_min !== null ? Number(casting.budget_min) : undefined,
+                          casting.budget_max !== undefined && casting.budget_max !== null ? Number(casting.budget_max) : undefined
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-zinc-500" />
-                        {gig.requirements}
+                        {casting.requirements || 'Requirements will be shared'}
                     </div>
                   </div>
                 </div>
@@ -139,15 +171,15 @@ export const Castings: React.FC = () => {
                 {/* Actions */}
                 <div className="flex flex-col justify-center items-end min-w-[150px]">
                     <button 
-                        onClick={() => handleApplyClick(gig.id)}
-                        disabled={appliedGigs.includes(gig.id)}
+                        onClick={() => handleApplyClick(casting.id as string)}
+                        disabled={appliedCastings.includes((casting.id as string) ?? '')}
                       className={`w-full py-3 font-bold uppercase tracking-widest text-xs transition-colors flex items-center justify-center gap-2 rounded-2xl
-                        ${appliedGigs.includes(gig.id) 
+                        ${appliedCastings.includes((casting.id as string) ?? '')} 
                           ? 'bg-emerald-900/50 text-emerald-400 cursor-default' 
                           : 'text-white bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md'
                         }`}
                     >
-                        {appliedGigs.includes(gig.id) ? (
+                        {appliedCastings.includes((casting.id as string) ?? '') ? (
                             <><Check className="w-4 h-4" /> Applied</>
                         ) : (
                             'Apply Now'
@@ -165,7 +197,7 @@ export const Castings: React.FC = () => {
         </div>
       </div>
 
-      {/* Post Gig Modal (Client Only) */}
+      {/* Post Casting Modal (Client Only) */}
       <AnimatePresence>
         {isPostModalOpen && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -182,14 +214,14 @@ export const Castings: React.FC = () => {
                     exit={{ opacity: 0, scale: 0.9 }}
                     className="relative bg-zinc-900 w-full max-w-2xl p-8 rounded-xl border border-zinc-800 shadow-2xl max-h-[90vh] overflow-y-auto"
                 >
-                    <h3 className="text-2xl font-bold font-['Syne'] mb-6">Create New Gig</h3>
-                    <form onSubmit={handlePostGig} className="space-y-4">
+                    <h3 className="text-2xl font-bold font-['Syne'] mb-6">Create New Casting</h3>
+                    <form onSubmit={handlePostCasting} className="space-y-4">
                         <div>
                             <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Project Title</label>
                             <input 
                                 required
-                                value={newGig.title}
-                                onChange={(e) => setNewGig({...newGig, title: e.target.value})}
+                                value={newCasting.title}
+                                onChange={(e) => setNewCasting({...newCasting, title: e.target.value})}
                                 className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
                                 placeholder="e.g. Winter Campaign 2024"
                             />
@@ -198,58 +230,69 @@ export const Castings: React.FC = () => {
                             <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Description</label>
                             <textarea 
                                 required
-                                value={newGig.description}
-                                onChange={(e) => setNewGig({...newGig, description: e.target.value})}
+                                value={newCasting.description}
+                                onChange={(e) => setNewCasting({...newCasting, description: e.target.value})}
                                 className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 h-32"
                                 placeholder="Describe the role and project..."
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Location</label>
+                            <input 
+                              required
+                              value={newCasting.location}
+                              onChange={(e) => setNewCasting({...newCasting, location: e.target.value})}
+                              className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                              placeholder="City, Country"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Location</label>
-                                <input 
-                                    required
-                                    value={newGig.location}
-                                    onChange={(e) => setNewGig({...newGig, location: e.target.value})}
-                                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
-                                    placeholder="City, Country"
-                                />
+                              <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Budget Min</label>
+                              <input
+                              type="number"
+                              value={newCasting.budget_min}
+                              onChange={(e) => setNewCasting({...newCasting, budget_min: e.target.value})}
+                              className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                              placeholder="30000"
+                              />
                             </div>
                             <div>
-                                <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Budget</label>
-                                <input 
-                                    required
-                                    value={newGig.budget}
-                                    onChange={(e) => setNewGig({...newGig, budget: e.target.value})}
-                                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
-                                    placeholder="₹XX,XXX"
-                                />
+                              <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Budget Max</label>
+                              <input
+                              type="number"
+                              value={newCasting.budget_max}
+                              onChange={(e) => setNewCasting({...newCasting, budget_max: e.target.value})}
+                              className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                              placeholder="50000"
+                              />
                             </div>
+                          </div>
                         </div>
                         <div>
                             <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Requirements</label>
                             <input 
                                 required
-                                value={newGig.requirements}
-                                onChange={(e) => setNewGig({...newGig, requirements: e.target.value})}
+                                value={newCasting.requirements}
+                                onChange={(e) => setNewCasting({...newCasting, requirements: e.target.value})}
                                 className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
                                 placeholder="e.g. Female, 20-25, 5'8+"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Date</label>
+                            <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Application Deadline</label>
                             <input 
                                 type="date"
-                                required
-                                value={newGig.date}
-                                onChange={(e) => setNewGig({...newGig, date: e.target.value})}
+                              value={newCasting.application_deadline}
+                              onChange={(e) => setNewCasting({...newCasting, application_deadline: e.target.value})}
                                 className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
                             />
                         </div>
                         
                         <div className="pt-4 flex gap-4">
                           <button type="button" onClick={() => setIsPostModalOpen(false)} className="flex-1 py-3 border-2 border-[#dfcda5] hover:bg-white/5 transition-colors uppercase tracking-widest font-bold text-xs rounded-xl backdrop-blur-md">Cancel</button>
-                          <button type="submit" className="flex-1 py-3 text-white uppercase tracking-widest font-bold text-xs rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md">Post Gig</button>
+                          <button type="submit" className="flex-1 py-3 text-white uppercase tracking-widest font-bold text-xs rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md">Post Casting</button>
                         </div>
                     </form>
                 </motion.div>

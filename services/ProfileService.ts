@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 
 export type InstagramHandle = {
@@ -36,11 +35,39 @@ export type ProfileData = {
   shoe_size?: string; // e.g., 'UK-8' or 'US-9'
   // Media
   cover_photo_url?: string;
-  gallery_urls?: string[];
+  portfolio_folder_link?: string;
 };
 
-// Use a dedicated table to avoid conflicts with the existing minimal `profiles` table
+// Brand profiles (clients)
+export type BrandProfile = {
+  id?: string;
+  user_id: string;
+  brand_name: string;
+  website_url?: string | null;
+  instagram_handle?: string | null;
+  contact_email?: string | null;
+  brand_description?: string | null;
+};
+
+export type Casting = {
+  id?: string;
+  brand_profile_id?: string | null;
+  user_id: string;
+  title: string;
+  description?: string | null;
+  location?: string | null;
+  budget_min?: number | null;
+  budget_max?: number | null;
+  requirements?: string | null;
+  status?: 'under_review' | 'open' | 'closed' | 'draft';
+  application_deadline?: string | null; // date string
+  created_at?: string;
+  updated_at?: string;
+};
+
 export const PROFILE_TABLE = 'model_profiles';
+export const BRAND_PROFILE_TABLE = 'brand_profiles';
+export const CASTINGS_TABLE = 'castings';
 
 export async function getProfileByUserId(userId: string) {
   const { data, error } = await supabase
@@ -62,51 +89,52 @@ export async function upsertProfile(payload: ProfileData) {
   return data as ProfileData;
 }
 
+export async function getBrandProfileByUserId(userId: string) {
+  const { data, error } = await supabase
+    .from(BRAND_PROFILE_TABLE)
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as BrandProfile | null;
+}
+
+export async function upsertBrandProfile(payload: BrandProfile) {
+  const { data, error } = await supabase
+    .from(BRAND_PROFILE_TABLE)
+    .upsert(payload, { onConflict: 'user_id' })
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data as BrandProfile;
+}
+
+export async function createCasting(payload: Casting) {
+  const insertPayload = { ...payload, status: payload.status ?? 'under_review' };
+  const { data, error } = await supabase
+    .from(CASTINGS_TABLE)
+    .insert(insertPayload)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data as Casting;
+}
+
+export async function listCastings() {
+  const { data, error } = await supabase
+    .from(CASTINGS_TABLE)
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Casting[];
+}
+
+// Generic image upload helper for cover photos
 export async function uploadImage(file: File, path: string) {
-  const bucket = 'media';
-  const { data, error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
+  const bucket = 'media'; // Create a public bucket named "media" in Supabase
+  const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
   if (error) throw error;
   const { data: pub } = await supabase.storage.from(bucket).getPublicUrl(path);
   return pub.publicUrl;
 }
 
-export const PROFILE_TABLE_SQL = `
--- Create a dedicated model profiles table
-create table if not exists model_profiles (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null unique references auth.users(id) on delete cascade,
-  full_name text not null,
-  dob date not null,
-  gender text not null check (gender in ('male','female','other')),
-  phone text not null,
-  email text not null,
-  state text not null,
-  city text not null,
-  category text not null,
-  instagram jsonb not null,
-  experience_level text,
-  languages text[],
-  skills text[],
-  open_to_travel boolean,
-  ramp_walk_experience boolean,
-  ramp_walk_description text,
-  height_feet int,
-  height_inches int,
-  bust_chest int,
-  waist int,
-  hips int,
-  weight int,
-  shoe_size text,
-  cover_photo_url text,
-  gallery_urls text[],
-  inserted_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now()
-);
-create unique index if not exists model_profiles_user_id_unique on model_profiles(user_id);
-
--- Enable RLS and allow users to read and write their own row
-alter table model_profiles enable row level security;
-create policy if not exists "select own" on model_profiles for select using (auth.uid() = user_id);
-create policy if not exists "insert own" on model_profiles for insert with check (auth.uid() = user_id);
-create policy if not exists "update own" on model_profiles for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
-`;

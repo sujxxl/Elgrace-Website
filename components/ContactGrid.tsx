@@ -1,8 +1,20 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Clock, Phone, MapPin, Instagram } from 'lucide-react';
+import { Mail, Clock, Phone, MapPin, Instagram, Copy } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
 
 export const ContactGrid: React.FC = () => {
+  const { showToast } = useToast();
+
+  const copyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText('business@elgrace.in');
+      showToast('📧 Email copied to clipboard!');
+    } catch (err) {
+      showToast('Failed to copy email');
+    }
+  };
+
   return (
     <section id="contact" className="py-24 bg-zinc-950 relative z-10">
       <div className="container mx-auto px-6">
@@ -39,19 +51,40 @@ export const ContactGrid: React.FC = () => {
                         <div className="space-y-6 pl-10">
                             <div>
                                 <p className="text-zinc-500 text-sm uppercase tracking-wider mb-1">General Inquiries</p>
-                                <a href="mailto:hardik@elgrace.in" className="text-lg text-white transition-colors border-b border-[#dfcda5]/40 hover:border-[#dfcda5] pb-1 inline-block">
+                                <a
+                                    href="mailto:hardik@elgrace.in"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        window.open('mailto:hardik@elgrace.in', '_self');
+                                    }}
+                                    className="text-lg text-white transition-colors border-b border-[#dfcda5]/40 hover:border-[#dfcda5] pb-1 inline-block cursor-pointer"
+                                >
                                     hardik@elgrace.in
                                 </a>
                             </div>
                             <div>
                                 <p className="text-zinc-500 text-sm uppercase tracking-wider mb-1">Business & Productions</p>
-                                <a href="mailto:business@elgrace.in" className="text-lg text-white transition-colors border-b border-[#dfcda5]/40 hover:border-[#dfcda5] pb-1 inline-block">
+                                <a
+                                    href="mailto:business@elgrace.in"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        window.open('mailto:business@elgrace.in', '_self');
+                                    }}
+                                    className="text-lg text-white transition-colors border-b border-[#dfcda5]/40 hover:border-[#dfcda5] pb-1 inline-block cursor-pointer"
+                                >
                                     business@elgrace.in
                                 </a>
                             </div>
                             <div>
                                 <p className="text-zinc-500 text-sm uppercase tracking-wider mb-1">New talent?</p>
-                                <a href="mailto:talent@elgrace.in" className="text-lg text-white transition-colors border-b border-[#dfcda5]/40 hover:border-[#dfcda5] pb-1 inline-block">
+                                <a
+                                    href="mailto:talent@elgrace.in"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        window.open('mailto:talent@elgrace.in', '_self');
+                                    }}
+                                    className="text-lg text-white transition-colors border-b border-[#dfcda5]/40 hover:border-[#dfcda5] pb-1 inline-block cursor-pointer"
+                                >
                                     talent@elgrace.in
                                 </a>
                             </div>
@@ -122,12 +155,13 @@ export const ContactGrid: React.FC = () => {
 
                     {/* CTA */}
                     <div className="pt-8 mt-8 border-t border-zinc-800">
-                        <a 
-                            href="mailto:business@elgrace.in"
-                            className="flex items-center justify-center w-full py-4 text-white font-bold uppercase tracking-widest transition-colors rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md"
+                        <button
+                            onClick={copyEmail}
+                            className="flex items-center justify-center gap-2 w-full py-4 text-white font-bold uppercase tracking-widest transition-colors rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md cursor-pointer"
                         >
-                            Start a Project
-                        </a>
+                            <Copy className="w-4 h-4" />
+                            Copy Email Address
+                        </button>
                     </div>
 
                 </div>

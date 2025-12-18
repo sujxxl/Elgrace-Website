@@ -10,9 +10,11 @@ import { Navbar } from './components/Navbar';
 import { Brands } from './components/Brands';
 import { Castings } from './components/Castings';
 import { AuthPage } from './components/AuthPage';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import { ProfileDashboard } from './components/ProfileDashboard';
 import { ProfileEdit } from './components/ProfileEdit';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 const viewToPath = (v: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile') =>
   v === 'home' ? '/' : `/${v}`;
@@ -84,27 +86,33 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/auth"
           element={
-            <main className="pt-20 relative z-10">
-              <AuthPage onLoginSuccess={() => navigate('/')} />
-            </main>
+            <ProtectedRoute requireAuth={false} redirectTo="/profile">
+              <main className="pt-20 relative z-10">
+                <AuthPage />
+              </main>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/profile"
           element={
-            <main className="pt-20 relative z-10">
-              <ProfileDashboard />
-            </main>
+            <ProtectedRoute requireAuth={true}>
+              <main className="pt-20 relative z-10">
+                <ProfileDashboard />
+              </main>
+            </ProtectedRoute>
           }
         />
 
         <Route
           path="/profile/edit"
           element={
-            <main className="pt-20 relative z-10">
-              <ProfileEdit />
-            </main>
+            <ProtectedRoute requireAuth={true} requireRole="model">
+              <main className="pt-20 relative z-10">
+                <ProfileEdit />
+              </main>
+            </ProtectedRoute>
           }
         />
       </Routes>
@@ -123,7 +131,9 @@ const AppContent: React.FC = () => (
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </AuthProvider>
   );
 };

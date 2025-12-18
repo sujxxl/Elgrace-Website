@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { PROFILE_TABLE_SQL, ProfileData, InstagramHandle, getProfileByUserId, upsertProfile, uploadImage } from '../services/ProfileService';
+import { ProfileData, InstagramHandle, getProfileByUserId, upsertProfile, uploadImage } from '../services/ProfileService';
+import { buildDriveImageUrls } from '../services/gdrive';
+import { compressImageFile } from '../services/image';
 import { CheckCircle2 } from 'lucide-react';
 import { Country, State, City } from 'country-state-city';
 
@@ -465,25 +467,30 @@ const MeasurementsForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
 
 /* STEP 4: MEDIA */
 const MediaForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (patch: Partial<ProfileData>) => void; }> = ({ profile, onSave, saving }) => {
+  const { user } = useAuth();
   const [form, setForm] = useState<ProfileData>(profile);
-  const [coverFile, setCoverFile] = useState<File | null>(null);
-  const [galleryFiles, setGalleryFiles] = useState<FileList | null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   useEffect(() => setForm(profile), [profile]);
 
-  const handleUpload = async () => {
-    if (coverFile) {
-      const url = await uploadImage(coverFile, `covers/${form.user_id}.jpg`);
-      form.cover_photo_url = url;
-    }
-    if (galleryFiles && galleryFiles.length) {
-      const urls: string[] = [];
-      for (let i = 0; i < galleryFiles.length; i++) {
-        const f = galleryFiles.item(i)!;
-        const url = await uploadImage(f, `gallery/${form.user_id}-${Date.now()}-${i}.jpg`);
-        urls.push(url);
-      }
-      form.gallery_urls = urls;
+  const coverCandidates = buildDriveImageUrls(form.cover_photo_url || '');
+
+  const handleCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    try {
+      setUploadingCover(true);
+      // Compress to well under 1MB and convert to JPEG/compatible format
+      const compressed = await compressImageFile(file, { maxBytes: 900 * 1024 });
+      const path = `profiles/${user.id}/cover_${Date.now()}.jpg`;
+      const url = await uploadImage(compressed, path);
+      setForm(prev => ({ ...prev, cover_photo_url: url }));
+      alert('Cover image uploaded successfully');
+    } catch (err: any) {
+      alert(`Cover upload failed: ${err?.message ?? err}`);
+    } finally {
+      setUploadingCover(false);
+      e.target.value = '';
     }
   };
 
@@ -492,17 +499,91 @@ const MediaForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (patc
       <h4 className="text-lg font-['Syne'] font-bold mb-4">Photos / Media</h4>
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Cover Photo (required)</label>
-          <input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files?.[0] || null)} className="w-full text-zinc-300" />
-          {form.cover_photo_url && <img src={form.cover_photo_url} alt="Cover" className="mt-2 h-32 object-cover rounded" />}
+          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Cover Photo</label>
+          <input
+            type="url"
+            value={form.cover_photo_url || ''}
+            onChange={(e) => setForm({ ...form, cover_photo_url: e.target.value })}
+            placeholder="Paste an image URL (optional)"
+            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 rounded-lg"
+          />
+          <p className="text-xs text-zinc-500 mt-1">Either upload an image or paste a direct/public image URL.</p>
+          <div className="mt-3 flex items-center gap-3">
+            <label className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] cursor-pointer text-xs uppercase tracking-widest">
+              {uploadingCover ? 'Uploading…' : 'Upload Cover Image'}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleCoverFileChange}
+                disabled={uploadingCover}
+              />
+            </label>
+            <span className="text-xs text-zinc-500">We compress to under 1MB and convert for web.</span>
+          </div>
+          {coverCandidates.length > 0 && (
+            <div className="mt-3">
+              <div className="text-xs text-zinc-500 mb-1">Live preview:</div>
+              <img
+                src={coverCandidates[0]}
+                alt="Cover preview"
+                className="w-full aspect-[3/4] object-cover rounded-md border border-white/10"
+                onError={(e) => {
+                  const el = e.currentTarget as HTMLImageElement & { _try?: number };
+                  el._try = (el._try || 0) + 1;
+                  if (el._try < coverCandidates.length) {
+                    el.src = coverCandidates[el._try];
+                  }
+                }}
+              />
+            </div>
+          )}
+          {form.cover_photo_url && (
+            <a
+              href={form.cover_photo_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-[#dfcda5] hover:underline text-xs"
+            >
+              Open original on Drive →
+            </a>
+          )}
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Additional Photos (optional)</label>
-          <input type="file" accept="image/*" multiple onChange={(e) => setGalleryFiles(e.target.files)} className="w-full text-zinc-300" />
+          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Portfolio Folder Link (Google Drive)</label>
+          <input
+            type="url"
+            value={form.portfolio_folder_link || ''}
+            onChange={(e) => setForm({ ...form, portfolio_folder_link: e.target.value })}
+            placeholder="https://drive.google.com/drive/folders/..."
+            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 rounded-lg"
+          />
+          <p className="text-xs text-zinc-500 mt-1">
+            Paste your Google Drive folder link with all portfolio images. Set sharing to "Anyone with the link can view".
+          </p>
+          {form.portfolio_folder_link && (
+            <a
+              href={form.portfolio_folder_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-[#dfcda5] hover:underline text-sm"
+            >
+              Open portfolio folder →
+            </a>
+          )}
         </div>
       </div>
       <div className="pt-4 flex gap-3">
-        <button disabled={saving} onClick={async () => { await handleUpload(); await onSave({ cover_photo_url: form.cover_photo_url, gallery_urls: form.gallery_urls }); }} className="px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-bold uppercase tracking-widest border-2 border-[#dfcda5]">Save Media</button>
+        <button
+          disabled={saving}
+          onClick={() => onSave({
+            cover_photo_url: form.cover_photo_url,
+            portfolio_folder_link: form.portfolio_folder_link,
+          })}
+          className="px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-bold uppercase tracking-widest border-2 border-[#dfcda5]"
+        >
+          Save Media
+        </button>
       </div>
     </div>
   );

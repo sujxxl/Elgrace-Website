@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, Edit, Plus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle2, Edit, Plus, MapPin, DollarSign, Calendar } from 'lucide-react';
+import { BrandProfile, Casting, getBrandProfileByUserId, upsertBrandProfile, createCasting, listCastings, getProfileByUserId, ProfileData } from '../services/ProfileService';
+import { buildDriveImageUrls } from '../services/gdrive';
 
 // This dashboard strictly inherits existing theme: black/white base, neutral glass,
 // existing buttons, spacing, borders, typography. Accent via outlines (#dfcda5) only.
@@ -65,10 +70,19 @@ export const ProfileDashboard: React.FC = () => {
 
         {/* Content */}
         <div className="space-y-6">
-          {activeTab === 'dashboard' && (isModel ? <ModelDashboard /> : <ClientDashboard />)}
+          {activeTab === 'dashboard' && (
+            isModel ? (
+              <ModelDashboard />
+            ) : (
+              <ClientDashboard
+                onEditBrand={() => setActiveTab('profile')}
+                onAddCasting={() => setActiveTab('castings')}
+              />
+            )
+          )}
           {activeTab === 'profile' && (isModel ? <ModelProfileView /> : <ClientBrandProfile />)}
           {activeTab === 'castings' && (isModel ? <ModelCastingsApplied /> : <ClientCastingsList />)}
-          {activeTab === 'settings' && (<SettingsPanel />)}
+          {activeTab === 'settings' && (<SettingsPanel user={user} />)}
         </div>
       </div>
     </section>
@@ -91,6 +105,91 @@ function renderSideLink(key: TabKey, label: string, active: TabKey, setActive: (
 
 /* MODEL DASHBOARD */
 const ModelDashboard: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const data = await getProfileByUserId(user.id);
+        setProfile(data);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
+  const completion = {
+    personal:
+      !!profile?.full_name &&
+      !!profile?.dob &&
+      !!profile?.gender &&
+      !!profile?.phone &&
+      !!profile?.country &&
+      !!profile?.state &&
+      !!profile?.city &&
+      (profile?.instagram?.length ?? 0) > 0 &&
+      !!profile?.instagram?.[0]?.handle,
+    professional:
+      !!profile?.experience_level &&
+      profile?.open_to_travel !== undefined &&
+      profile?.ramp_walk_experience !== undefined &&
+      (profile?.ramp_walk_experience ? !!profile?.ramp_walk_description : true) &&
+      (profile?.languages?.length ?? 0) > 0,
+    measurements:
+      !!profile?.height_feet &&
+      !!profile?.height_inches &&
+      !!profile?.bust_chest &&
+      !!profile?.waist &&
+      !!profile?.shoe_size,
+    media: !!profile?.cover_photo_url,
+  } as const;
+
+  const stepsOrder: Array<'personal' | 'professional' | 'measurements' | 'media'> = [
+    'personal',
+    'professional',
+    'measurements',
+    'media',
+  ];
+
+  const firstIncompleteId = stepsOrder.find((k) => !completion[k]) ?? 'media';
+  const completedCount = stepsOrder.filter((k) => completion[k]).length;
+  const totalSteps = stepsOrder.length;
+
+  const getSectionForId = (id: 'personal' | 'professional' | 'measurements' | 'media') => {
+    switch (id) {
+      case 'personal':
+        return 'personal-info' as const;
+      case 'professional':
+        return 'professional-info' as const;
+      case 'measurements':
+        return 'measurements' as const;
+      case 'media':
+      default:
+        return 'photos-media' as const;
+    }
+  };
+
+  const handleGoToSection = (section: 'personal-info' | 'professional-info' | 'measurements' | 'photos-media') => {
+    navigate(`/profile/edit?section=${section}`);
+  };
+
+  const nextSection = getSectionForId(firstIncompleteId);
+  const editHref = `/profile/edit?section=${nextSection}`;
+  const displayName = profile?.full_name || user?.name || 'Your Name';
+  const displayLocation = [profile?.city, profile?.state, profile?.country]
+    .filter(Boolean)
+    .join(', ');
+  const displayInstagram = profile?.instagram?.[0]?.handle || '@instagram_handle';
+
+  const statusText =
+    completedCount === totalSteps
+      ? 'Status: Profile Complete'
+      : `Status: ${completedCount}/${totalSteps} sections complete`;
+
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
       <h3 className="text-2xl font-['Syne'] font-bold mb-4">Profile Overview</h3>
@@ -99,22 +198,26 @@ const ModelDashboard: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-white/10 border border-white/20" />
             <div>
-              <div className="font-semibold">Your Name</div>
+              <div className="font-semibold">{displayName}</div>
               <div className="text-xs text-zinc-500 uppercase tracking-widest">Category: Model</div>
-              <div className="text-xs text-zinc-500">City • @instagram_handle</div>
+              <div className="text-xs text-zinc-500">{displayLocation || 'Location'} • {displayInstagram}</div>
             </div>
           </div>
           <div className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10 text-zinc-300">
-            Status: Profile Under Review
+            {loading ? 'Checking profile status…' : statusText}
           </div>
           <div className="mt-4 flex gap-3">
-            <a href="/profile/edit?section=personal-info" className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white">Edit Profile</a>
+            <a href={editHref} className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white">Edit Profile</a>
             <button className="px-4 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5]">Contact Admin</button>
           </div>
         </div>
         <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
           <h4 className="text-sm uppercase tracking-widest text-zinc-500 mb-2">Complete Your Profile</h4>
-          <ProfileStepper />
+          <ProfileStepper
+            completion={completion}
+            current={firstIncompleteId}
+            onGoTo={handleGoToSection}
+          />
         </div>
       </div>
     </div>
@@ -122,33 +225,69 @@ const ModelDashboard: React.FC = () => {
 };
 
 /* PROFILE STEPPER */
-const ProfileStepper: React.FC = () => {
-  const steps = [
-    { key: 'personal', label: 'Personal Information' },
-    { key: 'professional', label: 'Professional Information' },
-    { key: 'measurements', label: 'Measurements' },
-    { key: 'media', label: 'Photos / Media' },
+type CompletionMap = {
+  personal: boolean;
+  professional: boolean;
+  measurements: boolean;
+  media: boolean;
+};
+
+type EditSectionKey = 'personal-info' | 'professional-info' | 'measurements' | 'photos-media';
+
+const ProfileStepper: React.FC<{
+  completion: CompletionMap;
+  current: keyof CompletionMap;
+  onGoTo: (section: EditSectionKey) => void;
+}> = ({ completion, current, onGoTo }) => {
+  const steps: Array<{
+    id: keyof CompletionMap;
+    label: string;
+    section: EditSectionKey;
+  }> = [
+    { id: 'personal', label: 'Personal Information', section: 'personal-info' },
+    { id: 'professional', label: 'Professional Information', section: 'professional-info' },
+    { id: 'measurements', label: 'Measurements', section: 'measurements' },
+    { id: 'media', label: 'Photos / Media', section: 'photos-media' },
   ];
-  const completed = ['personal'];
-  const current = 'professional';
+
+  const allComplete = steps.every((s) => completion[s.id]);
+  const nextSection =
+    steps.find((s) => !completion[s.id])?.section || 'personal-info';
 
   return (
     <div className="space-y-3">
-      {steps.map((s, i) => {
-        const isCompleted = completed.includes(s.key);
-        const isCurrent = s.key === current;
+      {steps.map((s) => {
+        const isCompleted = completion[s.id];
+        const isCurrent = s.id === current || (allComplete && s.id === 'media');
         return (
-          <div key={s.key} className={`flex items-center justify-between px-4 py-3 rounded-lg border text-sm
-            ${isCurrent ? 'border-[#dfcda5] bg-white/10 text-white' : 'border-white/10 bg-white/5 text-zinc-300'}
-          `}>
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => onGoTo(s.section)}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm text-left
+              ${isCurrent ? 'border-[#dfcda5] bg-white/10 text-white' : 'border-white/10 bg-white/5 text-zinc-300 hover:border-[#dfcda5]'}
+            `}
+          >
             <span>{s.label}</span>
             {isCompleted && <CheckCircle2 className="w-4 h-4 text-white/70" />}
-          </div>
+          </button>
         );
       })}
       <div className="flex gap-3 pt-2">
-        <button className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white">Continue</button>
-        <button className="px-4 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5]">Save Draft</button>
+        <button
+          type="button"
+          onClick={() => onGoTo(nextSection)}
+          className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white text-xs uppercase tracking-widest"
+        >
+          {allComplete ? 'Review Profile' : 'Continue'}
+        </button>
+        <button
+          type="button"
+          onClick={() => onGoTo('personal-info')}
+          className="px-4 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] text-xs uppercase tracking-widest"
+        >
+          Edit Manually
+        </button>
       </div>
     </div>
   );
@@ -156,19 +295,157 @@ const ProfileStepper: React.FC = () => {
 
 /* MODEL PROFILE VIEW */
 const ModelProfileView: React.FC = () => {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const data = await getProfileByUserId(user.id);
+        setProfile(data);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
+  const coverCandidates = useMemo(
+    () => buildDriveImageUrls(profile?.cover_photo_url || ''),
+    [profile?.cover_photo_url]
+  );
+  const portfolioFolder = profile?.portfolio_folder_link?.trim() || '';
+
+  if (loading) {
+    return (
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm text-zinc-400">Loading your profile...</div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+        <div className="text-zinc-400">No profile found yet.</div>
+        <a href="/profile/edit" className="inline-block mt-3 px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white">Create Profile</a>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {['Personal Information', 'Professional Information', 'Measurements'].map((section) => (
-        <div key={section} className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="text-lg font-['Syne'] font-bold">{section}</h4>
-            <a href={`/profile/edit?section=${section === 'Personal Information' ? 'personal-info' : section === 'Professional Information' ? 'professional-info' : 'measurements'}`} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
-              <Edit className="w-4 h-4" /> Edit
-            </a>
-          </div>
-          <div className="text-zinc-300">Details displayed here in site’s card style.</div>
+      {/* Media Card: cover + gallery */}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="text-lg font-['Syne'] font-bold">Photos / Media</h4>
+          <a href={`/profile/edit?section=photos-media`} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
+            <Edit className="w-4 h-4" /> Edit
+          </a>
         </div>
-      ))}
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="md:col-span-1">
+            <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2">Cover Photo</div>
+            {coverCandidates.length > 0 ? (
+              <img
+                src={coverCandidates[0]}
+                alt="Cover"
+                className="w-full aspect-[3/4] object-cover rounded-lg border border-white/10"
+                onError={(e) => {
+                  const el = e.currentTarget as HTMLImageElement & { _try?: number };
+                  el._try = (el._try || 0) + 1;
+                  if (el._try < coverCandidates.length) {
+                    el.src = coverCandidates[el._try];
+                  }
+                }}
+              />
+            ) : (
+              <div className="w-full aspect-[3/4] rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-zinc-500 text-sm">
+                No cover set
+              </div>
+            )}
+            {profile.cover_photo_url && (
+              <a
+                href={profile.cover_photo_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-block text-[#dfcda5] hover:underline text-xs"
+              >
+                Open original on Drive →
+              </a>
+            )}
+          </div>
+          <div className="md:col-span-2">
+            <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2">Portfolio</div>
+            {portfolioFolder ? (
+              <a
+                href={portfolioFolder}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white text-xs font-bold uppercase tracking-widest hover:bg-white/10"
+              >
+                View Full Portfolio on Drive →
+              </a>
+            ) : (
+              <div className="w-full h-full min-h-[120px] rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-zinc-500 text-sm">
+                No portfolio folder link set
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Personal Information */}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="text-lg font-['Syne'] font-bold">Personal Information</h4>
+          <a href={`/profile/edit?section=personal-info`} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
+            <Edit className="w-4 h-4" /> Edit
+          </a>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4 text-zinc-300">
+          <div><span className="text-zinc-500 text-xs uppercase">Full Name</span><div className="font-medium">{profile.full_name}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Email</span><div className="font-medium">{profile.email}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Phone</span><div className="font-medium">{profile.phone}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">DOB</span><div className="font-medium">{profile.dob}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Gender</span><div className="font-medium">{profile.gender}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Location</span><div className="font-medium">{[profile.city, profile.state, profile.country].filter(Boolean).join(', ')}</div></div>
+        </div>
+      </div>
+
+      {/* Professional */}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="text-lg font-['Syne'] font-bold">Professional Information</h4>
+          <a href={`/profile/edit?section=professional-info`} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
+            <Edit className="w-4 h-4" /> Edit
+          </a>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4 text-zinc-300">
+          <div><span className="text-zinc-500 text-xs uppercase">Experience</span><div className="font-medium">{profile.experience_level || '—'}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Open to Travel</span><div className="font-medium">{profile.open_to_travel ? 'Yes' : profile.open_to_travel === false ? 'No' : '—'}</div></div>
+          <div className="md:col-span-2"><span className="text-zinc-500 text-xs uppercase">Languages</span><div className="font-medium">{profile.languages?.join(', ') || '—'}</div></div>
+          <div className="md:col-span-2"><span className="text-zinc-500 text-xs uppercase">Skills</span><div className="font-medium">{profile.skills?.join(', ') || '—'}</div></div>
+          <div className="md:col-span-2"><span className="text-zinc-500 text-xs uppercase">Ramp Walk</span><div className="font-medium">{profile.ramp_walk_experience ? (profile.ramp_walk_description || 'Yes') : (profile.ramp_walk_experience === false ? 'No' : '—')}</div></div>
+        </div>
+      </div>
+
+      {/* Measurements */}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="text-lg font-['Syne'] font-bold">Measurements</h4>
+          <a href={`/profile/edit?section=measurements`} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
+            <Edit className="w-4 h-4" /> Edit
+          </a>
+        </div>
+        <div className="grid md:grid-cols-3 gap-4 text-zinc-300">
+          <div><span className="text-zinc-500 text-xs uppercase">Height</span><div className="font-medium">{profile.height_feet && profile.height_inches ? `${profile.height_feet}' ${profile.height_inches}"` : '—'}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Bust/Chest</span><div className="font-medium">{profile.bust_chest ? `${profile.bust_chest}"` : '—'}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Waist</span><div className="font-medium">{profile.waist ? `${profile.waist}"` : '—'}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Hips</span><div className="font-medium">{profile.hips ? `${profile.hips}"` : '—'}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Weight</span><div className="font-medium">{profile.weight ? `${profile.weight} kg` : '—'}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Shoe Size</span><div className="font-medium">{profile.shoe_size || '—'}</div></div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -202,58 +479,196 @@ const ModelCastingsApplied: React.FC = () => {
 };
 
 /* CLIENT DASHBOARD */
-const ClientDashboard: React.FC = () => {
+const ClientDashboard: React.FC<{ onEditBrand: () => void; onAddCasting: () => void }> = ({ onEditBrand, onAddCasting }) => {
+  const { user } = useAuth();
+  const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null);
+  const [recentCastings, setRecentCastings] = useState<Casting[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const profile = await getBrandProfileByUserId(user.id);
+        setBrandProfile(profile);
+        
+        const castings = await listCastings();
+        const userCastings = castings.filter(c => c.user_id === user.id).slice(0, 3);
+        setRecentCastings(userCastings);
+      } catch (err) {
+        console.error('Failed to load brand data', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
       <h3 className="text-2xl font-['Syne'] font-bold mb-4">Brand Overview</h3>
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-lg bg-white/10 border border-white/20" />
-            <div>
-              <div className="font-semibold">Brand Name</div>
-              <div className="text-xs text-zinc-500">website.com • @brand_instagram</div>
+      {loading ? (
+        <div className="text-zinc-400">Loading brand profile...</div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-white font-bold text-xl">
+                {brandProfile?.brand_name?.charAt(0)?.toUpperCase() || 'B'}
+              </div>
+              <div>
+                <div className="font-semibold">{brandProfile?.brand_name || 'Brand Name'}</div>
+                <div className="text-xs text-zinc-500">
+                  {brandProfile?.website_url && (
+                    <a href={brandProfile.website_url} target="_blank" rel="noopener noreferrer" className="hover:text-[#dfcda5] transition-colors">
+                      {brandProfile.website_url.replace(/^https?:\/\//, '')}
+                    </a>
+                  )}
+                  {brandProfile?.website_url && brandProfile?.instagram_handle && ' • '}
+                  {brandProfile?.instagram_handle && (
+                    <a href={`https://instagram.com/${brandProfile.instagram_handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-[#dfcda5] transition-colors">
+                      {brandProfile.instagram_handle}
+                    </a>
+                  )}
+                  {!brandProfile?.website_url && !brandProfile?.instagram_handle && 'Complete your profile'}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-3">
+              <button onClick={onEditBrand} className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white">Edit Brand Profile</button>
+              <button onClick={onAddCasting} className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white flex items-center gap-2"><Plus className="w-4 h-4"/> Add New Casting</button>
             </div>
           </div>
-          <div className="mt-4 flex gap-3">
-            <button className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white">Edit Brand Profile</button>
-            <button className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white flex items-center gap-2"><Plus className="w-4 h-4"/> Add New Casting</button>
+          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
+            <h4 className="text-sm uppercase tracking-widest text-zinc-500 mb-2">Recent Castings</h4>
+            {recentCastings.length === 0 ? (
+              <div className="text-zinc-400 text-sm">No castings posted yet.</div>
+            ) : (
+              <div className="space-y-2">
+                {recentCastings.map((casting) => (
+                  <div key={casting.id} className="text-sm">
+                    <div className="text-white font-medium">{casting.title}</div>
+                    <div className="text-xs text-zinc-500">
+                      {casting.status === 'open' ? '🟢 Open' : casting.status === 'closed' ? '🔴 Closed' : '🟡 ' + casting.status}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
-          <h4 className="text-sm uppercase tracking-widest text-zinc-500 mb-2">Recent Castings</h4>
-          <div className="text-zinc-300">Your casting cards will show here using existing layout.</div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
 
 /* CLIENT BRAND PROFILE */
 const ClientBrandProfile: React.FC = () => {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const [form, setForm] = useState<BrandProfile | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const existing = await getBrandProfileByUserId(user.id);
+        setForm(
+          existing ?? {
+            user_id: user.id,
+            brand_name: '',
+            contact_email: user.email,
+            website_url: '',
+            instagram_handle: '',
+            brand_description: '',
+          }
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
+  const handleSave = async () => {
+    if (!form || !user) return;
+    setSaving(true);
+    try {
+      const payload: BrandProfile = { ...form, user_id: user.id };
+      const saved = await upsertBrandProfile(payload);
+      setForm(saved);
+      showToast('✨ Brand profile saved successfully!');
+    } catch (err: any) {
+      alert(`Save failed: ${err.message ?? err}`);
+    }
+    setSaving(false);
+  };
+
+  if (!form || loading) {
+    return (
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm text-zinc-400">Loading brand profile...</div>
+    );
+  }
+
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
       <h4 className="text-lg font-['Syne'] font-bold mb-4">Brand Profile</h4>
       <div className="grid md:grid-cols-2 gap-6">
         <div className="space-y-3">
-          <label className="block text-xs uppercase tracking-widest text-zinc-500">Brand Image / Logo</label>
-          <div className="h-32 bg-zinc-950 border border-zinc-800 rounded-xl" />
-        </div>
-        <div className="space-y-3">
           <label className="block text-xs uppercase tracking-widest text-zinc-500">Brand Name</label>
-          <input className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50" placeholder="Your Brand"/>
+          <input
+            required
+            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+            placeholder="Your Brand"
+            value={form.brand_name}
+            onChange={(e) => setForm({ ...form, brand_name: e.target.value })}
+          />
         </div>
         <div className="space-y-3">
           <label className="block text-xs uppercase tracking-widest text-zinc-500">Website URL</label>
-          <input className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50" placeholder="https://"/>
+          <input
+            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+            placeholder="https://"
+            value={form.website_url ?? ''}
+            onChange={(e) => setForm({ ...form, website_url: e.target.value })}
+          />
         </div>
         <div className="space-y-3">
           <label className="block text-xs uppercase tracking-widest text-zinc-500">Instagram Handle</label>
-          <input className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50" placeholder="@handle"/>
+          <input
+            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+            placeholder="@handle"
+            value={form.instagram_handle ?? ''}
+            onChange={(e) => setForm({ ...form, instagram_handle: e.target.value })}
+          />
+        </div>
+        <div className="space-y-3 md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-zinc-500">Contact Email</label>
+          <input
+            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+            placeholder="contact@brand.com"
+            value={form.contact_email ?? ''}
+            onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
+          />
+        </div>
+        <div className="space-y-3 md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-zinc-500">Brand Description</label>
+          <textarea
+            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 h-28"
+            placeholder="What does your brand do?"
+            value={form.brand_description ?? ''}
+            onChange={(e) => setForm({ ...form, brand_description: e.target.value })}
+          />
         </div>
       </div>
       <div className="pt-4">
-        <button className="px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-bold uppercase tracking-widest border-2 border-[#dfcda5]">Save</button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-bold uppercase tracking-widest border-2 border-[#dfcda5]"
+        >
+          {saving ? 'Saving...' : 'Save Brand Profile'}
+        </button>
       </div>
     </div>
   );
@@ -261,39 +676,363 @@ const ClientBrandProfile: React.FC = () => {
 
 /* CLIENT CASTINGS LIST */
 const ClientCastingsList: React.FC = () => {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const [castings, setCastings] = useState<Casting[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [newCasting, setNewCasting] = useState({
+    title: '',
+    description: '',
+    location: '',
+    budget_min: '',
+    budget_max: '',
+    application_deadline: '',
+    requirements: ''
+  });
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const data = await listCastings();
+        const userCastings = data.filter(c => c.user_id === user.id);
+        setCastings(userCastings);
+      } catch (err) {
+        console.error('Failed to load castings', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
+  const handlePostCasting = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    try {
+      const brandProfile = await getBrandProfileByUserId(user.id);
+      if (!brandProfile) {
+        alert('Please complete your brand profile before posting a casting.');
+        return;
+      }
+      const created = await createCasting({
+        user_id: user.id,
+        brand_profile_id: brandProfile?.id ?? null,
+        title: newCasting.title,
+        description: newCasting.description || null,
+        location: newCasting.location || null,
+        budget_min: newCasting.budget_min ? Number(newCasting.budget_min) : null,
+        budget_max: newCasting.budget_max ? Number(newCasting.budget_max) : null,
+        requirements: newCasting.requirements || null,
+        status: 'open',
+        application_deadline: newCasting.application_deadline || null,
+      });
+      setCastings([created, ...castings]);
+      setIsModalOpen(false);
+      setNewCasting({ title: '', description: '', location: '', budget_min: '', budget_max: '', application_deadline: '', requirements: '' });
+      showToast('🎬 Casting posted successfully!');
+    } catch (err: any) {
+      alert(`Failed to post casting: ${err.message ?? err}`);
+    }
+  };
+
+  const formatBudget = (min?: number | null, max?: number | null) => {
+    if (!min && !max) return 'Budget TBA';
+    if (min && max) return `₹${min.toLocaleString()} - ₹${max.toLocaleString()}`;
+    if (min) return `From ₹${min.toLocaleString()}`;
+    return `Up to ₹${max?.toLocaleString()}`;
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
-        <h4 className="text-lg font-['Syne'] font-bold mb-4">Your Castings</h4>
-        <div className="text-zinc-300">Client-side casting cards will use the existing Castings layout and statuses (Under Verification / ONLINE / CLOSED).</div>
+    <>
+      <div className="space-y-6">
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h4 className="text-lg font-['Syne'] font-bold">Your Castings</h4>
+              <p className="text-zinc-400 text-sm mt-1">Create clear briefs with budget range, deadlines, and must-have requirements.</p>
+            </div>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-[#dfcda5] text-white hover:bg-white/5 transition-colors text-xs uppercase tracking-widest font-bold"
+            >
+              <Plus className="w-4 h-4" /> Create Casting
+            </button>
+          </div>
+          
+          {loading ? (
+            <div className="text-zinc-400 text-sm">Loading your castings...</div>
+          ) : castings.length === 0 ? (
+            <div className="text-zinc-400 text-sm mt-4">No castings posted yet. Create your first casting to get started!</div>
+          ) : (
+            <div className="space-y-4 mt-6">
+              {castings.map((casting) => (
+                <div
+                  key={casting.id}
+                  className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-zinc-600 transition-colors"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h5 className="text-white font-semibold text-lg">{casting.title}</h5>
+                      <span className="text-xs text-zinc-500 uppercase tracking-wider">
+                        {casting.status === 'open' ? '🟢 Open' : casting.status === 'closed' ? '🔴 Closed' : '🟡 ' + casting.status}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-zinc-400 text-sm mb-3">{casting.description}</p>
+                  <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {casting.location || 'Location TBA'}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="w-3 h-3" />
+                      {formatBudget(casting.budget_min, casting.budget_max)}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {casting.application_deadline || 'No deadline'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Create Casting Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              onClick={() => setIsModalOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative bg-zinc-900 w-full max-w-2xl p-8 rounded-xl border border-zinc-800 shadow-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <h3 className="text-2xl font-bold font-['Syne'] mb-6">Create New Casting</h3>
+              <form onSubmit={handlePostCasting} className="space-y-4">
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Project Title</label>
+                  <input
+                    required
+                    value={newCasting.title}
+                    onChange={(e) => setNewCasting({ ...newCasting, title: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                    placeholder="e.g. Winter Campaign 2024"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Description</label>
+                  <textarea
+                    required
+                    value={newCasting.description}
+                    onChange={(e) => setNewCasting({ ...newCasting, description: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 h-32"
+                    placeholder="Describe the role and project..."
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Location</label>
+                    <input
+                      required
+                      value={newCasting.location}
+                      onChange={(e) => setNewCasting({ ...newCasting, location: e.target.value })}
+                      className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                      placeholder="City, Country"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Budget Min</label>
+                      <input
+                        type="number"
+                        value={newCasting.budget_min}
+                        onChange={(e) => setNewCasting({ ...newCasting, budget_min: e.target.value })}
+                        className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                        placeholder="30000"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Budget Max</label>
+                      <input
+                        type="number"
+                        value={newCasting.budget_max}
+                        onChange={(e) => setNewCasting({ ...newCasting, budget_max: e.target.value })}
+                        className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                        placeholder="50000"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Requirements</label>
+                  <input
+                    required
+                    value={newCasting.requirements}
+                    onChange={(e) => setNewCasting({ ...newCasting, requirements: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                    placeholder="e.g. Female, 20-25, 5'8+"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Application Deadline</label>
+                  <input
+                    type="date"
+                    value={newCasting.application_deadline}
+                    onChange={(e) => setNewCasting({ ...newCasting, application_deadline: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                  />
+                </div>
+
+                <div className="pt-4 flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 py-3 border-2 border-[#dfcda5] hover:bg-white/5 transition-colors uppercase tracking-widest font-bold text-xs rounded-xl backdrop-blur-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 text-white uppercase tracking-widest font-bold text-xs rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md"
+                  >
+                    Post Casting
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 
 /* SETTINGS */
-const SettingsPanel: React.FC = () => {
+const SettingsPanel: React.FC<{ user: { email: string | null; } }> = ({ user }) => {
+  const { verifyAndUpdatePassword } = useAuth();
+  const { showToast } = useToast();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [updating, setUpdating] = useState(false);
+
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!currentPassword.trim()) {
+      showToast('⚠️ Please enter your current password');
+      return;
+    }
+    
+    if (!newPassword.trim()) {
+      showToast('⚠️ Please enter a new password');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      showToast('⚠️ Password must be at least 6 characters');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      showToast('⚠️ Passwords do not match');
+      return;
+    }
+    
+    if (currentPassword === newPassword) {
+      showToast('⚠️ New password must be different from current password');
+      return;
+    }
+    
+    setUpdating(true);
+    const res = await verifyAndUpdatePassword(currentPassword, newPassword);
+    setUpdating(false);
+    
+    if (res.success) {
+      showToast('🔐 Password updated successfully!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } else {
+      showToast(res.message ?? '❌ Password update failed');
+    }
+  };
+
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm space-y-6">
       <div>
         <h4 className="text-lg font-['Syne'] font-bold mb-2">Email Management</h4>
         <p className="text-zinc-400 text-sm mb-3">To update your registered email, please contact support.</p>
         <div className="flex items-center gap-3">
-          <span className="text-white">user@example.com</span>
+          <span className="text-white">{user.email || 'No email'}</span>
           <span className="text-xs uppercase tracking-widest text-emerald-400">Verified</span>
         </div>
       </div>
       <div className="pt-2 border-t border-zinc-800">
         <h4 className="text-lg font-['Syne'] font-bold mb-2">Change Password</h4>
-        <div className="grid md:grid-cols-3 gap-3">
-          <input type="password" placeholder="Current Password" className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50" />
-          <input type="password" placeholder="New Password" className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50" />
-          <input type="password" placeholder="Confirm New Password" className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50" />
-        </div>
-        <div className="pt-4 flex items-center gap-4">
-          <button className="px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-bold uppercase tracking-widest border-2 border-[#dfcda5]">Submit</button>
-          <button className="text-zinc-400 text-sm hover:text-white">Forgot password?</button>
-        </div>
+        <p className="text-zinc-400 text-sm mb-4">Enter your current password to verify your identity, then set a new password (minimum 6 characters).</p>
+        <form onSubmit={handlePasswordUpdate}>
+          <div className="space-y-3">
+            <input
+              type="password"
+              placeholder="Current Password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 placeholder:text-zinc-600"
+            />
+            <div className="grid md:grid-cols-2 gap-3">
+              <input
+                type="password"
+                placeholder="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                minLength={6}
+                required
+                className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 placeholder:text-zinc-600"
+              />
+              <input
+                type="password"
+                placeholder="Confirm New Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                minLength={6}
+                required
+                className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 placeholder:text-zinc-600"
+              />
+            </div>
+          </div>
+          <div className="pt-4 flex items-center gap-4">
+            <button
+              type="submit"
+              disabled={updating || !currentPassword || !newPassword || !confirmPassword}
+              className="px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-bold uppercase tracking-widest border-2 border-[#dfcda5] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {updating ? 'Updating...' : 'Update Password'}
+            </button>
+            <button
+              type="button"
+              className="text-zinc-400 text-sm hover:text-[#dfcda5] transition-colors"
+              onClick={() => {
+                window.location.href = '/auth?reset=1';
+              }}
+            >
+              Forgot password?
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
