@@ -36,6 +36,8 @@ export type ProfileData = {
   // Media
   cover_photo_url?: string;
   portfolio_folder_link?: string;
+  // Admin moderation
+  status?: 'UNDER_REVIEW' | 'ONLINE' | 'OFFLINE';
 };
 
 // Brand profiles (clients)
@@ -61,6 +63,7 @@ export type Casting = {
   requirements?: string | null;
   status?: 'under_review' | 'open' | 'closed' | 'draft';
   application_deadline?: string | null; // date string
+   shoot_date?: string | null; // date string
   created_at?: string;
   updated_at?: string;
 };
@@ -68,6 +71,19 @@ export type Casting = {
 export const PROFILE_TABLE = 'model_profiles';
 export const BRAND_PROFILE_TABLE = 'brand_profiles';
 export const CASTINGS_TABLE = 'castings';
+export const BOOKINGS_TABLE = 'booking_requests';
+
+export type BookingStatus = 'pending' | 'approved' | 'rejected';
+
+export type BookingRequest = {
+  id?: string;
+  model_user_id: string;
+  client_user_id: string;
+  brand_profile_id?: string | null;
+  message?: string | null;
+  status?: BookingStatus;
+  created_at?: string;
+};
 
 export async function getProfileByUserId(userId: string) {
   const { data, error } = await supabase
@@ -127,6 +143,142 @@ export async function listCastings() {
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as Casting[];
+}
+
+// ADMIN: list all model profiles
+export async function listAllProfilesAdmin() {
+  const { data, error } = await supabase.from(PROFILE_TABLE).select('*');
+  if (error) throw error;
+  return (data ?? []) as ProfileData[];
+}
+
+// PUBLIC: list only ONLINE model profiles
+export async function listOnlineProfiles() {
+  const { data, error } = await supabase
+    .from(PROFILE_TABLE)
+    .select('*')
+    .eq('status', 'ONLINE');
+  if (error) throw error;
+  return (data ?? []) as ProfileData[];
+}
+
+// ADMIN/MODEL: update profile status by user_id (unique)
+export async function updateProfileStatus(
+  userId: string,
+  status: 'UNDER_REVIEW' | 'ONLINE' | 'OFFLINE'
+) {
+  const { data, error } = await supabase
+    .from(PROFILE_TABLE)
+    .update({ status })
+    .eq('user_id', userId)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data as ProfileData;
+}
+
+// ADMIN: list all castings
+export async function listAllCastingsAdmin() {
+  const { data, error } = await supabase
+    .from(CASTINGS_TABLE)
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Casting[];
+}
+
+// PUBLIC/MODEL: list only "online" castings (mapped to status 'open')
+export async function listOnlineCastings() {
+  const { data, error } = await supabase
+    .from(CASTINGS_TABLE)
+    .select('*')
+    .eq('status', 'open')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Casting[];
+}
+
+// BOOKINGS
+
+export async function createBookingRequest(payload: BookingRequest) {
+  const insertPayload = { ...payload, status: payload.status ?? 'pending' };
+  const { data, error } = await supabase
+    .from(BOOKINGS_TABLE)
+    .insert(insertPayload)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data as BookingRequest;
+}
+
+export async function listBookingRequestsForModel(userId: string) {
+  const { data, error } = await supabase
+    .from(BOOKINGS_TABLE)
+    .select('*')
+    .eq('model_user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BookingRequest[];
+}
+
+export async function listBookingRequestsForClient(userId: string) {
+  const { data, error } = await supabase
+    .from(BOOKINGS_TABLE)
+    .select('*')
+    .eq('client_user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BookingRequest[];
+}
+
+export async function listAllBookingRequestsAdmin() {
+  const { data, error } = await supabase
+    .from(BOOKINGS_TABLE)
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as BookingRequest[];
+}
+
+export async function updateBookingStatus(id: string, status: BookingStatus) {
+  const { data, error } = await supabase
+    .from(BOOKINGS_TABLE)
+    .update({ status })
+    .eq('id', id)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data as BookingRequest;
+}
+
+// ADMIN: update casting status using high-level moderation statuses
+export async function updateCastingStatus(
+  id: string,
+  uiStatus: 'UNDER_VERIFICATION' | 'ONLINE' | 'CLOSED'
+) {
+  // Map UI statuses to existing DB status values
+  let dbStatus: Casting['status'];
+  switch (uiStatus) {
+    case 'ONLINE':
+      dbStatus = 'open';
+      break;
+    case 'CLOSED':
+      dbStatus = 'closed';
+      break;
+    case 'UNDER_VERIFICATION':
+    default:
+      dbStatus = 'under_review';
+      break;
+  }
+
+  const { data, error } = await supabase
+    .from(CASTINGS_TABLE)
+    .update({ status: dbStatus })
+    .eq('id', id)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data as Casting;
 }
 
 // Generic image upload helper for cover photos

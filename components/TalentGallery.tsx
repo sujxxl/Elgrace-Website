@@ -1,27 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Instagram, Mail, MapPin, Ruler, Weight, Filter, Search } from 'lucide-react';
+import { listOnlineProfiles, ProfileData, createBookingRequest, getBrandProfileByUserId } from '../services/ProfileService';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 type Category = 'All' | 'Models' | 'Actors' | 'Creatives';
 
 interface Talent {
-  id: number;
-  name: string;
-  category: Category;
-  image: string;
-  height: string;
-  weight: string;
-  eyes: string;
-  hair: string;
-  location: string;
-  age: number;
-  gender: 'Male' | 'Female' | 'Other';
-  heightCm: number; // For filtering logic
+    id: string;
+    name: string;
+    category: Category;
+    image: string;
+    height: string;
+    weight: string;
+    location: string;
+    age: number;
+    gender: 'Male' | 'Female' | 'Other';
+    heightCm: number; // For filtering logic
+    instagramHandle?: string;
+    portfolioUrl?: string | null;
 }
-
-const talentData: Talent[] = [
-  { id: 1, name: "Aarav S.", category: "Models", image: "https://picsum.photos/600/800?random=20", height: "6'1\"", heightCm: 185, weight: "75 kg", eyes: "Brown", hair: "Black", location: "Mumbai", age: 24, gender: 'Male' },
-];
 
 const useScreenSize = () => {
     const [screenSize, setScreenSize] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
@@ -45,9 +44,10 @@ const TalentCard: React.FC<{
     talent: Talent;
     index: number;
     isExpanded: boolean;
-    setExpandedId: (id: number | null) => void;
+    setExpandedId: (id: string | null) => void;
     screenSize: 'mobile' | 'tablet' | 'desktop';
-}> = ({ talent, index, isExpanded, setExpandedId, screenSize }) => {
+    onBookNow: (talent: Talent) => void;
+}> = ({ talent, index, isExpanded, setExpandedId, screenSize, onBookNow }) => {
     
     let isRightEdge = false;
     if (screenSize === 'desktop') {
@@ -149,28 +149,39 @@ const TalentCard: React.FC<{
                                                     <p className="text-zinc-500 text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1"><Weight className="w-3 h-3" /> Weight</p>
                                                     <p className="text-white font-medium">{talent.weight}</p>
                                                 </div>
-                                                <div>
-                                                    <p className="text-zinc-500 text-[10px] uppercase tracking-wider mb-1">Eyes</p>
-                                                    <p className="text-white font-medium">{talent.eyes}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-zinc-500 text-[10px] uppercase tracking-wider mb-1">Hair</p>
-                                                    <p className="text-white font-medium">{talent.hair}</p>
-                                                </div>
                                             </div>
                                         )}
                                     </div>
                                 </div>
 
-                                <div className="space-y-3">
-                                    <button className="w-full py-3 bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-zinc-200 transition-colors">
-                                        Book Now
-                                    </button>
+                                                                <div className="space-y-3">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                onBookNow(talent);
+                                                                            }}
+                                                                            className="w-full py-3 bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-zinc-200 transition-colors"
+                                                                        >
+                                                                                Book Now
+                                                                        </button>
                                     <div className="flex gap-2">
-                                        <button className="flex-1 py-2 border border-zinc-700 hover:bg-zinc-800 text-zinc-300 text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-colors">
+                                        <a
+                                          href={`mailto:talents@elgrace.in?subject=${encodeURIComponent('Booking Enquiry for ' + talent.name)}`}
+                                          className="flex-1 py-2 border border-zinc-700 hover:bg-zinc-800 text-zinc-300 text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-colors text-center"
+                                        >
                                             <Mail className="w-3 h-3" /> Email
-                                        </button>
-                                        <button className="flex-1 py-2 border border-zinc-700 hover:bg-zinc-800 text-zinc-300 text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-colors">
+                                        </a>
+                                        <button
+                                          disabled={!talent.portfolioUrl}
+                                          onClick={() => {
+                                            if (talent.portfolioUrl) window.open(talent.portfolioUrl, '_blank');
+                                          }}
+                                          className={`flex-1 py-2 border text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-colors ${
+                                            talent.portfolioUrl
+                                              ? 'border-zinc-700 hover:bg-zinc-800 text-zinc-300'
+                                              : 'border-zinc-800 text-zinc-600 cursor-not-allowed'
+                                          }`}
+                                        >
                                             <Instagram className="w-3 h-3" /> Portfolio
                                         </button>
                                     </div>
@@ -200,10 +211,14 @@ const TalentCard: React.FC<{
 };
 
 export const TalentGallery: React.FC = () => {
+    const { user } = useAuth();
+    const { showToast } = useToast();
   const [filter, setFilter] = useState<Category>('All');
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
   const screenSize = useScreenSize();
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+    const [talents, setTalents] = useState<Talent[]>([]);
+    const [loading, setLoading] = useState(true);
 
   // Advanced Search State
   const [locationSearch, setLocationSearch] = useState('');
@@ -212,7 +227,86 @@ export const TalentGallery: React.FC = () => {
   const [genderFilter, setGenderFilter] = useState<string>('All');
   const [minHeight, setMinHeight] = useState<number>(0);
 
-  const filteredTalents = talentData.filter(t => {
+    const handleBookNow = async (talent: Talent) => {
+        try {
+            if (!user) {
+                window.location.href = '/auth';
+                return;
+            }
+            if (user.role !== 'client') {
+                showToast('Please login as a client to request a booking.', 'error');
+                return;
+            }
+            const brandProfile = await getBrandProfileByUserId(user.id);
+            if (!brandProfile) {
+                showToast('Complete your brand profile before sending booking requests.', 'error');
+                return;
+            }
+
+            const message = window.prompt(
+                `Share a brief note for ${talent.name} (optional):`
+            );
+
+            await createBookingRequest({
+                model_user_id: talent.id,
+                client_user_id: user.id,
+                brand_profile_id: brandProfile.id,
+                message: message || null,
+            });
+
+            showToast('Booking request sent to the model.', 'success');
+        } catch (err) {
+            console.error('Failed to create booking request', err);
+            showToast('Could not send booking request. Please try again.', 'error');
+        }
+    };
+  
+    useEffect(() => {
+        (async () => {
+            try {
+                const profiles = await listOnlineProfiles();
+                const mapped: Talent[] = profiles
+                    .filter((p) => p.category === 'model')
+                    .map((p) => {
+                        const now = new Date();
+                        const dob = p.dob ? new Date(p.dob) : null;
+                        const age = dob ? now.getFullYear() - dob.getFullYear() - (now < new Date(now.getFullYear(), dob.getMonth(), dob.getDate()) ? 1 : 0) : 0;
+                        const feet = p.height_feet ?? 0;
+                        const inches = p.height_inches ?? 0;
+                        const heightCm = Math.round(feet * 30.48 + inches * 2.54);
+                        const heightLabel = feet || inches ? `${feet}'${inches}"` : 'N/A';
+                        const weightLabel = p.weight ? `${p.weight} kg` : 'N/A';
+                        const gender: 'Male' | 'Female' | 'Other' =
+                            p.gender === 'male' ? 'Male' : p.gender === 'female' ? 'Female' : 'Other';
+                        const location = [p.city, p.state, p.country].filter(Boolean).join(', ');
+                        const instagramHandle = p.instagram?.[0]?.handle;
+                        return {
+                            id: p.user_id,
+                            name: p.full_name,
+                            category: 'Models',
+                            image:
+                                p.cover_photo_url ||
+                                'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=600',
+                            height: heightLabel,
+                            weight: weightLabel,
+                            location: location || 'Location TBA',
+                            age,
+                            gender,
+                            heightCm,
+                            instagramHandle,
+                            portfolioUrl: p.portfolio_folder_link ?? null,
+                        };
+                    });
+                setTalents(mapped);
+            } catch (err) {
+                console.error('Failed to load talents', err);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    const filteredTalents = talents.filter(t => {
       // 1. Category Filter
       if (filter !== 'All' && t.category !== filter) return false;
       
@@ -359,6 +453,7 @@ export const TalentGallery: React.FC = () => {
                     isExpanded={expandedId === talent.id}
                     setExpandedId={setExpandedId}
                     screenSize={screenSize}
+                    onBookNow={handleBookNow}
                 />
                 ))
             ) : (

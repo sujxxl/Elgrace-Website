@@ -4,7 +4,7 @@ import { MapPin, DollarSign, Calendar, Plus, Check, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { AuthPage } from './AuthPage';
-import { Casting, createCasting, listCastings, getBrandProfileByUserId } from '../services/ProfileService';
+import { Casting, createCasting, listOnlineCastings, getBrandProfileByUserId } from '../services/ProfileService';
 
 export const Castings: React.FC = () => {
   const { user } = useAuth();
@@ -23,13 +23,14 @@ export const Castings: React.FC = () => {
     budget_min: '',
     budget_max: '',
     application_deadline: '',
+    shoot_date: '',
     requirements: ''
   });
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await listCastings();
+        const data = await listOnlineCastings();
         setCastings(data);
       } catch (err) {
         console.error('Failed to load castings', err);
@@ -85,10 +86,11 @@ export const Castings: React.FC = () => {
         requirements: newCasting.requirements || null,
         status: 'open',
         application_deadline: newCasting.application_deadline || null,
+        shoot_date: newCasting.shoot_date || null,
       });
       setCastings([created, ...castings]);
       setIsPostModalOpen(false);
-      setNewCasting({ title: '', description: '', location: '', budget_min: '', budget_max: '', application_deadline: '', requirements: '' });
+      setNewCasting({ title: '', description: '', location: '', budget_min: '', budget_max: '', application_deadline: '', shoot_date: '', requirements: '' });
       showToast('🎬 Casting posted successfully!');
     } catch (err: any) {
       alert(`Failed to post casting: ${err.message ?? err}`);
@@ -163,7 +165,9 @@ export const Castings: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-zinc-500" />
-                        {casting.requirements || 'Requirements will be shared'}
+                        {casting.shoot_date
+                          ? `Shoot date: ${new Date(casting.shoot_date).toLocaleDateString()}`
+                          : 'Shoot date: TBA'}
                     </div>
                   </div>
                 </div>
@@ -280,14 +284,25 @@ export const Castings: React.FC = () => {
                                 placeholder="e.g. Female, 20-25, 5'8+"
                             />
                         </div>
-                        <div>
-                            <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Application Deadline</label>
-                            <input 
-                                type="date"
-                              value={newCasting.application_deadline}
-                              onChange={(e) => setNewCasting({...newCasting, application_deadline: e.target.value})}
-                                className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                              <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Application Deadline</label>
+                              <input 
+                                  type="date"
+                                value={newCasting.application_deadline}
+                                onChange={(e) => setNewCasting({...newCasting, application_deadline: e.target.value})}
+                                  className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                              />
+                          </div>
+                          <div>
+                              <label className="block text-xs uppercase tracking-wider text-zinc-500 mb-1">Shoot Date</label>
+                              <input 
+                                  type="date"
+                                value={newCasting.shoot_date}
+                                onChange={(e) => setNewCasting({...newCasting, shoot_date: e.target.value})}
+                                  className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                              />
+                          </div>
                         </div>
                         
                         <div className="pt-4 flex gap-4">

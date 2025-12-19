@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Edit, Plus, MapPin, DollarSign, Calendar } from 'lucide-react';
-import { BrandProfile, Casting, getBrandProfileByUserId, upsertBrandProfile, createCasting, listCastings, getProfileByUserId, ProfileData } from '../services/ProfileService';
+import { BrandProfile, Casting, BookingRequest, listBookingRequestsForModel, listBookingRequestsForClient, updateBookingStatus, getBrandProfileByUserId, upsertBrandProfile, createCasting, listCastings, getProfileByUserId, ProfileData, updateProfileStatus } from '../services/ProfileService';
 import { buildDriveImageUrls } from '../services/gdrive';
 
 // This dashboard strictly inherits existing theme: black/white base, neutral glass,
 // existing buttons, spacing, borders, typography. Accent via outlines (#dfcda5) only.
 
-type TabKey = 'dashboard' | 'profile' | 'castings' | 'settings';
+type TabKey = 'dashboard' | 'profile' | 'castings' | 'bookings' | 'settings';
 
 export const ProfileDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -54,6 +54,7 @@ export const ProfileDashboard: React.FC = () => {
                 {renderSideLink('dashboard', 'Dashboard', activeTab, setActiveTab)}
                 {renderSideLink('profile', 'Your Profile', activeTab, setActiveTab)}
                 {renderSideLink('castings', 'Casting Applied', activeTab, setActiveTab)}
+                {renderSideLink('bookings', 'Booking Requests', activeTab, setActiveTab)}
                 {renderSideLink('settings', 'Settings', activeTab, setActiveTab)}
               </>
             )}
@@ -62,6 +63,7 @@ export const ProfileDashboard: React.FC = () => {
                 {renderSideLink('dashboard', 'Dashboard', activeTab, setActiveTab)}
                 {renderSideLink('profile', 'Brand Profile', activeTab, setActiveTab)}
                 {renderSideLink('castings', 'Castings', activeTab, setActiveTab)}
+                {renderSideLink('bookings', 'Bookings', activeTab, setActiveTab)}
                 {renderSideLink('settings', 'Settings', activeTab, setActiveTab)}
               </>
             )}
@@ -82,6 +84,7 @@ export const ProfileDashboard: React.FC = () => {
           )}
           {activeTab === 'profile' && (isModel ? <ModelProfileView /> : <ClientBrandProfile />)}
           {activeTab === 'castings' && (isModel ? <ModelCastingsApplied /> : <ClientCastingsList />)}
+          {activeTab === 'bookings' && (isModel ? <ModelBookings /> : <ClientBookings />)}
           {activeTab === 'settings' && (<SettingsPanel user={user} />)}
         </div>
       </div>
@@ -107,8 +110,10 @@ function renderSideLink(key: TabKey, label: string, active: TabKey, setActive: (
 const ModelDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -158,6 +163,7 @@ const ModelDashboard: React.FC = () => {
   const firstIncompleteId = stepsOrder.find((k) => !completion[k]) ?? 'media';
   const completedCount = stepsOrder.filter((k) => completion[k]).length;
   const totalSteps = stepsOrder.length;
+  const canConfirmProfile = completedCount === totalSteps;
 
   const getSectionForId = (id: 'personal' | 'professional' | 'measurements' | 'media') => {
     switch (id) {
@@ -190,6 +196,21 @@ const ModelDashboard: React.FC = () => {
       ? 'Status: Profile Complete'
       : `Status: ${completedCount}/${totalSteps} sections complete`;
 
+  const handleConfirmProfile = async () => {
+    if (!profile?.user_id || !canConfirmProfile || confirming) return;
+    try {
+      setConfirming(true);
+      const updated = await updateProfileStatus(profile.user_id, 'UNDER_REVIEW');
+      setProfile(updated);
+      showToast('Profile submitted for admin review');
+    } catch (err) {
+      console.error('Failed to submit profile for review', err);
+      showToast('Failed to submit profile for review');
+    } finally {
+      setConfirming(false);
+    }
+  };
+
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
       <h3 className="text-2xl font-['Syne'] font-bold mb-4">Profile Overview</h3>
@@ -204,11 +225,43 @@ const ModelDashboard: React.FC = () => {
             </div>
           </div>
           <div className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10 text-zinc-300">
-            {loading ? 'Checking profile status…' : statusText}
+            {loading
+              ? 'Checking profile status…'
+              : profile?.status === 'ONLINE'
+              ? 'Status: Profile Approved & Online'
+              : statusText}
           </div>
-          <div className="mt-4 flex gap-3">
-            <a href={editHref} className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white">Edit Profile</a>
-            <button className="px-4 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5]">Contact Admin</button>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <a
+              href={editHref}
+              className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white"
+            >
+              Edit Profile
+            </a>
+            {profile?.status !== 'ONLINE' && (
+              <button
+                type="button"
+                disabled={!canConfirmProfile || confirming}
+                onClick={handleConfirmProfile}
+                className={`px-4 py-2 rounded-xl border text-xs font-semibold tracking-widest uppercase transition-colors ${
+                  canConfirmProfile
+                    ? 'border-emerald-400 text-emerald-200 hover:bg-emerald-900/30'
+                    : 'border-white/10 text-zinc-500 cursor-not-allowed'
+                }`}
+              >
+                {profile?.status === 'UNDER_REVIEW'
+                  ? 'Awaiting Admin Review'
+                  : confirming
+                  ? 'Submitting…'
+                  : 'Confirm Profile'}
+              </button>
+            )}
+            <button
+              className="px-4 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5]"
+              type="button"
+            >
+              Contact Admin
+            </button>
           </div>
         </div>
         <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
@@ -478,6 +531,91 @@ const ModelCastingsApplied: React.FC = () => {
   );
 };
 
+/* MODEL BOOKINGS */
+const ModelBookings: React.FC = () => {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const [bookings, setBookings] = useState<BookingRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const data = await listBookingRequestsForModel(user.id);
+        setBookings(data);
+      } catch (err) {
+        console.error('Failed to load booking requests', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
+  const handleStatusChange = async (booking: BookingRequest, status: 'approved' | 'rejected') => {
+    if (!booking.id) return;
+    try {
+      const updated = await updateBookingStatus(booking.id, status);
+      setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+      showToast(`Booking ${status === 'approved' ? 'approved' : 'rejected'}.`, 'success');
+    } catch (err) {
+      console.error('Failed to update booking status', err);
+      showToast('Could not update booking status.', 'error');
+    }
+  };
+
+  return (
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+      <h4 className="text-lg font-['Syne'] font-bold mb-4">Booking Requests</h4>
+      {loading ? (
+        <div className="text-zinc-400 text-sm">Loading booking requests...</div>
+      ) : bookings.length === 0 ? (
+        <div className="text-zinc-400 text-sm">No booking requests yet.</div>
+      ) : (
+        <div className="space-y-3">
+          {bookings.map((b) => (
+            <div key={b.id} className="bg-zinc-900/70 border border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <div className="text-sm text-zinc-300">Booking from brand</div>
+                {b.message && <div className="text-xs text-zinc-400 mt-1 max-w-md">{b.message}</div>}
+                <div className="text-[10px] uppercase tracking-widest text-zinc-500 mt-2">
+                  Status: {b.status ?? 'pending'}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={b.status === 'approved'}
+                  onClick={() => handleStatusChange(b, 'approved')}
+                  className={`px-3 py-2 rounded-xl border text-xs uppercase tracking-widest font-semibold ${
+                    b.status === 'approved'
+                      ? 'border-emerald-900 text-emerald-700 cursor-not-allowed'
+                      : 'border-emerald-400 text-emerald-200 hover:bg-emerald-900/20'
+                  }`}
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  disabled={b.status === 'rejected'}
+                  onClick={() => handleStatusChange(b, 'rejected')}
+                  className={`px-3 py-2 rounded-xl border text-xs uppercase tracking-widest font-semibold ${
+                    b.status === 'rejected'
+                      ? 'border-red-900 text-red-700 cursor-not-allowed'
+                      : 'border-red-400 text-red-200 hover:bg-red-900/20'
+                  }`}
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* CLIENT DASHBOARD */
 const ClientDashboard: React.FC<{ onEditBrand: () => void; onAddCasting: () => void }> = ({ onEditBrand, onAddCasting }) => {
   const { user } = useAuth();
@@ -555,6 +693,52 @@ const ClientDashboard: React.FC<{ onEditBrand: () => void; onAddCasting: () => v
               </div>
             )}
           </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* CLIENT BOOKINGS (BRAND SIDE) */
+const ClientBookings: React.FC = () => {
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState<BookingRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const data = await listBookingRequestsForClient(user.id);
+        setBookings(data);
+      } catch (err) {
+        console.error('Failed to load bookings for client', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
+  return (
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+      <h4 className="text-lg font-['Syne'] font-bold mb-4">Your Booking Requests</h4>
+      {loading ? (
+        <div className="text-zinc-400 text-sm">Loading booking requests...</div>
+      ) : bookings.length === 0 ? (
+        <div className="text-zinc-400 text-sm">You have not requested any bookings yet.</div>
+      ) : (
+        <div className="space-y-3">
+          {bookings.map((b) => (
+            <div key={b.id} className="bg-zinc-900/70 border border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <div className="text-sm text-zinc-300">Request to a model</div>
+                {b.message && <div className="text-xs text-zinc-400 mt-1 max-w-md">{b.message}</div>}
+                <div className="text-[10px] uppercase tracking-widest text-zinc-500 mt-2">
+                  Status: {b.status ?? 'pending'}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

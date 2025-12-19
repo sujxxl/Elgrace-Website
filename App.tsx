@@ -15,6 +15,7 @@ import { ToastProvider } from './context/ToastContext';
 import { ProfileDashboard } from './components/ProfileDashboard';
 import { ProfileEdit } from './components/ProfileEdit';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AdminDashboard } from './components/AdminDashboard';
 
 const viewToPath = (v: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile') =>
   v === 'home' ? '/' : `/${v}`;
@@ -26,6 +27,14 @@ const pathToView = (p: string): 'home' | 'services' | 'talents' | 'castings' | '
   if (p.startsWith('/auth')) return 'auth';
   if (p.startsWith('/profile')) return 'profile';
   return 'home';
+};
+
+const ProfileRouteContent: React.FC = () => {
+  const { user } = useAuth();
+  if (user?.role === 'admin') {
+    return <AdminDashboard />;
+  }
+  return <ProfileDashboard />;
 };
 
 const AppRouterContent: React.FC = () => {
@@ -99,7 +108,7 @@ const AppRouterContent: React.FC = () => {
           element={
             <ProtectedRoute requireAuth={true}>
               <main className="pt-20 relative z-10">
-                <ProfileDashboard />
+                <ProfileRouteContent />
               </main>
             </ProtectedRoute>
           }
@@ -111,6 +120,17 @@ const AppRouterContent: React.FC = () => {
             <ProtectedRoute requireAuth={true} requireRole="model">
               <main className="pt-20 relative z-10">
                 <ProfileEdit />
+              </main>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requireAuth={true} requireRole="admin">
+              <main className="pt-20 relative z-10">
+                <AdminDashboard />
               </main>
             </ProtectedRoute>
           }
