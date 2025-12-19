@@ -72,6 +72,7 @@ export const PROFILE_TABLE = 'model_profiles';
 export const BRAND_PROFILE_TABLE = 'brand_profiles';
 export const CASTINGS_TABLE = 'castings';
 export const BOOKINGS_TABLE = 'booking_requests';
+export const CASTING_APPLICATIONS_TABLE = 'casting_applications';
 
 export type BookingStatus = 'pending' | 'approved' | 'rejected';
 
@@ -83,6 +84,18 @@ export type BookingRequest = {
   message?: string | null;
   status?: BookingStatus;
   created_at?: string;
+};
+
+export type CastingApplicationStatus = 'applied' | 'shortlisted' | 'booked' | 'rejected';
+
+export type CastingApplication = {
+  id?: string;
+  casting_id: string;
+  model_user_id: string;
+  status?: CastingApplicationStatus;
+  created_at?: string;
+  // When fetched with joins
+  casting?: Casting;
 };
 
 export async function getProfileByUserId(userId: string) {
@@ -249,6 +262,69 @@ export async function updateBookingStatus(id: string, status: BookingStatus) {
     .maybeSingle();
   if (error) throw error;
   return data as BookingRequest;
+}
+
+// CASTING APPLICATIONS
+
+export async function applyToCasting(castingId: string, modelUserId: string) {
+  const insertPayload = {
+    casting_id: castingId,
+    model_user_id: modelUserId,
+    status: 'applied' as CastingApplicationStatus,
+  };
+
+  const { data, error } = await supabase
+    .from(CASTING_APPLICATIONS_TABLE)
+    .insert(insertPayload)
+    .select()
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as CastingApplication;
+}
+
+export async function listCastingApplicationsForModel(userId: string) {
+  const { data, error } = await supabase
+    .from(CASTING_APPLICATIONS_TABLE)
+    .select('*, casting:castings(*)')
+    .eq('model_user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CastingApplication[];
+}
+
+export async function listCastingApplicationsForBrand(userId: string) {
+  const { data, error } = await supabase
+    .from(CASTING_APPLICATIONS_TABLE)
+    .select('*, casting:castings(*)')
+    .eq('casting.user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CastingApplication[];
+}
+
+export async function listCastingApplicationsForCasting(castingId: string) {
+  const { data, error } = await supabase
+    .from(CASTING_APPLICATIONS_TABLE)
+    .select('*, casting:castings(*)')
+    .eq('casting_id', castingId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CastingApplication[];
+}
+
+export async function updateCastingApplicationStatus(
+  id: string,
+  status: CastingApplicationStatus
+) {
+  const { data, error } = await supabase
+    .from(CASTING_APPLICATIONS_TABLE)
+    .update({ status })
+    .eq('id', id)
+    .select()
+    .maybeSingle();
+  if (error) throw error;
+  return data as CastingApplication;
 }
 
 // ADMIN: update casting status using high-level moderation statuses

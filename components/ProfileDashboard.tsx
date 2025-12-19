@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Edit, Plus, MapPin, DollarSign, Calendar } from 'lucide-react';
-import { BrandProfile, Casting, BookingRequest, listBookingRequestsForModel, listBookingRequestsForClient, updateBookingStatus, getBrandProfileByUserId, upsertBrandProfile, createCasting, listCastings, getProfileByUserId, ProfileData, updateProfileStatus } from '../services/ProfileService';
+import { BrandProfile, Casting, BookingRequest, CastingApplication, CastingApplicationStatus, listCastingApplicationsForModel, listCastingApplicationsForBrand, updateCastingApplicationStatus, listBookingRequestsForModel, listBookingRequestsForClient, updateBookingStatus, getBrandProfileByUserId, upsertBrandProfile, createCasting, listCastings, getProfileByUserId, ProfileData, updateProfileStatus } from '../services/ProfileService';
 import { buildDriveImageUrls } from '../services/gdrive';
 
 // This dashboard strictly inherits existing theme: black/white base, neutral glass,
@@ -505,24 +505,66 @@ const ModelProfileView: React.FC = () => {
 
 /* MODEL CASTINGS APPLIED */
 const ModelCastingsApplied: React.FC = () => {
-  const rows: Array<Record<string, string>> = [];
+  const { user } = useAuth();
+  const [applications, setApplications] = useState<CastingApplication[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const data = await listCastingApplicationsForModel(user.id);
+        setApplications(data);
+      } catch (err) {
+        console.error('Failed to load casting applications for model', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user]);
+
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
       <h4 className="text-lg font-['Syne'] font-bold mb-4">Castings Applied</h4>
-      {rows.length === 0 ? (
+      {loading ? (
+        <div className="text-zinc-400 text-sm">Loading your casting applications...</div>
+      ) : applications.length === 0 ? (
         <div className="text-zinc-400">You haven't applied to any castings yet.</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="text-zinc-500 text-xs uppercase tracking-widest">
-                {['Casting Title','Status','Type','Budget','Location','Applied On','Shoot Date','Deadline'].map(h => (
+                {['Casting Title','Status','Budget','Location','Applied On','Shoot Date','Deadline'].map(h => (
                   <th key={h} className="py-2 pr-6">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="text-zinc-300">
-              {/* Map rows here */}
+              {applications.map((app) => {
+                const c = app.casting as any as Casting | undefined;
+                const budget = c
+                  ? (() => {
+                      const min = c.budget_min ?? undefined;
+                      const max = c.budget_max ?? undefined;
+                      if (!min && !max) return 'TBA';
+                      if (min && max) return `₹${Number(min).toLocaleString()} - ₹${Number(max).toLocaleString()}`;
+                      if (min) return `From ₹${Number(min).toLocaleString()}`;
+                      return `Up to ₹${Number(max!).toLocaleString()}`;
+                    })()
+                  : 'TBA';
+                return (
+                  <tr key={app.id} className="border-t border-zinc-800">
+                    <td className="py-2 pr-6 text-sm text-white">{c?.title ?? 'Casting'}</td>
+                    <td className="py-2 pr-6 text-sm capitalize">{app.status ?? 'applied'}</td>
+                    <td className="py-2 pr-6 text-sm">{budget}</td>
+                    <td className="py-2 pr-6 text-sm">{c?.location ?? '—'}</td>
+                    <td className="py-2 pr-6 text-sm">{app.created_at ? new Date(app.created_at).toLocaleDateString() : '—'}</td>
+                    <td className="py-2 pr-6 text-sm">{c?.shoot_date ? new Date(c.shoot_date).toLocaleDateString() : '—'}</td>
+                    <td className="py-2 pr-6 text-sm">{c?.application_deadline ? new Date(c.application_deadline).toLocaleDateString() : '—'}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -621,6 +663,7 @@ const ClientDashboard: React.FC<{ onEditBrand: () => void; onAddCasting: () => v
   const { user } = useAuth();
   const [brandProfile, setBrandProfile] = useState<BrandProfile | null>(null);
   const [recentCastings, setRecentCastings] = useState<Casting[]>([]);
+  const [applications, setApplications] = useState<CastingApplication[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -633,6 +676,9 @@ const ClientDashboard: React.FC<{ onEditBrand: () => void; onAddCasting: () => v
         const castings = await listCastings();
         const userCastings = castings.filter(c => c.user_id === user.id).slice(0, 3);
         setRecentCastings(userCastings);
+
+        const apps = await listCastingApplicationsForBrand(user.id);
+        setApplications(apps);
       } catch (err) {
         console.error('Failed to load brand data', err);
       } finally {
@@ -690,6 +736,27 @@ const ClientDashboard: React.FC<{ onEditBrand: () => void; onAddCasting: () => v
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+          <div className="md:col-span-2 bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 mt-4">
+            <h4 className="text-sm uppercase tracking-widest text-zinc-500 mb-2">Recent Applications To Your Castings</h4>
+            {applications.length === 0 ? (
+              <div className="text-zinc-400 text-sm">No applications yet.</div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {applications.slice(0, 5).map((app) => {
+                  const c = app.casting as any as Casting | undefined;
+                  return (
+                    <div key={app.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-zinc-950/60 border border-zinc-800">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium text-white truncate">{c?.title ?? 'Casting'}</div>
+                        <div className="text-[11px] text-zinc-500 mt-1">Applicant: {app.model_user_id.slice(0, 8)}…</div>
+                        <div className="text-[11px] text-zinc-500 mt-1">Status: {app.status ?? 'applied'}</div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -863,6 +930,7 @@ const ClientCastingsList: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [castings, setCastings] = useState<Casting[]>([]);
+  const [applicationsByCasting, setApplicationsByCasting] = useState<Record<string, CastingApplication[]>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [newCasting, setNewCasting] = useState({
@@ -882,6 +950,15 @@ const ClientCastingsList: React.FC = () => {
         const data = await listCastings();
         const userCastings = data.filter(c => c.user_id === user.id);
         setCastings(userCastings);
+
+        const apps = await listCastingApplicationsForBrand(user.id);
+        const grouped: Record<string, CastingApplication[]> = {};
+        apps.forEach((app) => {
+          const cid = app.casting_id;
+          if (!grouped[cid]) grouped[cid] = [];
+          grouped[cid].push(app);
+        });
+        setApplicationsByCasting(grouped);
       } catch (err) {
         console.error('Failed to load castings', err);
       } finally {
@@ -908,7 +985,6 @@ const ClientCastingsList: React.FC = () => {
         budget_min: newCasting.budget_min ? Number(newCasting.budget_min) : null,
         budget_max: newCasting.budget_max ? Number(newCasting.budget_max) : null,
         requirements: newCasting.requirements || null,
-        status: 'open',
         application_deadline: newCasting.application_deadline || null,
       });
       setCastings([created, ...castings]);
@@ -977,7 +1053,26 @@ const ClientCastingsList: React.FC = () => {
                       <Calendar className="w-3 h-3" />
                       {casting.application_deadline || 'No deadline'}
                     </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-3 rounded-full bg-zinc-600 inline-block" />
+                      {applicationsByCasting[casting.id as string]?.length ?? 0} applicants
+                    </div>
                   </div>
+                  {applicationsByCasting[casting.id as string]?.length ? (
+                    <div className="mt-3 border-t border-zinc-800 pt-3 text-xs text-zinc-300">
+                      <div className="mb-1 font-semibold">Recent Applicants</div>
+                      <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
+                        {applicationsByCasting[casting.id as string]
+                          .slice(0, 3)
+                          .map((app) => (
+                            <div key={app.id} className="flex items-center justify-between gap-2">
+                              <span className="truncate">Model {app.model_user_id.slice(0, 8)}…</span>
+                              <span className="capitalize text-zinc-400">{app.status ?? 'applied'}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>

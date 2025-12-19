@@ -4,7 +4,7 @@ import { MapPin, DollarSign, Calendar, Plus, Check, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { AuthPage } from './AuthPage';
-import { Casting, createCasting, listOnlineCastings, getBrandProfileByUserId } from '../services/ProfileService';
+import { Casting, CastingApplication, applyToCasting, listCastingApplicationsForModel, createCasting, listOnlineCastings, getBrandProfileByUserId } from '../services/ProfileService';
 
 export const Castings: React.FC = () => {
   const { user } = useAuth();
@@ -32,13 +32,19 @@ export const Castings: React.FC = () => {
       try {
         const data = await listOnlineCastings();
         setCastings(data);
+        // Load already-applied castings for logged-in models
+        if (user && user.role === 'model') {
+          const apps = await listCastingApplicationsForModel(user.id);
+          const appliedIds = apps.map((a) => a.casting_id);
+          setAppliedCastings(appliedIds);
+        }
       } catch (err) {
         console.error('Failed to load castings', err);
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [user]);
 
   const handlePostCastingClick = () => {
     if (!user) {
@@ -50,13 +56,19 @@ export const Castings: React.FC = () => {
     }
   };
 
-  const handleApplyClick = (castingId?: string) => {
+  const handleApplyClick = async (castingId?: string) => {
     if (!user) {
         setIsAuthPromptOpen(true);
     } else if (user.role === 'model') {
         if (castingId) {
-          setAppliedCastings([...appliedCastings, castingId]);
-          showToast('✅ Application submitted successfully!');
+          try {
+            await applyToCasting(castingId, user.id);
+            setAppliedCastings((prev) => [...prev, castingId]);
+            showToast('✅ Application submitted successfully!');
+          } catch (err) {
+            console.error('Failed to apply to casting', err);
+            showToast('Could not submit application. Please try again.', 'error');
+          }
         }
     } else {
         alert("Only models can apply for castings.");
@@ -84,7 +96,6 @@ export const Castings: React.FC = () => {
         budget_min: newCasting.budget_min ? Number(newCasting.budget_min) : null,
         budget_max: newCasting.budget_max ? Number(newCasting.budget_max) : null,
         requirements: newCasting.requirements || null,
-        status: 'open',
         application_deadline: newCasting.application_deadline || null,
         shoot_date: newCasting.shoot_date || null,
       });
