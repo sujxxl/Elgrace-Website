@@ -56,9 +56,12 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
     const res = await signup(email, password, displayName, role);
     setLoading(false);
     if (res.success) {
-      showToast('🎉 Account created successfully!');
-      onLoginSuccess?.();
-      navigate('/profile');
+      showToast('🎉 Account created! Check your email to confirm.');
+      setMsg(
+        'We\'ve sent a confirmation link to your email. Please open it to verify your account and you will be logged in automatically.'
+      );
+      // Do not auto-navigate; user will come back logged in after confirming via email.
+      setPassword('');
     } else {
       setMsg(res.message ?? 'Signup failed');
     }
