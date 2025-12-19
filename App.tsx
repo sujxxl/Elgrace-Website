@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Hero } from './components/Hero';
 import { Mission } from './components/Mission';
 import { Services } from './components/Services';
@@ -143,9 +143,11 @@ const AppRouterContent: React.FC = () => {
 };
 
 const AppContent: React.FC = () => (
-  <BrowserRouter>
+  // Use HashRouter so refreshing on nested routes (e.g. /services, /talents)
+  // does not rely on server-side rewrite rules and avoids 404s on static hosts.
+  <HashRouter>
     <AppRouterContent />
-  </BrowserRouter>
+  </HashRouter>
 );
 
 const App: React.FC = () => {
