@@ -9,6 +9,7 @@ import { Footer } from './components/Footer';
 import { Navbar } from './components/Navbar';
 import { Brands } from './components/Brands';
 import { Castings } from './components/Castings';
+import { CastingDetail } from './components/CastingDetail';
 import { AuthPage } from './components/AuthPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
@@ -17,6 +18,8 @@ import { ProfileEdit } from './components/ProfileEdit';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
+import { TalentProfilePage } from './components/TalentProfilePage';
+import { BrandPage } from './components/BrandPage';
 
 const viewToPath = (v: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile') =>
   v === 'home' ? '/' : `/${v}`;
@@ -27,6 +30,7 @@ const pathToView = (p: string): 'home' | 'services' | 'talents' | 'castings' | '
   if (p.startsWith('/castings')) return 'castings';
   if (p.startsWith('/auth')) return 'auth';
   if (p.startsWith('/profile')) return 'profile';
+  if (p.startsWith('/admin') || p.startsWith('/brands')) return 'profile';
   return 'home';
 };
 
@@ -85,10 +89,28 @@ const AppRouterContent: React.FC = () => {
         />
 
         <Route
+          path="/talents/:userId"
+          element={
+            <main className="pt-20 relative z-10">
+              <TalentProfilePage />
+            </main>
+          }
+        />
+
+        <Route
           path="/castings"
           element={
             <main className="pt-20 relative z-10">
               <Castings />
+            </main>
+          }
+        />
+
+        <Route
+          path="/castings/:castingId"
+          element={
+            <main className="pt-20 relative z-10">
+              <CastingDetail />
             </main>
           }
         />
@@ -141,6 +163,17 @@ const AppRouterContent: React.FC = () => {
             <ProtectedRoute requireAuth={true} requireRole="admin">
               <main className="pt-20 relative z-10">
                 <AdminDashboard />
+              </main>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/brands/:userId"
+          element={
+            <ProtectedRoute requireAuth={true} requireRole="admin">
+              <main className="pt-20 relative z-10">
+                <BrandPage />
               </main>
             </ProtectedRoute>
           }

@@ -1,22 +1,34 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useNavigate } from 'react-router-dom';
 import {
-  ProfileData,
-  Casting,
-  BookingRequest,
+                return (
+                  <tr key={p.id ?? p.user_id} className="hover:bg-zinc-900/40">
+                    <td className="px-4 py-3 text-sm text-white">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/talents/${p.user_id}`)}
+                        className="hover:underline text-left"
+                      >
+                        {p.full_name}
+                      </button>
+                    </td>
+  CastingApplication,
   listAllProfilesAdmin,
   updateProfileStatus,
   listAllCastingsAdmin,
   updateCastingStatus,
   listAllBookingRequestsAdmin,
   updateBookingStatus,
+  listAllCastingApplicationsAdmin,
+  updateCastingApplicationStatus,
 } from '../services/ProfileService';
 
 type ProfileStatus = 'UNDER_REVIEW' | 'ONLINE' | 'OFFLINE';
 type CastingUiStatus = 'UNDER_VERIFICATION' | 'ONLINE' | 'CLOSED';
 
-type TabKey = 'profiles' | 'castings' | 'bookings' | 'review';
+type TabKey = 'profiles' | 'castings' | 'applications' | 'bookings' | 'review';
 
 type CastingSortKey = 'created_at' | 'application_deadline' | 'shoot_date';
 
@@ -43,6 +55,7 @@ function mapCastingDbStatusToUi(status?: Casting['status']): CastingUiStatus {
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>('profiles');
 
   const [profiles, setProfiles] = useState<ProfileData[]>([]);
@@ -55,6 +68,9 @@ export const AdminDashboard: React.FC = () => {
   const [bookings, setBookings] = useState<BookingRequest[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
 
+  const [applications, setApplications] = useState<CastingApplication[]>([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+
   useEffect(() => {
     if (!user || user.role !== 'admin') return;
 
@@ -62,6 +78,8 @@ export const AdminDashboard: React.FC = () => {
       void loadProfiles();
     } else if (activeTab === 'castings') {
       void loadCastings();
+    } else if (activeTab === 'applications') {
+      void loadApplications();
     } else if (activeTab === 'bookings') {
       void loadBookings();
     } else if (activeTab === 'review') {
@@ -107,6 +125,19 @@ export const AdminDashboard: React.FC = () => {
       showToast('Failed to load booking requests');
     } finally {
       setBookingsLoading(false);
+    }
+  };
+
+  const loadApplications = async () => {
+    try {
+      setApplicationsLoading(true);
+      const data = await listAllCastingApplicationsAdmin();
+      setApplications(data);
+    } catch (err) {
+      console.error('Failed to load casting applications for admin', err);
+      showToast('Failed to load applications');
+    } finally {
+      setApplicationsLoading(false);
     }
   };
 
@@ -186,7 +217,15 @@ export const AdminDashboard: React.FC = () => {
                 const ig = (p.instagram ?? []).map((i) => i.handle).join(', ');
                 return (
                   <tr key={p.id ?? p.user_id} className="hover:bg-zinc-900/40">
-                    <td className="px-4 py-3 text-sm text-white">{p.full_name}</td>
+                    <td className="px-4 py-3 text-sm text-white">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/talents/${p.user_id}`)}
+                        className="hover:underline text-left"
+                      >
+                        {p.full_name}
+                      </button>
+                    </td>
                     <td className="px-4 py-3 text-sm text-zinc-300">{locationParts || '—'}</td>
                     <td className="px-4 py-3 text-sm text-zinc-300">{ig || '—'}</td>
                     <td className="px-4 py-3 text-sm text-zinc-300">{p.experience_level ?? '—'}</td>
@@ -431,6 +470,128 @@ export const AdminDashboard: React.FC = () => {
     </div>
   );
 
+  const renderApplications = () => (
+    <div className="mt-8">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-semibold">Casting Applications</h2>
+        <button
+          onClick={loadApplications}
+          className="px-3 py-1 text-xs border border-zinc-700 rounded-lg hover:bg-zinc-800"
+        >
+          Refresh
+        </button>
+      </div>
+      {applicationsLoading ? (
+        <p className="text-zinc-400 text-sm">Loading applications...</p>
+      ) : applications.length === 0 ? (
+        <p className="text-zinc-500 text-sm">No casting applications yet.</p>
+      ) : (
+        <div className="overflow-x-auto border border-zinc-800 rounded-xl">
+          <table className="w-full text-sm">
+            <thead className="bg-zinc-900/80 text-zinc-400 uppercase text-xs">
+              <tr>
+                <th className="px-4 py-3 text-left">Casting</th>
+                <th className="px-4 py-3 text-left">Model</th>
+                <th className="px-4 py-3 text-left">Brand</th>
+                <th className="px-4 py-3 text-left">Applied</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800">
+              {applications.map((app) => {
+                const c = app.casting as Casting | undefined;
+                const status = (app.status ?? 'applied') as CastingApplication['status'];
+                return (
+                  <tr key={app.id} className="hover:bg-zinc-900/40">
+                    <td className="px-4 py-3 text-sm text-white max-w-xs">
+                      {c?.id ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/castings/${c.id}`)}
+                          className="hover:underline text-left truncate"
+                        >
+                          {c.title}
+                        </button>
+                      ) : (
+                        c?.title ?? 'Casting'
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-300">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/talents/${app.model_user_id}`)}
+                        className="hover:underline"
+                      >
+                        {app.model_user_id.slice(0, 8)}…
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-300">
+                      {c?.user_id ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/brands/${c.user_id}`)}
+                          className="hover:underline"
+                        >
+                          {c.user_id.slice(0, 8)}…
+                        </button>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-300">
+                      {app.created_at ? new Date(app.created_at).toLocaleString() : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-300 capitalize">{status}</td>
+                    <td className="px-4 py-3 text-xs">
+                      <div className="flex gap-2 flex-wrap">
+                        {(['applied', 'shortlisted', 'booked', 'rejected', 'cancelled'] as CastingApplication['status'][]).map(
+                          (target) => (
+                            <button
+                              key={target}
+                              type="button"
+                              disabled={status === target}
+                              onClick={async () => {
+                                if (!app.id) return;
+                                try {
+                                  const updated = await updateCastingApplicationStatus(app.id, target);
+                                  setApplications((prev) =>
+                                    prev.map((a) => (a.id === updated.id ? updated : a))
+                                  );
+                                  showToast(`Application set to ${target}.`);
+                                } catch (err) {
+                                  console.error('Failed to update application status', err);
+                                  showToast('Failed to update application status');
+                                }
+                              }}
+                              className={`px-2 py-1 rounded border text-[10px] uppercase tracking-widest font-medium ${
+                                status === target
+                                  ? 'border-zinc-700 text-zinc-500 cursor-not-allowed'
+                                  : target === 'booked'
+                                  ? 'border-emerald-500/40 text-emerald-200 hover:bg-emerald-900/30'
+                                  : target === 'rejected' || target === 'cancelled'
+                                  ? 'border-red-500/40 text-red-200 hover:bg-red-900/30'
+                                  : target === 'shortlisted'
+                                  ? 'border-amber-500/40 text-amber-200 hover:bg-amber-900/30'
+                                  : 'border-zinc-500/40 text-zinc-200 hover:bg-zinc-900/30'
+                              }`}
+                            >
+                              {target}
+                            </button>
+                          )
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
   const renderReviewBoard = () => {
     const profilesUnderReview = profiles.filter((p) => p.status === 'UNDER_REVIEW');
     const castingsUnderVerification = castings.filter(
@@ -581,6 +742,16 @@ export const AdminDashboard: React.FC = () => {
           Castings
         </button>
         <button
+          onClick={() => setActiveTab('applications')}
+          className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] rounded-full border transition-colors ${
+            activeTab === 'applications'
+              ? 'bg-white text-black border-white'
+              : 'border-zinc-800 text-zinc-400 hover:bg-zinc-900'
+          }`}
+        >
+          Applications
+        </button>
+        <button
           onClick={() => setActiveTab('bookings')}
           className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] rounded-full border transition-colors ${
             activeTab === 'bookings'
@@ -606,6 +777,8 @@ export const AdminDashboard: React.FC = () => {
         ? renderProfiles()
         : activeTab === 'castings'
         ? renderCastings()
+        : activeTab === 'applications'
+        ? renderApplications()
         : activeTab === 'bookings'
         ? renderBookings()
         : renderReviewBoard()}

@@ -4,6 +4,7 @@ import { X, Instagram, Mail, MapPin, Ruler, Weight, Filter, Search } from 'lucid
 import { listOnlineProfiles, ProfileData, createBookingRequest, getBrandProfileByUserId } from '../services/ProfileService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useNavigate } from 'react-router-dom';
 
 type Category = 'All' | 'Models' | 'Actors' | 'Creatives';
 
@@ -47,7 +48,8 @@ const TalentCard: React.FC<{
     setExpandedId: (id: string | null) => void;
     screenSize: 'mobile' | 'tablet' | 'desktop';
     onBookNow: (talent: Talent) => void;
-}> = ({ talent, index, isExpanded, setExpandedId, screenSize, onBookNow }) => {
+    onOpenProfile: (id: string) => void;
+}> = ({ talent, index, isExpanded, setExpandedId, screenSize, onBookNow, onOpenProfile }) => {
     
     let isRightEdge = false;
     if (screenSize === 'desktop') {
@@ -155,15 +157,24 @@ const TalentCard: React.FC<{
                                 </div>
 
                                                                 <div className="space-y-3">
-                                                                        <button
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                onBookNow(talent);
-                                                                            }}
-                                                                            className="w-full py-3 bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-zinc-200 transition-colors"
-                                                                        >
-                                                                                Book Now
-                                                                        </button>
+                                                                                                                                                <button
+                                                                                                                                                        onClick={(e) => {
+                                                                                                                                                                e.stopPropagation();
+                                                                                                                                                                onBookNow(talent);
+                                                                                                                                                        }}
+                                                                                                                                                        className="w-full py-3 bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-zinc-200 transition-colors"
+                                                                                                                                                >
+                                                                                                                                                                Book Now
+                                                                                                                                                </button>
+                                                                                                                                                <button
+                                                                                                                                                    onClick={(e) => {
+                                                                                                                                                        e.stopPropagation();
+                                                                                                                                                        onOpenProfile(talent.id);
+                                                                                                                                                    }}
+                                                                                                                                                    className="w-full py-2 mt-2 border border-zinc-700 text-zinc-200 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-900 transition-colors"
+                                                                                                                                                >
+                                                                                                                                                    View Full Profile
+                                                                                                                                                </button>
                                     <div className="flex gap-2">
                                         <a
                                           href={`mailto:talents@elgrace.in?subject=${encodeURIComponent('Booking Enquiry for ' + talent.name)}`}
@@ -213,6 +224,7 @@ const TalentCard: React.FC<{
 export const TalentGallery: React.FC = () => {
     const { user } = useAuth();
     const { showToast } = useToast();
+    const navigate = useNavigate();
   const [filter, setFilter] = useState<Category>('All');
     const [expandedId, setExpandedId] = useState<string | null>(null);
   const screenSize = useScreenSize();
@@ -333,7 +345,7 @@ export const TalentGallery: React.FC = () => {
             <h3 className="text-4xl md:text-5xl font-['Syne'] font-bold text-white">Our Talent</h3>
           </div>
           
-          <div className="flex flex-col items-end gap-4 mt-6 md:mt-0">
+              <div className="flex flex-col items-end gap-4 mt-6 md:mt-0">
               {/* Category Pills */}
               <div className="flex gap-4 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
                 {(['All', 'Models', 'Actors', 'Creatives'] as Category[]).map((cat) => (
@@ -378,6 +390,7 @@ export const TalentGallery: React.FC = () => {
                             <label className="text-xs uppercase tracking-wider text-zinc-500 flex items-center gap-2">
                                 <Search className="w-3 h-3" /> Location
                             </label>
+                                                onOpenProfile={(id) => navigate(`/talents/${id}`)}
                             <input 
                                 type="text"
                                 value={locationSearch}

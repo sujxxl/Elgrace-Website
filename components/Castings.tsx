@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, DollarSign, Calendar, Plus, Check, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { AuthPage } from './AuthPage';
@@ -159,7 +160,15 @@ export const Castings: React.FC = () => {
                     </span>
                     <span className="text-xs text-zinc-500 uppercase tracking-wider">{casting.application_deadline ?? 'TBD'}</span>
                   </div>
-                  <h4 className="text-2xl font-bold text-white mb-3 group-hover:text-zinc-200">{casting.title}</h4>
+                  <h4 className="text-2xl font-bold text-white mb-3 group-hover:text-zinc-200">
+                    {casting.id ? (
+                      <Link to={`/castings/${casting.id}`} className="hover:underline">
+                        {casting.title}
+                      </Link>
+                    ) : (
+                      casting.title
+                    )}
+                  </h4>
                   <p className="text-zinc-400 mb-6 max-w-2xl">{casting.description}</p>
                   
                   <div className="flex flex-wrap gap-4 md:gap-8 text-sm text-zinc-300">

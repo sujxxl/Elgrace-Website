@@ -318,6 +318,16 @@ export async function listCastingApplicationsForCasting(castingId: string) {
   return (data ?? []) as CastingApplication[];
 }
 
+// ADMIN: list all casting applications with casting join
+export async function listAllCastingApplicationsAdmin() {
+  const { data, error } = await supabase
+    .from(CASTING_APPLICATIONS_TABLE)
+    .select('*, casting:castings(*)')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as CastingApplication[];
+}
+
 export async function updateCastingApplicationStatus(
   id: string,
   status: CastingApplicationStatus
