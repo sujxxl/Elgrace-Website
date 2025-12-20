@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Edit, Plus, MapPin, DollarSign, Calendar } from 'lucide-react';
-import { BrandProfile, Casting, BookingRequest, CastingApplication, CastingApplicationStatus, listCastingApplicationsForModel, listCastingApplicationsForBrand, updateCastingApplicationStatus, listBookingRequestsForModel, listBookingRequestsForClient, updateBookingStatus, getBrandProfileByUserId, upsertBrandProfile, createCasting, listCastings, getProfileByUserId, ProfileData, updateProfileStatus } from '../services/ProfileService';
+import { BrandProfile, Casting, BookingRequest, CastingApplication, CastingApplicationStatus, listCastingApplicationsForModel, listCastingApplicationsForBrand, updateCastingApplicationStatus, listBookingRequestsForModel, listBookingRequestsForClient, updateBookingStatus, getBrandProfileByUserId, upsertBrandProfile, createCasting, listCastings, getProfileByUserId, ProfileData, updateProfileStatus, deleteCasting } from '../services/ProfileService';
 import { buildDriveImageUrls } from '../services/gdrive';
 
 // This dashboard strictly inherits existing theme: black/white base, neutral glass,
@@ -506,6 +506,7 @@ const ModelProfileView: React.FC = () => {
 /* MODEL CASTINGS APPLIED */
 const ModelCastingsApplied: React.FC = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [applications, setApplications] = useState<CastingApplication[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -523,6 +524,18 @@ const ModelCastingsApplied: React.FC = () => {
     })();
   }, [user]);
 
+  const handleCancelApplication = async (app: CastingApplication) => {
+    if (!app.id) return;
+    try {
+      const updated = await updateCastingApplicationStatus(app.id, 'cancelled' as CastingApplicationStatus);
+      setApplications((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+      showToast('Application cancelled.', 'success');
+    } catch (err) {
+      console.error('Failed to cancel application', err);
+      showToast('Could not cancel application.', 'error');
+    }
+  };
+
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
       <h4 className="text-lg font-['Syne'] font-bold mb-4">Castings Applied</h4>
@@ -535,7 +548,7 @@ const ModelCastingsApplied: React.FC = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="text-zinc-500 text-xs uppercase tracking-widest">
-                {['Casting Title','Status','Budget','Location','Applied On','Shoot Date','Deadline'].map(h => (
+                {['Casting Title','Status','Budget','Location','Applied On','Shoot Date','Deadline','Actions'].map(h => (
                   <th key={h} className="py-2 pr-6">{h}</th>
                 ))}
               </tr>
@@ -553,6 +566,8 @@ const ModelCastingsApplied: React.FC = () => {
                       return `Up to ₹${Number(max!).toLocaleString()}`;
                     })()
                   : 'TBA';
+                const effectiveStatus = (app.status ?? 'applied') as CastingApplicationStatus;
+                const canCancel = !['cancelled', 'booked', 'rejected'].includes(effectiveStatus);
                 return (
                   <tr key={app.id} className="border-t border-zinc-800">
                     <td className="py-2 pr-6 text-sm text-white">{c?.title ?? 'Casting'}</td>
@@ -562,6 +577,17 @@ const ModelCastingsApplied: React.FC = () => {
                     <td className="py-2 pr-6 text-sm">{app.created_at ? new Date(app.created_at).toLocaleDateString() : '—'}</td>
                     <td className="py-2 pr-6 text-sm">{c?.shoot_date ? new Date(c.shoot_date).toLocaleDateString() : '—'}</td>
                     <td className="py-2 pr-6 text-sm">{c?.application_deadline ? new Date(c.application_deadline).toLocaleDateString() : '—'}</td>
+                    <td className="py-2 pr-6 text-sm">
+                      {canCancel && app.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleCancelApplication(app)}
+                          className="px-3 py-1 rounded-xl border border-red-400 text-red-200 text-[11px] uppercase tracking-widest hover:bg-red-900/20"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -769,6 +795,7 @@ const ClientDashboard: React.FC<{ onEditBrand: () => void; onAddCasting: () => v
 /* CLIENT BOOKINGS (BRAND SIDE) */
 const ClientBookings: React.FC = () => {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [bookings, setBookings] = useState<BookingRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -785,6 +812,18 @@ const ClientBookings: React.FC = () => {
       }
     })();
   }, [user]);
+
+  const handleCancelBooking = async (booking: BookingRequest) => {
+    if (!booking.id) return;
+    try {
+      const updated = await updateBookingStatus(booking.id, 'cancelled');
+      setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+      showToast('Booking request cancelled.', 'success');
+    } catch (err) {
+      console.error('Failed to cancel booking', err);
+      showToast('Could not cancel booking.', 'error');
+    }
+  };
 
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
@@ -803,6 +842,20 @@ const ClientBookings: React.FC = () => {
                 <div className="text-[10px] uppercase tracking-widest text-zinc-500 mt-2">
                   Status: {b.status ?? 'pending'}
                 </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={b.status === 'cancelled'}
+                  onClick={() => handleCancelBooking(b)}
+                  className={`px-3 py-2 rounded-xl border text-xs uppercase tracking-widest font-semibold ${
+                    b.status === 'cancelled'
+                      ? 'border-red-900 text-red-700 cursor-not-allowed'
+                      : 'border-red-400 text-red-200 hover:bg-red-900/20'
+                  }`}
+                >
+                  Cancel Request
+                </button>
               </div>
             </div>
           ))}
@@ -1003,6 +1056,19 @@ const ClientCastingsList: React.FC = () => {
     return `Up to ₹${max?.toLocaleString()}`;
   };
 
+  const handleDeleteCasting = async (id: string) => {
+    const confirmDelete = window.confirm('Delete this casting? This action cannot be undone.');
+    if (!confirmDelete) return;
+    try {
+      await deleteCasting(id);
+      setCastings((prev) => prev.filter((c) => c.id !== id));
+      showToast('Casting deleted.', 'success');
+    } catch (err) {
+      console.error('Failed to delete casting', err);
+      showToast('Could not delete casting.', 'error');
+    }
+  };
+
   return (
     <>
       <div className="space-y-6">
@@ -1038,6 +1104,15 @@ const ClientCastingsList: React.FC = () => {
                         {casting.status === 'open' ? '🟢 Open' : casting.status === 'closed' ? '🔴 Closed' : '🟡 ' + casting.status}
                       </span>
                     </div>
+                    {casting.id && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCasting(casting.id as string)}
+                        className="px-3 py-1 rounded-xl border border-red-400 text-red-200 text-[11px] uppercase tracking-widest hover:bg-red-900/20"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                   <p className="text-zinc-400 text-sm mb-3">{casting.description}</p>
                   <div className="flex flex-wrap gap-4 text-xs text-zinc-400">

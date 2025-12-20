@@ -101,11 +101,14 @@ const Card: React.FC<{
         {/* Visual Content - Left/Top */}
         <div className="w-full md:w-5/12 relative overflow-hidden group">
              <div className="absolute inset-0 bg-zinc-800 animate-pulse" />
+             {/* Placeholder service image removed for now */}
+             {/**
              <img 
                src={service.image} 
                alt={service.title} 
                className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700 ease-in-out" 
              />
+             */}
              <div className={`absolute inset-0 bg-gradient-to-br ${service.color} mix-blend-overlay opacity-60`} />
              <div className="absolute top-6 left-6 p-4 bg-black/30 backdrop-blur-md rounded-full border border-white/10 text-white">
                 {service.icon}

@@ -6,7 +6,7 @@ create table if not exists public.booking_requests (
   client_user_id uuid not null references auth.users(id) on delete cascade,
   brand_profile_id uuid references public.brand_profiles(id) on delete set null,
   message text,
-  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  status text not null default 'pending' check (status in ('pending','approved','rejected','cancelled')),
   created_at timestamptz not null default now()
 );
 
@@ -45,6 +45,13 @@ create policy booking_requests_update_model
   for update
   using ( auth.uid() = model_user_id )
   with check ( auth.uid() = model_user_id );
+
+-- Clients can cancel their own booking requests
+create policy booking_requests_update_client
+  on public.booking_requests
+  for update
+  using ( auth.uid() = client_user_id )
+  with check ( auth.uid() = client_user_id );
 
 -- Admins can update any booking request
 create policy booking_requests_update_admin

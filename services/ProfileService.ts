@@ -74,7 +74,7 @@ export const CASTINGS_TABLE = 'castings';
 export const BOOKINGS_TABLE = 'booking_requests';
 export const CASTING_APPLICATIONS_TABLE = 'casting_applications';
 
-export type BookingStatus = 'pending' | 'approved' | 'rejected';
+export type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
 export type BookingRequest = {
   id?: string;
@@ -86,7 +86,7 @@ export type BookingRequest = {
   created_at?: string;
 };
 
-export type CastingApplicationStatus = 'applied' | 'shortlisted' | 'booked' | 'rejected';
+export type CastingApplicationStatus = 'applied' | 'shortlisted' | 'booked' | 'rejected' | 'cancelled';
 
 export type CastingApplication = {
   id?: string;
@@ -147,6 +147,11 @@ export async function createCasting(payload: Casting) {
     .maybeSingle();
   if (error) throw error;
   return data as Casting;
+}
+
+export async function deleteCasting(id: string) {
+  const { error } = await supabase.from(CASTINGS_TABLE).delete().eq('id', id);
+  if (error) throw error;
 }
 
 export async function listCastings() {

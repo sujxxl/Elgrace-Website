@@ -29,13 +29,14 @@ const Counter: React.FC<{ to: number; label: string }> = ({ to, label }) => {
 };
 
 export const Mission: React.FC = () => {
+  // Placeholder gallery images removed for now; keep structure for future assets
   const images = [
-    "https://picsum.photos/400/500?grayscale&random=10",
-    "https://picsum.photos/400/500?grayscale&random=11",
-    "https://picsum.photos/400/500?grayscale&random=12",
-    "https://picsum.photos/400/500?grayscale&random=13",
-    "https://picsum.photos/400/500?grayscale&random=14",
-    "https://picsum.photos/400/500?grayscale&random=15",
+    // "https://picsum.photos/400/500?grayscale&random=10",
+    // "https://picsum.photos/400/500?grayscale&random=11",
+    // "https://picsum.photos/400/500?grayscale&random=12",
+    // "https://picsum.photos/400/500?grayscale&random=13",
+    // "https://picsum.photos/400/500?grayscale&random=14",
+    // "https://picsum.photos/400/500?grayscale&random=15",
   ];
 
   return (
@@ -66,7 +67,7 @@ export const Mission: React.FC = () => {
              </div>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
              {images.map((src, i) => (
                 <motion.div
                    key={i}
@@ -75,12 +76,16 @@ export const Mission: React.FC = () => {
                    viewport={{ once: true }}
                    transition={{ duration: 0.5, delay: i * 0.1 }}
                    className={`rounded-sm overflow-hidden aspect-[3/4] ${i % 2 === 0 ? 'mt-0' : 'mt-4'}`}
-                >
+                 >
+                   {/* Placeholder image removed for now */}
+                   {/**
                    <img 
-                     src={src} 
-                     alt={`Mission gallery ${i + 1}`} 
-                     className="w-full h-full object-cover hover:scale-110 transition-transform duration-700"
+                    src={src} 
+                    alt={`Mission gallery ${i + 1}`} 
+                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-700"
                    />
+                   */}
+                   <div className="w-full h-full bg-zinc-900/80" />
                 </motion.div>
              ))}
           </div>

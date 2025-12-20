@@ -16,6 +16,7 @@ import { ProfileDashboard } from './components/ProfileDashboard';
 import { ProfileEdit } from './components/ProfileEdit';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminDashboard } from './components/AdminDashboard';
+import { ResetPasswordPage } from './components/ResetPasswordPage';
 
 const viewToPath = (v: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile') =>
   v === 'home' ? '/' : `/${v}`;
@@ -100,6 +101,15 @@ const AppRouterContent: React.FC = () => {
                 <AuthPage />
               </main>
             </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reset-password"
+          element={
+            <main className="pt-20 relative z-10">
+              <ResetPasswordPage />
+            </main>
           }
         />
 

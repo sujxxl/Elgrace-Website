@@ -51,11 +51,14 @@ export const Hero: React.FC = () => {
         style={{ y: bgY }}
         className="absolute inset-0 z-0"
       >
+        {/* Placeholder background image removed for now */}
+        {/**
         <img 
           src="https://picsum.photos/1920/1080?grayscale&blur=2" 
           alt="Background" 
           className="w-full h-full object-cover opacity-30"
         />
+        */}
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent" />
       </motion.div>
 

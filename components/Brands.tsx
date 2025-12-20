@@ -48,16 +48,19 @@ export const Brands: React.FC = () => {
               className="w-full flex justify-center group"
             >
               <div className="px-4 py-3 rounded-xl border border-white/10 group-hover:border-[#dfcda5] transition-colors duration-500 backdrop-blur-sm bg-white/0">
-                {/* 
-                  Placeholder Logo 
-                  Replace src with actual logo assets. 
-                  Using placehold.co with custom text to simulate logos.
-                */}
+                {/* Placeholder logo image removed for now; render brand name text instead */}
+                {/**
                 <img 
                   src={`https://placehold.co/400x150/09090b/ffffff?text=${encodeURIComponent(brand.name)}&font=montserrat`} 
                   alt={`${brand.name} logo`}
                   className="w-auto h-6 md:h-12 object-contain opacity-100 transition-all duration-500 grayscale group-hover:grayscale-0"
                 />
+                */}
+                <div className="min-w-[80px] flex items-center justify-center">
+                  <span className="text-xs md:text-sm font-medium text-zinc-200 tracking-wide">
+                    {brand.name}
+                  </span>
+                </div>
               </div>
             </motion.div>
           ))}
