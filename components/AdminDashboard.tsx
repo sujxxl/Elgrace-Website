@@ -3,17 +3,9 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import {
-                return (
-                  <tr key={p.id ?? p.user_id} className="hover:bg-zinc-900/40">
-                    <td className="px-4 py-3 text-sm text-white">
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/talents/${p.user_id}`)}
-                        className="hover:underline text-left"
-                      >
-                        {p.full_name}
-                      </button>
-                    </td>
+  ProfileData,
+  Casting,
+  BookingRequest,
   CastingApplication,
   listAllProfilesAdmin,
   updateProfileStatus,
