@@ -63,7 +63,7 @@ export const ContactGrid: React.FC = () => {
                                 </a>
                             </div>
                             <div>
-                                <p className="text-zinc-500 text-sm uppercase tracking-wider mb-1">Support</p>
+                                <p className="text-zinc-500 text-sm uppercase tracking-wider mb-1">Business Enquiries</p>
                                 <a
                                     href="mailto:creatives@elgrace.in"
                                     onClick={(e) => {
@@ -72,7 +72,7 @@ export const ContactGrid: React.FC = () => {
                                     }}
                                     className="text-lg text-white transition-colors border-b border-[#dfcda5]/40 hover:border-[#dfcda5] pb-1 inline-block cursor-pointer"
                                 >
-                                    creatives@elgrace.in
+                                    business@elgrace.in
                                 </a>
                             </div>
                             <div>
