@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, UserCircle, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { siteConfig, ViewKey } from '../siteConfig';
 
 interface NavbarProps {
-  onNavigate: (view: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile') => void;
-  currentView: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile';
+  onNavigate: (view: ViewKey) => void;
+  currentView: ViewKey;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
@@ -40,12 +41,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
     }, 100);
   };
 
-  const navLinks = [
-    { name: 'Mission', href: '#mission', view: 'home' as const },
-    { name: 'Services', href: '#', view: 'services' as const },
-    { name: 'Talents', href: '#', view: 'talents' as const },
-    { name: 'Castings', href: '#', view: 'castings' as const },
+  const baseNavLinks: { name: string; href: string; view: ViewKey }[] = [
+    { name: 'Mission', href: '#mission', view: 'home' },
+    { name: 'Services', href: '#', view: 'services' },
+    { name: 'Talents', href: '#', view: 'talents' },
+    { name: 'Castings', href: '#', view: 'castings' },
   ];
+
+  // Only include links that are enabled in the global config (1 = on, 0 = off)
+  const navLinks = baseNavLinks.filter((link) => siteConfig.tabs[link.view] === 1);
 
   return (
     <motion.nav
@@ -67,7 +71,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex gap-8 items-center">
-          {[...navLinks, ...(user ? [{ name: 'Profile', href: '#', view: 'profile' as const }] : [])].map((link) => (
+          {[
+            ...navLinks,
+            ...(user && siteConfig.tabs.profile === 1
+              ? [{ name: 'Profile', href: '#', view: 'profile' as ViewKey }]
+              : []),
+          ].map((link) => (
             <a
               key={link.name}
               href={link.href}
@@ -101,14 +110,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
                     <LogOut className="w-4 h-4" /> Logout
                   </button>
                </div>
-            ) : (
+            ) : siteConfig.tabs.auth === 1 ? (
                 <button 
                     onClick={(e) => handleLinkClick(e, '#', 'auth')}
                     className="px-6 py-2 text-white text-xs font-bold uppercase tracking-widest transition-colors duration-300 flex items-center gap-2 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md"
                 >
                     <UserCircle className="w-4 h-4" /> Login
                 </button>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -129,7 +138,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
             exit={{ opacity: 0, height: 0 }}
             className="fixed inset-0 bg-zinc-950 flex flex-col items-center justify-center gap-8 md:hidden overflow-hidden"
           >
-            {[...navLinks, ...(user ? [{ name: 'Profile', href: '#', view: 'profile' as const }] : [])].map((link) => (
+            {[
+              ...navLinks,
+              ...(user && siteConfig.tabs.profile === 1
+                ? [{ name: 'Profile', href: '#', view: 'profile' as ViewKey }]
+                : []),
+            ].map((link) => (
               <a
                 key={link.name}
                 href={link.href}
@@ -139,16 +153,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
                 {link.name}
               </a>
             ))}
-             {!user ? (
+             {!user && siteConfig.tabs.auth === 1 ? (
                <button onClick={(e) => handleLinkClick(e, '#', 'auth')} className="w-3/4 py-4 text-white font-bold uppercase tracking-widest rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md">
                 Login / Sign Up
                </button>
-             ) : (
+             ) : user ? (
                  <div className="flex flex-col items-center gap-4 w-full">
                      <p className="text-zinc-500 uppercase tracking-widest text-sm">Hi, {user.name}</p>
                      <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="text-xl text-red-500 font-bold uppercase tracking-widest">Logout</button>
                  </div>
-             )}
+             ) : null}
           </motion.div>
         )}
       </AnimatePresence>

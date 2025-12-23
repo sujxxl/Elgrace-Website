@@ -20,11 +20,12 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { TalentProfilePage } from './components/TalentProfilePage';
 import { BrandPage } from './components/BrandPage';
+import { ViewKey } from './siteConfig';
 
-const viewToPath = (v: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile') =>
+const viewToPath = (v: ViewKey) =>
   v === 'home' ? '/' : `/${v}`;
 
-const pathToView = (p: string): 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile' => {
+const pathToView = (p: string): ViewKey => {
   if (p.startsWith('/services')) return 'services';
   if (p.startsWith('/talents')) return 'talents';
   if (p.startsWith('/castings')) return 'castings';
@@ -47,7 +48,7 @@ const AppRouterContent: React.FC = () => {
   const location = useLocation();
 
   const currentView = pathToView(location.pathname);
-  const onNavigate = (view: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile') => {
+  const onNavigate = (view: ViewKey) => {
     navigate(viewToPath(view));
   };
 
