@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Clock, Phone, MapPin, Instagram, Copy } from 'lucide-react';
+import { Mail, Clock, Phone, MapPin, Instagram, Linkedin, Copy } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 export const ContactGrid: React.FC = () => {
@@ -15,9 +15,19 @@ export const ContactGrid: React.FC = () => {
     }
   };
 
-  return (
-    <section id="contact" className="py-24 bg-zinc-950 relative z-10">
-      <div className="container mx-auto px-6">
+    const copyHiringEmail = async () => {
+        try {
+            await navigator.clipboard.writeText('hardik@elgrace.in');
+            showToast('📧 Hiring email copied to clipboard!');
+        } catch (err) {
+            showToast('Failed to copy hiring email');
+        }
+    };
+
+    return (
+        <>
+        <section id="contact" className="py-24 bg-zinc-950 relative z-10">
+            <div className="container mx-auto px-6">
         <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -76,7 +86,7 @@ export const ContactGrid: React.FC = () => {
                                 </a>
                             </div>
                             <div>
-                                <p className="text-zinc-500 text-sm uppercase tracking-wider mb-1">New talent?</p>
+                                <p className="text-zinc-500 text-sm uppercase tracking-wider mb-1">New talent</p>
                                 <a
                                     href="mailto:talent@elgrace.in"
                                     onClick={(e) => {
@@ -108,14 +118,30 @@ export const ContactGrid: React.FC = () => {
                     {/* Socials */}
                     <div>
                         <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-white/5 rounded-full"><Instagram className="w-5 h-5 text-white" /></div>
+                                                <div className="p-2 bg-white/5 rounded-full flex items-center gap-1">
+                                                    <Instagram className="w-5 h-5 text-white" />
+                                                    <Linkedin className="w-5 h-5 text-white" />
+                                                </div>
                         <h3 className="text-xl font-bold font-['Syne']">Follow Us</h3>
                         </div>
-                        <div className="pl-10">
-                            <a href="https://www.instagram.com/elgracetalents/" target="_blank" rel="noopener noreferrer" className="text-xl font-medium text-white hover:text-zinc-300 transition-colors">
-                            @elgracetalents
-                            </a>
-                        </div>
+                                                <div className="pl-10 space-y-2">
+                                                    <a
+                                                        href="https://www.instagram.com/elgracetalents/"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="block text-xl font-medium text-white hover:text-zinc-300 transition-colors"
+                                                    >
+                                                        Instagram – @elgracetalents
+                                                    </a>
+                                                    <a
+                                                        href="https://www.linkedin.com/company/elgracetalents"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="block text-xl font-medium text-white hover:text-zinc-300 transition-colors"
+                                                    >
+                                                        LinkedIn – Elgrace Talents
+                                                    </a>
+                                                </div>
                     </div>
 
                                         {/* CTA - Copy Email (moved to left side) */}
@@ -242,8 +268,36 @@ export const ContactGrid: React.FC = () => {
             </div>
 
           </div>
-        </motion.div>
-      </div>
-    </section>
+                </motion.div>
+            </div>
+        </section>
+
+        {/* Hiring section directly below contact grid */}
+        <section className="py-16 bg-zinc-950 border-t border-zinc-900 relative z-10">
+            <div className="container mx-auto px-6">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5 }}
+                    className="max-w-3xl mx-auto text-center"
+                >
+                    <h3 className="text-3xl md:text-4xl font-['Syne'] font-bold text-white mb-4">
+                        We are always hiring
+                    </h3>
+                    <p className="text-zinc-400 mb-6 text-sm md:text-base">
+                        Are you a passionate individual who wants to work with Elgrace? Share your portfolio or CV with our team.
+                    </p>
+                    <button
+                        onClick={copyHiringEmail}
+                        className="inline-flex items-center gap-2 px-8 py-3 rounded-2xl text-xs md:text-sm font-bold uppercase tracking-widest text-white bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 hover:from-zinc-700 hover:to-zinc-500 border-2 border-[#dfcda5] backdrop-blur-md cursor-pointer"
+                    >
+                        <Copy className="w-4 h-4" />
+                        Apply here
+                    </button>
+                </motion.div>
+            </div>
+        </section>
+        </>
   );
 };

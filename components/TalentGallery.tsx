@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 
-type Category = 'All' | 'Models' | 'Actors' | 'Creatives';
+type Category = 'All' | 'Male' | 'Female' | 'Kids';
 
 interface Talent {
     id: string;
@@ -233,9 +233,10 @@ export const TalentGallery: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
   // Advanced Search State
-  const [locationSearch, setLocationSearch] = useState('');
-  const [minAge, setMinAge] = useState<number>(18);
-  const [maxAge, setMaxAge] = useState<number>(60);
+    const [locationSearch, setLocationSearch] = useState('');
+    // Default to a wide age range so all talents are shown until user narrows it
+    const [minAge, setMinAge] = useState<number>(0);
+    const [maxAge, setMaxAge] = useState<number>(80);
   const [genderFilter, setGenderFilter] = useState<string>('All');
   const [minHeight, setMinHeight] = useState<number>(0);
 
@@ -290,12 +291,18 @@ export const TalentGallery: React.FC = () => {
                         const weightLabel = p.weight ? `${p.weight} kg` : 'N/A';
                         const gender: 'Male' | 'Female' | 'Other' =
                             p.gender === 'male' ? 'Male' : p.gender === 'female' ? 'Female' : 'Other';
+                        // Derive display category for filters
+                        let category: Category = 'Kids';
+                        if (age >= 15) {
+                            if (gender === 'Male') category = 'Male';
+                            else if (gender === 'Female') category = 'Female';
+                        }
                         const location = [p.city, p.state, p.country].filter(Boolean).join(', ');
                         const instagramHandle = p.instagram?.[0]?.handle;
                         return {
                             id: p.user_id,
                             name: p.full_name,
-                            category: 'Models',
+                            category,
                             image:
                                 p.cover_photo_url ||
                                 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=600',
@@ -318,9 +325,11 @@ export const TalentGallery: React.FC = () => {
         })();
     }, []);
 
-    const filteredTalents = talents.filter(t => {
-      // 1. Category Filter
-      if (filter !== 'All' && t.category !== filter) return false;
+        const filteredTalents = talents.filter(t => {
+            // 1. Category Filter (Male, Female, Kids)
+            if (filter === 'Male' && !(t.gender === 'Male' && t.age >= 15)) return false;
+            if (filter === 'Female' && !(t.gender === 'Female' && t.age >= 15)) return false;
+            if (filter === 'Kids' && !(t.age < 15)) return false;
       
       // 2. Advanced Filters (Only if panel is open)
       if (showAdvancedSearch) {
@@ -345,10 +354,10 @@ export const TalentGallery: React.FC = () => {
             <h3 className="text-4xl md:text-5xl font-['Syne'] font-bold text-white">Our Talent</h3>
           </div>
           
-              <div className="flex flex-col items-end gap-4 mt-6 md:mt-0">
-              {/* Category Pills */}
-              <div className="flex gap-4 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-                {(['All', 'Models', 'Actors', 'Creatives'] as Category[]).map((cat) => (
+                            <div className="flex flex-col items-end gap-4 mt-6 md:mt-0">
+                            {/* Category Pills: All / Male / Female / Kids */}
+                            <div className="flex gap-4 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+                                {(['All', 'Male', 'Female', 'Kids'] as Category[]).map((cat) => (
                 <button
                     key={cat}
                     onClick={() => setFilter(cat)}
@@ -363,11 +372,17 @@ export const TalentGallery: React.FC = () => {
                 ))}
               </div>
 
-              {/* Advanced Search Toggle */}
-              <button 
-                onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-                className="flex items-center gap-2 text-xs uppercase tracking-widest font-bold text-zinc-400 hover:text-white transition-colors"
-              >
+                            {/* Advanced Search Toggle */}
+                            <button 
+                                onClick={() => {
+                                    // When opening advanced filters, always switch category to All
+                                    if (!showAdvancedSearch) {
+                                        setFilter('All');
+                                    }
+                                    setShowAdvancedSearch(!showAdvancedSearch);
+                                }}
+                                className="flex items-center gap-2 text-xs uppercase tracking-widest font-bold text-zinc-400 hover:text-white transition-colors"
+                            >
                   <Filter className="w-4 h-4" /> 
                   {showAdvancedSearch ? 'Hide Filters' : 'Advanced Filters'}
               </button>
@@ -390,7 +405,6 @@ export const TalentGallery: React.FC = () => {
                             <label className="text-xs uppercase tracking-wider text-zinc-500 flex items-center gap-2">
                                 <Search className="w-3 h-3" /> Location
                             </label>
-                                                onOpenProfile={(id) => navigate(`/talents/${id}`)}
                             <input 
                                 type="text"
                                 value={locationSearch}
@@ -420,14 +434,14 @@ export const TalentGallery: React.FC = () => {
                             <div className="flex gap-2">
                                 <input 
                                     type="number" 
-                                    min="18" max="100" 
+                                    min="0" max="100" 
                                     value={minAge} 
                                     onChange={(e) => setMinAge(Number(e.target.value))}
                                     className="w-1/2 bg-zinc-950 border border-zinc-800 text-white p-2 rounded text-sm"
                                 />
                                 <input 
                                     type="number" 
-                                    min="18" max="100" 
+                                    min="0" max="100" 
                                     value={maxAge} 
                                     onChange={(e) => setMaxAge(Number(e.target.value))}
                                     className="w-1/2 bg-zinc-950 border border-zinc-800 text-white p-2 rounded text-sm"
@@ -467,6 +481,7 @@ export const TalentGallery: React.FC = () => {
                     setExpandedId={setExpandedId}
                     screenSize={screenSize}
                     onBookNow={handleBookNow}
+                    onOpenProfile={(id) => navigate(`/talents/${id}`)}
                 />
                 ))
             ) : (

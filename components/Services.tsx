@@ -18,11 +18,33 @@ const services: Service[] = [
     id: 1,
     title: "Elgrace Talents",
     subtitle: "Talent Sourcing & Management",
-    description: "We specialize in sourcing, vetting, and managing top models, actors, and creative professionals. We handle every detail—from casting and negotiations to on-set supervision and compliance—ensuring both brands and talent have an empowering, frictionless experience.",
-    features: ["Verified Model Roster", "Digital Casting Platform", "Rights & Compliance Mgmt", "End-to-End Supervision"],
+    description:
+      "Elgrace Talents (Elgrace logo) is the core talent division of the group. We specialize in sourcing, vetting, and managing top models, actors, celebrities and creative professionals for campaigns, films, OTT and brand content. We handle every detail—from casting and negotiations to on-set supervision and compliance—ensuring both brands and talent have an empowering, frictionless experience.",
+    features: [
+      "Verified Models, Actors & Celebrity Roster",
+      "Digital Casting & Shortlisting Platform",
+      "Usage Rights, Contracts & Compliance Mgmt",
+      "End-to-End Supervision from Brief to Shoot",
+    ],
     icon: <Users className="w-6 h-6" />,
-    image: "https://picsum.photos/1000/1000?grayscale&random=40",
+    image: "elgrace-logo-inverted.png",
     color: "from-blue-900/20 to-purple-900/20"
+  },
+  {
+    id: 2,
+    title: "EventIcon",
+    subtitle: "Event Manpower & Experiential Teams",
+    description:
+      "Eventicon is the dedicated manpower division of Elgrace — supplying trained on-ground teams for launches, exhibitions, mall activations, concerts and corporate events. From promoters, ushers and registration desks to backstage support, we ensure your event is fully staffed with reliable, brand-ready professionals.",
+    features: [
+      "Promoters, Hosts, Ushers & Brand Reps",
+      "Pan-India Event Manpower & Coordination",
+      "Backstage, Tech & Hospitality Support",
+      "On-Ground Supervision by Elgrace Team",
+    ],
+    icon: <Users className="w-6 h-6" />,
+    image: "https://picsum.photos/1000/&random=41",
+    color: "from-amber-900/20 to-red-900/20"
   }
 ];
 
@@ -101,14 +123,11 @@ const Card: React.FC<{
         {/* Visual Content - Left/Top */}
         <div className="w-full md:w-5/12 relative overflow-hidden group">
              <div className="absolute inset-0 bg-zinc-800 animate-pulse" />
-             {/* Placeholder service image removed for now */}
-             {/**
              <img 
                src={service.image} 
                alt={service.title} 
                className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700 ease-in-out" 
              />
-             */}
              <div className={`absolute inset-0 bg-gradient-to-br ${service.color} mix-blend-overlay opacity-60`} />
              <div className="absolute top-6 left-6 p-4 bg-black/30 backdrop-blur-md rounded-full border border-white/10 text-white">
                 {service.icon}
