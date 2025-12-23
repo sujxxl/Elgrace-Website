@@ -19,7 +19,7 @@ const services: Service[] = [
     title: "Elgrace Talents",
     subtitle: "Talent Sourcing & Management",
     description:
-      "Elgrace Talents (Elgrace logo) is the core talent division of the group. We specialize in sourcing, vetting, and managing top models, actors, celebrities and creative professionals for campaigns, films, OTT and brand content. We handle every detail—from casting and negotiations to on-set supervision and compliance—ensuring both brands and talent have an empowering, frictionless experience.",
+      "Elgrace Talents is the core talent division of the group. We specialize in sourcing, vetting, and managing top models, actors, celebrities and creative professionals for campaigns, films, OTT and brand content. We handle every detail—from casting and negotiations to on-set supervision and compliance—ensuring both brands and talent have an empowering, frictionless experience.",
     features: [
       "Verified Models, Actors & Celebrity Roster",
       "Digital Casting & Shortlisting Platform",
