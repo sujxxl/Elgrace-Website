@@ -125,7 +125,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                 <div className="p-2 bg-white/5 rounded-full"><Mail className="w-4 h-4" /></div>
                 <div>
                   <div className="text-sm text-zinc-500 uppercase tracking-wider">Support</div>
-                  <div className="text-sm">info@elgrace.in</div>
+                  <div className="text-sm">creatives@elgrace.in</div>
                 </div>
               </div>
 
@@ -173,7 +173,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                     onChange={e => setEmail(e.target.value)}
                     required
                     className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-zinc-300/60 text-white placeholder:text-zinc-400"
-                    placeholder="you@domain.com"
+                    placeholder="you@email.com"
                   />
                 </label>
               )}
