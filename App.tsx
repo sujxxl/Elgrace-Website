@@ -20,6 +20,8 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { TalentProfilePage } from './components/TalentProfilePage';
 import { BrandPage } from './components/BrandPage';
+import { EventIconPage } from './components/EventIconPage';
+import { ElgraceTalentsPage } from './components/ElgraceTalentsPage';
 import { ViewKey } from './siteConfig';
 
 const viewToPath = (v: ViewKey) =>
@@ -74,6 +76,26 @@ const AppRouterContent: React.FC = () => {
           element={
             <main className="relative z-10">
               <Services />
+              <ContactGrid />
+            </main>
+          }
+        />
+
+        <Route
+          path="/services/elgrace-talents"
+          element={
+            <main className="relative z-10">
+              <ElgraceTalentsPage />
+              <ContactGrid />
+            </main>
+          }
+        />
+
+        <Route
+          path="/services/eventicon"
+          element={
+            <main className="relative z-10">
+              <EventIconPage />
               <ContactGrid />
             </main>
           }

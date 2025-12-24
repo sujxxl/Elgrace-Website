@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import { ArrowUpRight, CheckCircle2, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Service {
   id: number;
@@ -55,7 +56,8 @@ const Card: React.FC<{
   range: number[]; 
   targetScale: number; 
   total: number;
-}> = ({ service, index, progress, range, targetScale, total }) => {
+  onExplore?: () => void;
+}> = ({ service, index, progress, range, targetScale, total, onExplore }) => {
   const container = useRef<HTMLDivElement>(null);
   
   // Scroll Animation Logic
@@ -157,7 +159,10 @@ const Card: React.FC<{
              </div>
 
              <div className="relative z-10 pt-6 border-t border-white/5">
-               <button className="group flex items-center gap-2 text-white font-bold uppercase tracking-widest text-sm transition-colors border-b border-transparent hover:border-[#dfcda5] pb-1">
+               <button
+                 onClick={onExplore}
+                 className="group flex items-center gap-2 text-white font-bold uppercase tracking-widest text-sm transition-colors border-b border-transparent hover:border-[#dfcda5] pb-1"
+               >
                     Explore Services 
                     <ArrowUpRight className="w-4 h-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
                 </button>
@@ -170,6 +175,7 @@ const Card: React.FC<{
 
 export const Services: React.FC = () => {
   const container = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   
   const { scrollYProgress } = useScroll({
     target: container,
@@ -211,6 +217,13 @@ export const Services: React.FC = () => {
                         range={[index * 0.25, 1]}
                         targetScale={targetScale}
                         total={services.length}
+                        onExplore={
+                          service.id === 1
+                            ? () => navigate('/services/elgrace-talents')
+                            : service.id === 2
+                            ? () => navigate('/services/eventicon')
+                            : undefined
+                        }
                     />
                 );
             })}
