@@ -99,11 +99,15 @@ const TalentCard: React.FC<{
                 <div className="flex w-full h-full">
                     {/* Image Section */}
                     <div className={`${isExpanded && screenSize !== 'mobile' ? 'w-1/2' : 'w-full'} h-full relative transition-all duration-500`}>
-                        <img
-                            src={talent.image}
-                            alt={talent.name}
-                            className={`w-full h-full object-cover transition-all duration-700 ${isExpanded ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`}
-                        />
+                        {talent.image ? (
+                            <img
+                                src={talent.image}
+                                alt={talent.name}
+                                className={`w-full h-full object-cover transition-all duration-700 ${isExpanded ? 'grayscale-0' : 'grayscale group-hover:grayscale-0'}`}
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-zinc-800" />
+                        )}
                         <motion.div 
                             initial={{ opacity: 1 }}
                             animate={{ opacity: isExpanded ? 0 : 1 }}
@@ -303,9 +307,7 @@ export const TalentGallery: React.FC = () => {
                             id: p.user_id,
                             name: p.full_name,
                             category,
-                            image:
-                                p.cover_photo_url ||
-                                'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=600',
+                            image: p.cover_photo_url || '',
                             height: heightLabel,
                             weight: weightLabel,
                             location: location || 'Location TBA',

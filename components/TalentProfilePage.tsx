@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, Ruler, Weight, ArrowLeft } from 'lucide-react';
 import { getProfileByUserId, ProfileData } from '../services/ProfileService';
+import { buildDriveImageUrls } from '../services/gdrive';
 
 export const TalentProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -63,6 +64,8 @@ export const TalentProfilePage: React.FC = () => {
   const inches = profile.height_inches ?? 0;
   const heightLabel = feet || inches ? `${feet}'${inches}"` : 'N/A';
   const weightLabel = profile.weight ? `${profile.weight} kg` : 'N/A';
+  const coverCandidates = buildDriveImageUrls(profile.cover_photo_url || '');
+  const hasCover = !!profile.cover_photo_url;
 
   return (
     <section className="min-h-screen bg-zinc-950 pt-10 pb-16 px-6">
@@ -88,11 +91,18 @@ export const TalentProfilePage: React.FC = () => {
           className="bg-zinc-900/70 border border-zinc-800 rounded-3xl overflow-hidden shadow-[0_30px_80px_rgba(0,0,0,0.8)]"
         >
           <div className="h-64 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black relative">
-            {profile.cover_photo_url && (
+            {hasCover && (
               <img
-                src={profile.cover_photo_url}
+                src={coverCandidates[0] || profile.cover_photo_url}
                 alt={profile.full_name}
                 className="w-full h-full object-cover opacity-80"
+                onError={(e) => {
+                  const el = e.currentTarget as HTMLImageElement & { _try?: number };
+                  el._try = (el._try || 0) + 1;
+                  if (coverCandidates.length && el._try < coverCandidates.length) {
+                    el.src = coverCandidates[el._try];
+                  }
+                }}
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
@@ -198,6 +208,20 @@ export const TalentProfilePage: React.FC = () => {
                   )}
                 </div>
               </div>
+
+              {profile.portfolio_folder_link && (
+                <div>
+                  <h2 className="text-sm uppercase tracking-[0.25em] text-zinc-500 mb-2">Portfolio</h2>
+                  <a
+                    href={profile.portfolio_folder_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-zinc-700 text-[11px] uppercase tracking-[0.2em] text-zinc-200 hover:bg-zinc-900/80"
+                  >
+                    View Full Portfolio on Drive
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
