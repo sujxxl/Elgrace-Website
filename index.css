@@ -1,0 +1,12 @@
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Optional: slightly softer scroll feel via touch-action on touch devices */
+main {
+  scroll-behavior: smooth;
+}
