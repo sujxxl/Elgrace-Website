@@ -22,7 +22,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLinkClick = (e: React.MouseEvent<HTMLElement>, target: string, view: 'home' | 'services' | 'talents' | 'castings' | 'auth' | 'profile') => {
+  const handleLinkClick = (e: React.MouseEvent<HTMLElement>, target: string, view: 'home' | 'services' | 'talents' | 'gallery' | 'castings' | 'auth' | 'profile') => {
     e.preventDefault();
     setMobileMenuOpen(false);
     onNavigate(view);
@@ -45,6 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
     { name: 'Mission', href: '#mission', view: 'home' },
     { name: 'Services', href: '#', view: 'services' },
     { name: 'Talents', href: '#', view: 'talents' },
+    { name: 'Gallery', href: '#', view: 'gallery' },
     { name: 'Castings', href: '#', view: 'castings' },
   ];
 

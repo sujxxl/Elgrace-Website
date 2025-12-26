@@ -22,6 +22,7 @@ import { TalentProfilePage } from './components/TalentProfilePage';
 import { BrandPage } from './components/BrandPage';
 import { EventIconPage } from './components/EventIconPage';
 import { ElgraceTalentsPage } from './components/ElgraceTalentsPage';
+import { GalleryPage } from './components/GalleryPage';
 import { ViewKey } from './siteConfig';
 
 const viewToPath = (v: ViewKey) =>
@@ -30,6 +31,7 @@ const viewToPath = (v: ViewKey) =>
 const pathToView = (p: string): ViewKey => {
   if (p.startsWith('/services')) return 'services';
   if (p.startsWith('/talents')) return 'talents';
+  if (p.startsWith('/gallery')) return 'gallery';
   if (p.startsWith('/castings')) return 'castings';
   if (p.startsWith('/auth')) return 'auth';
   if (p.startsWith('/profile')) return 'profile';
@@ -106,6 +108,16 @@ const AppRouterContent: React.FC = () => {
           element={
             <main className="pt-20 relative z-10">
               <TalentGallery />
+              <ContactGrid />
+            </main>
+          }
+        />
+
+        <Route
+          path="/gallery"
+          element={
+            <main className="pt-20 relative z-10">
+              <GalleryPage />
               <ContactGrid />
             </main>
           }

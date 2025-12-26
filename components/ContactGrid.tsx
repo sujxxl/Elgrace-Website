@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Clock, Phone, MapPin, Instagram, Linkedin, Copy } from 'lucide-react';
+import { Mail, Clock, Phone, MapPin, Instagram, Linkedin, Copy, ArrowUpRight } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 
 export const ContactGrid: React.FC = () => {
@@ -115,34 +115,43 @@ export const ContactGrid: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Socials */}
-                    <div>
-                        <div className="flex items-center gap-3 mb-4">
-                                                <div className="p-2 bg-white/5 rounded-full flex items-center gap-1">
-                                                    <Instagram className="w-5 h-5 text-white" />
-                                                    <Linkedin className="w-5 h-5 text-white" />
+                                        {/* Socials */}
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="p-2 bg-white/5 rounded-full flex items-center justify-center">
+													<ArrowUpRight className="w-5 h-5 text-white" />
                                                 </div>
-                        <h3 className="text-xl font-bold font-['Syne']">Follow Us</h3>
-                        </div>
-                                                <div className="pl-10 space-y-2">
+                                                <h3 className="text-xl font-bold font-['Syne']">Follow Us</h3>
+                                            </div>
+                                            <div className="pl-10 space-y-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-white/5 rounded-full flex items-center justify-center">
+                                                        <Instagram className="w-4 h-4 text-white" />
+                                                    </div>
                                                     <a
                                                         href="https://www.instagram.com/elgracetalents/"
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="block text-xl font-medium text-white hover:text-zinc-300 transition-colors"
+                                                        className="text-xl font-medium text-white hover:text-zinc-300 transition-colors"
                                                     >
                                                         Instagram – @elgracetalents
                                                     </a>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-white/5 rounded-full flex items-center justify-center">
+                                                        <Linkedin className="w-4 h-4 text-white" />
+                                                    </div>
                                                     <a
                                                         href="https://www.linkedin.com/company/elgracetalents"
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="block text-xl font-medium text-white hover:text-zinc-300 transition-colors"
+                                                        className="text-xl font-medium text-white hover:text-zinc-300 transition-colors"
                                                     >
                                                         LinkedIn – Elgrace Talents
                                                     </a>
                                                 </div>
-                    </div>
+                                            </div>
+                                        </div>
 
                                         {/* CTA - Copy Email (moved to left side) */}
                                         <div className="pt-4 border-t border-zinc-800 mt-4">

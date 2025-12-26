@@ -104,7 +104,7 @@ export const Hero: React.FC = () => {
             transition={{ delay: 2, duration: 1 }}
             className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
         >
-            <ArrowDown className="animate-bounce text-zinc-500 w-8 h-8" />
+	    <ArrowDown className="animate-bounce-subtle text-zinc-500 w-8 h-8" />
         </motion.div>
       </div>
     </section>

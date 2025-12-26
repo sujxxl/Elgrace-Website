@@ -1,8 +1,18 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="bg-black py-12 border-t border-zinc-900">
+    <motion.footer
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.4 }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
+      className="relative bg-black py-12 border-t border-zinc-900 overflow-hidden"
+    >
+      {/* Subtle animated highlight along the top of the footer */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#dfcda5]/70 to-transparent opacity-60 animate-pulse" />
+
       <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="text-center md:text-left">
           <h2 className="text-2xl font-bold font-['Syne'] tracking-wider mb-2">ELGRACE TALENTS</h2>
@@ -30,6 +40,6 @@ export const Footer: React.FC = () => {
           </a>
         </div>
       </div>
-    </footer>
+    </motion.footer>
   );
 };
