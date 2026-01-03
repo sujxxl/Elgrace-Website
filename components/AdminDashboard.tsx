@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MapPin, Ruler, Weight } from 'lucide-react';
 import { Country, State, City } from 'country-state-city';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -41,6 +43,27 @@ const castingStatusLabel: Record<CastingUiStatus, string> = {
   CLOSED: 'Closed',
 };
 
+type ScreenSize = 'mobile' | 'tablet' | 'desktop';
+
+const useScreenSize = (): ScreenSize => {
+  const [screenSize, setScreenSize] = useState<ScreenSize>('desktop');
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 640) setScreenSize('mobile');
+      else if (width < 1024) setScreenSize('tablet');
+      else setScreenSize('desktop');
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return screenSize;
+};
+
 function mapCastingDbStatusToUi(status?: Casting['status']): CastingUiStatus {
   if (!status) return 'UNDER_VERIFICATION';
   if (status === 'open') return 'ONLINE';
@@ -53,6 +76,7 @@ export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const screenSize = useScreenSize();
   const [activeTab, setActiveTab] = useState<TabKey>('model-entry');
 
   const [profiles, setProfiles] = useState<ProfileData[]>([]);
@@ -343,7 +367,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <button
             onClick={loadProfiles}
-            className="px-3 py-1 text-xs border border-zinc-300 rounded-lg bg-white text-zinc-900 hover:bg-zinc-100 dark:bg-transparent dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="px-3 py-1 text-xs border rounded-lg bg-[#3b2418] text-[#f6ead8] border-[#3b2418] hover:bg-[#4a3323] dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
           >
             Refresh
           </button>
@@ -625,72 +649,19 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1">
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {sortProfiles(filteredProfilesDetailed).map((p) => {
+                    {sortProfiles(filteredProfilesDetailed).map((p, index) => {
                       const status = (p.status ?? 'UNDER_REVIEW') as ProfileStatus;
-                      const isExpanded = expandedProfileId === p.id;
-                      return (
-                        <div
-                          key={p.id ?? p.model_code ?? p.email}
-                          className="group bg-[#f6ead8] text-[#3b2418] border border-[#e0cdb0] rounded-2xl overflow-hidden cursor-pointer transition-colors duration-300 dark:bg-[#111111] dark:text-zinc-100 dark:border-zinc-900"
-                          onClick={() => setExpandedProfileId(isExpanded ? null : (p.id as string | null))}
-                        >
-                          <div className="relative w-full aspect-[3/4] bg-[#f2e2cc] dark:bg-[#111111]">
-                            {p.cover_photo_url ? (
-                              <img
-                                src={p.cover_photo_url}
-                                alt={p.full_name || 'Model image'}
-                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                              />
-                            ) : null}
+                      const cardId = String(p.id ?? p.model_code ?? p.email ?? index);
+                      const isExpanded = expandedProfileId === cardId;
 
-                            {/* Minimal label on image */}
-                            <div className="absolute inset-x-0 bottom-0 p-4 flex items-end justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="text-sm font-semibold text-[#3b2418] truncate dark:text-white">
-                                  {p.full_name || 'Unnamed Model'}
-                                </div>
-                                <div className="text-[11px] text-[#6b4b30] truncate dark:text-zinc-300">
-                                  {p.model_code || 'No code'}
-                                  {p.category ? ` · ${p.category}` : ''}
-                                </div>
-                              </div>
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border backdrop-blur-sm ${
-                                  status === 'ONLINE'
-                                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-400 dark:text-black dark:border-emerald-300'
-                                    : status === 'OFFLINE'
-                                    ? 'bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-700 dark:text-zinc-50 dark:border-zinc-600'
-                                    : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-400 dark:text-black dark:border-amber-300'
-                                }`}
-                              >
-                                {profileStatusLabel[status]}
-                              </span>
-                            </div>
+                      let isRightEdge = false;
+                      if (screenSize === 'desktop') {
+                        // Approximate 3-column layout on wide screens
+                        isRightEdge = (index + 1) % 3 === 0;
+                      } else if (screenSize === 'tablet') {
+                        isRightEdge = (index + 1) % 2 === 0;
+                      }
 
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                p.id && navigate(`/talents/${p.id}`);
-                              }}
-                              className="absolute left-4 top-4 px-3 py-1.5 rounded-full border border-[#f5e4c8] bg-[#f5e4c8] text-[11px] uppercase tracking-[0.16em] text-black hover:bg-[#f7ecd6]"
-                            >
-                              View Profile
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Extending detail panel */}
-                {expandedProfileId && (
-                  <div className="w-full lg:w-[340px] xl:w-[380px] lg:flex-shrink-0 bg-[#f6ead8] border border-[#e0cdb0] rounded-2xl p-4 shadow-sm dark:bg-[#111111] dark:border-zinc-900">
-                    {(() => {
-                      const p = filteredProfilesDetailed.find((pr) => pr.id === expandedProfileId);
-                      if (!p) return null;
-                      const status = (p.status ?? 'UNDER_REVIEW') as ProfileStatus;
                       const minHalf = (p as any).min_budget_half_day as number | null | undefined;
                       const minFull = (p as any).min_budget_full_day as number | null | undefined;
                       const legacyBudget = (p as any).expected_budget as string | undefined;
@@ -706,137 +677,264 @@ export const AdminDashboard: React.FC = () => {
                         return legacyBudget || 'N/A';
                       })();
 
+                      const handleMouseEnter = () => {
+                        if (screenSize !== 'mobile') {
+                          setExpandedProfileId(cardId);
+                        }
+                      };
+
+                      const handleMouseLeave = () => {
+                        if (screenSize !== 'mobile') {
+                          setExpandedProfileId(null);
+                        }
+                      };
+
+                      const handleClick = () => {
+                        if (screenSize === 'mobile') {
+                          setExpandedProfileId(isExpanded ? null : cardId);
+                        }
+                      };
+
                       return (
-                        <div className="h-full flex flex-col gap-3 text-xs text-[#3b2418] dark:text-zinc-100">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="text-sm font-semibold truncate">
-                                {p.full_name || 'Unnamed Model'}
-                              </div>
-                              <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
-                                {p.locationLabel || 'Location TBA'}
-                              </div>
-                            </div>
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${
-                                status === 'ONLINE'
-                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-400 dark:text-black dark:border-emerald-300'
-                                  : status === 'OFFLINE'
-                                  ? 'bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-700 dark:text-zinc-50 dark:border-zinc-600'
-                                  : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-400 dark:text-black dark:border-amber-300'
-                              }`}
-                            >
-                              {profileStatusLabel[status]}
-                            </span>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-3 mt-1">
-                            <div>
-                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
-                                Age
-                              </div>
-                              <div>{p.age != null ? `${p.age} yrs` : 'N/A'}</div>
-                            </div>
-                            <div>
-                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
-                                Height
-                              </div>
-                              <div>{p.heightLabel}</div>
-                            </div>
-                            <div>
-                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
-                                Rating
-                              </div>
-                              <div>
-                                {(p as any).overall_rating != null
-                                  ? `${(p as any).overall_rating}/10`
-                                  : 'N/A'}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
-                                Budget
-                              </div>
-                              <div>{budgetText}</div>
-                            </div>
-                            <div>
-                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
-                                Open to Travel
-                              </div>
-                              <div>
-                                {p.open_to_travel == null
-                                  ? 'Any'
-                                  : p.open_to_travel
-                                  ? 'Yes'
-                                  : 'No'}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
-                                Experience
-                              </div>
-                              <div>{p.experience_level || 'N/A'}</div>
-                            </div>
-                          </div>
-
-                          {(p.languages && p.languages.length > 0) || (p.skills && p.skills.length > 0) ? (
-                            <div className="mt-2 space-y-2 text-[11px]">
-                              {p.languages && p.languages.length > 0 && (
-                                <div className="flex flex-wrap gap-1">
-                                  <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] mr-1">
-                                    Languages:
-                                  </span>
-                                  {p.languages.slice(0, 10).map((lang) => (
-                                    <span
-                                      key={lang}
-                                      className="px-2 py-0.5 rounded-full border border-[#d6c3a6] text-[#3b2418] dark:border-zinc-600 dark:text-zinc-100"
-                                    >
-                                      {lang}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                              {p.skills && p.skills.length > 0 && (
-                                <div className="flex flex-wrap gap-1">
-                                  <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] mr-1">
-                                    Skills:
-                                  </span>
-                                  {p.skills.slice(0, 10).map((skill) => (
-                                    <span
-                                      key={skill}
-                                      className="px-2 py-0.5 rounded-full border border-[#d6c3a6] text-[#3b2418] dark:border-zinc-600 dark:text-zinc-100"
-                                    >
-                                      {skill}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ) : null}
-
-                          <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
-                            <button
-                              type="button"
-                              onClick={() => setExpandedProfileId(null)}
-                              className="px-3 py-1 rounded-full border border-[#c5b196] text-[#3b2418] hover:bg-[#ebddc8] dark:border-zinc-500 dark:text-zinc-100 dark:hover:bg-zinc-900"
-                            >
-                              Close Details
-                            </button>
-                            {p.id && (
-                              <button
-                                type="button"
-                                onClick={() => navigate(`/talents/${p.id}`)}
-                                className="px-3 py-1 rounded-full border border-[#f5e4c8] bg-[#f5e4c8] text-[#3b2418] text-[11px] uppercase tracking-[0.16em] hover:bg-[#f7ecd6] dark:text-black"
+                        <div
+                          key={cardId}
+                          className={`relative aspect-[3/4] ${isExpanded ? 'z-40' : 'z-0'}`}
+                        >
+                          <motion.div
+                            layout
+                            onMouseEnter={handleMouseEnter}
+                            onMouseLeave={handleMouseLeave}
+                            onClick={handleClick}
+                            className={`absolute top-0 h-full rounded-2xl border overflow-hidden cursor-pointer shadow-xl transition-colors duration-300
+                              ${isRightEdge ? 'right-0 origin-right' : 'left-0 origin-left'}
+                              ${isExpanded ? 'shadow-2xl ring-1 ring-black/10 dark:ring-white/20' : 'hover:border-zinc-400/60 dark:hover:border-zinc-600'}
+                              bg-[#f6ead8] border-[#e0cdb0] text-zinc-100 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100
+                            `}
+                            initial={false}
+                            animate={{
+                              width: isExpanded && screenSize !== 'mobile' ? '200%' : '100%',
+                              height: '100%',
+                              zIndex: isExpanded ? 40 : 1,
+                            }}
+                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                          >
+                            <div className="flex w-full h-full">
+                              {/* Image section */}
+                              <div
+                                className={`${
+                                  isExpanded && screenSize !== 'mobile' ? 'w-1/2' : 'w-full'
+                                } h-full relative transition-all duration-500 bg-[#f2e2cc] dark:bg-[#111111]`}
                               >
-                                Open Public View
-                              </button>
-                            )}
-                          </div>
+                                {p.cover_photo_url ? (
+                                  <img
+                                  src={p.cover_photo_url}
+                                  alt={p.full_name || 'Model image'}
+                                  className={`w-full h-full object-cover transition-all duration-700 ${
+                                    isExpanded
+                                    ? 'grayscale-0'
+                                    : 'dark:grayscale dark:hover:grayscale-0'
+                                  }`}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-[#e7d5bc] dark:bg-zinc-900" />
+                                )}
+
+                                {/* Light-mode base tint so cards don't read as black even with dark photos */}
+                                <div className="absolute inset-0 bg-[#f6ead8]/55 pointer-events-none dark:white/10" />
+
+                                <motion.div
+                                  initial={{ opacity: 1 }}
+                                  animate={{ opacity: isExpanded ? 0 : 1 }}
+                                  className="absolute inset-0 bg-gradient-to-t from-[#f6ead8]/95 via-transparent to-transparent dark:from-black/80 flex flex-col justify-end p-4"
+                                >
+                                  <div className="flex items-end justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <div className="text-sm font-semibold truncate">
+                                        {p.full_name || 'Unnamed Model'}
+                                      </div>
+                                      <div className="text-[11px] truncate">
+                                        {p.model_code || 'No code'}
+                                        {p.category ? ` · ${p.category}` : ''}
+                                      </div>
+                                    </div>
+                                    <span
+                                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border backdrop-blur-sm ${
+                                        status === 'ONLINE'
+                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-400 dark:text-black dark:border-emerald-300'
+                                          : status === 'OFFLINE'
+                                          ? 'bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-700 dark:text-zinc-50 dark:border-zinc-600'
+                                          : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-400 dark:text-black dark:border-amber-300'
+                                      }`}
+                                    >
+                                      {profileStatusLabel[status]}
+                                    </span>
+                                  </div>
+                                </motion.div>
+
+                              </div>
+
+                              {/* Details section (desktop / tablet) */}
+                              <AnimatePresence>
+                                {isExpanded && screenSize !== 'mobile' && (
+                                  <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 20 }}
+                                    transition={{ delay: 0.05, duration: 0.25 }}
+                                    className="w-1/2 h-full p-5 bg-[#f6ead8] dark:bg-zinc-900 flex flex-col justify-between border-l border-[#e0cdb0] dark:border-white/10 text-xs text-zinc-100"
+                                  >
+                                    <div className="space-y-3">
+                                      <div className="flex items-start justify-between gap-3">
+                                      <div className="min-w-0">
+                                        <div className="text-sm font-semibold truncate text-zinc-100">
+                                        {p.full_name || 'Unnamed Model'}
+                                        </div>
+                                        <div className="text-[11px] text-zinc-300 dark:text-zinc-400 truncate">
+                                        {p.locationLabel || 'Location TBA'}
+                                        </div>
+                                      </div>
+                                      <span
+                                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                                        status === 'ONLINE'
+                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-400 dark:text-black dark:border-emerald-300'
+                                          : status === 'OFFLINE'
+                                          ? 'bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-700 dark:text-zinc-50 dark:border-zinc-600'
+                                          : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-400 dark:text-black dark:border-amber-300'
+                                        }`}
+                                      >
+                                        {profileStatusLabel[status]}
+                                      </span>
+                                      </div>
+
+                                      <div className="grid grid-cols-2 gap-3 mt-1">
+                                      <div>
+                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
+                                        Age
+                                        </div>
+                                        <div>{p.age != null ? `${p.age} yrs` : 'N/A'}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] flex items-center gap-1">
+                                        <Ruler className="w-3 h-3" /> Height
+                                        </div>
+                                        <div>{p.heightLabel}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
+                                        Rating
+                                        </div>
+                                        <div>
+                                        {(p as any).overall_rating != null
+                                          ? `${(p as any).overall_rating}/10`
+                                          : 'N/A'}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] flex items-center gap-1">
+                                        <Weight className="w-3 h-3" /> Budget
+                                        </div>
+                                        <div>{budgetText}</div>
+                                      </div>
+                                      <div>
+                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
+                                        Open to Travel
+                                        </div>
+                                        <div>
+                                        {p.open_to_travel == null
+                                          ? 'Any'
+                                          : p.open_to_travel
+                                          ? 'Yes'
+                                          : 'No'}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
+                                        Experience
+                                        </div>
+                                        <div>{p.experience_level || 'N/A'}</div>
+                                      </div>
+                                      </div>
+
+                                      {(p.languages && p.languages.length > 0) ||
+                                      (p.skills && p.skills.length > 0) ? (
+                                      <div className="mt-2 space-y-2 text-[11px]">
+                                        {p.languages && p.languages.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] mr-1">
+                                          Languages:
+                                          </span>
+                                          {p.languages.slice(0, 10).map((lang) => (
+                                          <span
+                                            key={lang}
+                                            className="px-2 py-0.5 rounded-full border border-[#d6c3a6] text-zinc-100 dark:border-zinc-600 dark:text-zinc-100"
+                                          >
+                                            {lang}
+                                          </span>
+                                          ))}
+                                        </div>
+                                        )}
+                                        {p.skills && p.skills.length > 0 && (
+                                        <div className="flex flex-wrap gap-1">
+                                          <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] mr-1">
+                                          Skills:
+                                          </span>
+                                          {p.skills.slice(0, 10).map((skill) => (
+                                          <span
+                                            key={skill}
+                                            className="px-2 py-0.5 rounded-full border border-[#d6c3a6] text-zinc-100 dark:border-zinc-600 dark:text-zinc-100"
+                                          >
+                                            {skill}
+                                          </span>
+                                          ))}
+                                        </div>
+                                        )}
+                                      </div>
+                                      ) : null}
+                                    </div>
+
+                                    <div className="mt-3 flex flex-wrap gap-2 text-[11px]" />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+
+                              {/* Mobile expansion overlay */}
+                              <AnimatePresence>
+                                {isExpanded && screenSize === 'mobile' && (
+                                  <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4 text-center text-sm text-white"
+                                  >
+                                    <h3 className="text-2xl font-semibold mb-2">
+                                      {p.full_name || 'Unnamed Model'}
+                                    </h3>
+                                    <p className="mb-4 text-xs text-zinc-200">
+                                      {p.locationLabel || 'Location TBA'} · {p.heightLabel} ·{' '}
+                                      {p.age != null ? `${p.age} yrs` : 'Age N/A'}
+                                    </p>
+                                    <div className="flex flex-col gap-2 w-full max-w-xs">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setExpandedProfileId(null);
+                                        }}
+                                        className="w-full px-4 py-2 border border-zinc-400 text-[11px] uppercase tracking-[0.16em] text-zinc-100"
+                                      >
+                                        Close
+                                      </button>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </motion.div>
                         </div>
                       );
-                    })()}
+                    })}
                   </div>
-                )}
+                </div>
               </div>
             )}
           </div>
@@ -1294,66 +1392,66 @@ export const AdminDashboard: React.FC = () => {
       </header>
 
       <div className="flex gap-2 border-b border-zinc-800 pb-2">
-        <div className="flex gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+        <div className="flex gap-3 pb-2 md:pb-0 overflow-x-auto md:overflow-visible scrollbar-hide">
           <button
             onClick={() => setActiveTab('model-entry')}
-            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+            className={`group relative px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 transform ${
               activeTab === 'model-entry'
-                ? 'bg-white text-black border-white'
-                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+                ? 'bg-white text-black border-white scale-105 shadow-md'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300 hover:scale-105 hover:z-10'
             }`}
           >
-            Model Data Entry
+            <span>Model Data Entry</span>
           </button>
           <button
             onClick={() => setActiveTab('profiles')}
-            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+            className={`group relative px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 transform ${
               activeTab === 'profiles'
-                ? 'bg-white text-black border-white'
-                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+                ? 'bg-white text-black border-white scale-105 shadow-md'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300 hover:scale-105 hover:z-10'
             }`}
           >
-            Model Profiles
+            <span>Model Profiles</span>
           </button>
           <button
             onClick={() => setActiveTab('castings')}
-            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+            className={`group relative px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 transform ${
               activeTab === 'castings'
-                ? 'bg-white text-black border-white'
-                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+                ? 'bg-white text-black border-white scale-105 shadow-md'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300 hover:scale-105 hover:z-10'
             }`}
           >
-            Castings
+            <span>Castings</span>
           </button>
           <button
             onClick={() => setActiveTab('applications')}
-            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+            className={`group relative px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 transform ${
               activeTab === 'applications'
-                ? 'bg-white text-black border-white'
-                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+                ? 'bg-white text-black border-white scale-105 shadow-md'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300 hover:scale-105 hover:z-10'
             }`}
           >
-            Applications
+            <span>Applications</span>
           </button>
           <button
             onClick={() => setActiveTab('bookings')}
-            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+            className={`group relative px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 transform ${
               activeTab === 'bookings'
-                ? 'bg-white text-black border-white'
-                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+                ? 'bg-white text-black border-white scale-105 shadow-md'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300 hover:scale-105 hover:z-10'
             }`}
           >
-            Bookings
+            <span>Bookings</span>
           </button>
           <button
             onClick={() => setActiveTab('review')}
-            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+            className={`group relative px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 transform ${
               activeTab === 'review'
-                ? 'bg-white text-black border-white'
-                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+                ? 'bg-white text-black border-white scale-105 shadow-md'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300 hover:scale-105 hover:z-10'
             }`}
           >
-            Review Board
+            <span>Review Board</span>
           </button>
         </div>
       </div>
