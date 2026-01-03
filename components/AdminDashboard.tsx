@@ -59,7 +59,7 @@ export const AdminDashboard: React.FC = () => {
   const [profilesLoading, setProfilesLoading] = useState(false);
   const [profileViewMode, setProfileViewMode] = useState<'table' | 'detailed'>('detailed');
 
-  // Advanced filters for detailed profiles view
+  // Advanced filters and sorting for detailed profiles view
   const [profileSearch, setProfileSearch] = useState('');
   const [profileStatusFilter, setProfileStatusFilter] = useState<'ALL' | ProfileStatus>('ALL');
   const [profileGenderFilter, setProfileGenderFilter] = useState<'All' | 'male' | 'female' | 'other'>('All');
@@ -69,6 +69,8 @@ export const AdminDashboard: React.FC = () => {
   const [profileMaxAge, setProfileMaxAge] = useState<number | ''>('');
   const [profileMinHeightCm, setProfileMinHeightCm] = useState<number | ''>('');
   const [profileLocationSearch, setProfileLocationSearch] = useState('');
+  const [profileSortBy, setProfileSortBy] = useState<'rating' | 'model_code' | 'age'>('rating');
+  const [expandedProfileId, setExpandedProfileId] = useState<string | null>(null);
 
   const [castings, setCastings] = useState<Casting[]>([]);
   const [castingsLoading, setCastingsLoading] = useState(false);
@@ -303,14 +305,14 @@ export const AdminDashboard: React.FC = () => {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
         <h2 className="text-xl font-semibold">Model Profiles</h2>
         <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-full border border-zinc-700 bg-zinc-950/60 p-1 text-xs uppercase tracking-[0.16em]">
+          <div className="inline-flex rounded-full border border-zinc-300 bg-white/80 p-1 text-xs uppercase tracking-[0.16em] dark:border-zinc-700 dark:bg-zinc-950/60">
             <button
               type="button"
               onClick={() => setProfileViewMode('detailed')}
               className={`px-3 py-1 rounded-full transition-colors ${
                 profileViewMode === 'detailed'
                   ? 'bg-white text-black'
-                  : 'text-zinc-400 hover:text-white'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
               }`}
             >
               Detailed View
@@ -321,15 +323,27 @@ export const AdminDashboard: React.FC = () => {
               className={`px-3 py-1 rounded-full transition-colors ${
                 profileViewMode === 'table'
                   ? 'bg-white text-black'
-                  : 'text-zinc-400 hover:text-white'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
               }`}
             >
               Table View
             </button>
           </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-zinc-600 dark:text-zinc-400">Sort</span>
+            <select
+              value={profileSortBy}
+              onChange={(e) => setProfileSortBy(e.target.value as 'rating' | 'model_code' | 'age')}
+              className="bg-white border border-zinc-300 rounded px-2 py-1 text-xs text-zinc-900 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-200"
+            >
+              <option value="rating">Rating</option>
+              <option value="model_code">Model ID</option>
+              <option value="age">Age</option>
+            </select>
+          </div>
           <button
             onClick={loadProfiles}
-            className="px-3 py-1 text-xs border border-zinc-700 rounded-lg hover:bg-zinc-800"
+            className="px-3 py-1 text-xs border border-zinc-300 rounded-lg bg-white text-zinc-900 hover:bg-zinc-100 dark:bg-transparent dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
           >
             Refresh
           </button>
@@ -355,6 +369,28 @@ export const AdminDashboard: React.FC = () => {
       );
     }
 
+    const sortProfiles = (items: typeof profilesWithDerived) => {
+      const arr = [...items];
+      arr.sort((a, b) => {
+        if (profileSortBy === 'rating') {
+          const ra = (a as any).overall_rating ?? 0;
+          const rb = (b as any).overall_rating ?? 0;
+          return rb - ra;
+        }
+        if (profileSortBy === 'model_code') {
+          const ma = (a.model_code || '').localeCompare(b.model_code || '');
+          return ma;
+        }
+        if (profileSortBy === 'age') {
+          const aa = a.age ?? 0;
+          const ab = b.age ?? 0;
+          return ab - aa;
+        }
+        return 0;
+      });
+      return arr;
+    };
+
     if (profileViewMode === 'table') {
       return (
         <div className="mt-8">
@@ -372,7 +408,7 @@ export const AdminDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800">
-                {profiles.map((p) => {
+                {sortProfiles(profilesWithDerived).map((p) => {
                   const status = (p.status ?? 'UNDER_REVIEW') as ProfileStatus;
                   const locationParts = [p.city, p.state, p.country].filter(Boolean).join(', ');
                   const ig = (p.instagram ?? []).map((i) => i.handle).join(', ');
@@ -450,20 +486,20 @@ export const AdminDashboard: React.FC = () => {
               </div>
               <div className="grid grid-cols-1 gap-3">
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-500">Search</label>
+                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Search</label>
                   <input
                     value={profileSearch}
                     onChange={(e) => setProfileSearch(e.target.value)}
                     placeholder="Name, email, model code, budget..."
-                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 placeholder:text-zinc-400 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white dark:placeholder:text-zinc-500"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-500">Status</label>
+                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Status</label>
                   <select
                     value={profileStatusFilter}
                     onChange={(e) => setProfileStatusFilter(e.target.value as 'ALL' | ProfileStatus)}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
                   >
                     <option value="ALL">Any Status</option>
                     <option value="UNDER_REVIEW">Under Review</option>
@@ -472,11 +508,11 @@ export const AdminDashboard: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-500">Gender</label>
+                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Gender</label>
                   <select
                     value={profileGenderFilter}
                     onChange={(e) => setProfileGenderFilter(e.target.value as any)}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
                   >
                     <option value="All">Any</option>
                     <option value="female">Female</option>
@@ -485,11 +521,11 @@ export const AdminDashboard: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-500">Open to Travel</label>
+                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Open to Travel</label>
                   <select
                     value={profileOpenToTravel}
                     onChange={(e) => setProfileOpenToTravel(e.target.value as 'any' | 'yes' | 'no')}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
                   >
                     <option value="any">Any</option>
                     <option value="yes">Yes</option>
@@ -497,7 +533,7 @@ export const AdminDashboard: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-500">Min Rating</label>
+                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Min Rating</label>
                   <input
                     type="number"
                     min={0}
@@ -507,11 +543,11 @@ export const AdminDashboard: React.FC = () => {
                       const v = e.target.value;
                       setProfileMinRating(v === '' ? '' : Number(v));
                     }}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-500">Age Range</label>
+                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Age Range</label>
                   <div className="flex gap-2">
                     <input
                       type="number"
@@ -523,7 +559,7 @@ export const AdminDashboard: React.FC = () => {
                         const v = e.target.value;
                         setProfileMinAge(v === '' ? '' : Number(v));
                       }}
-                      className="w-1/2 bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                      className="w-1/2 bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
                     />
                     <input
                       type="number"
@@ -535,12 +571,12 @@ export const AdminDashboard: React.FC = () => {
                         const v = e.target.value;
                         setProfileMaxAge(v === '' ? '' : Number(v));
                       }}
-                      className="w-1/2 bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                      className="w-1/2 bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-500">Min Height (cm)</label>
+                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Min Height (cm)</label>
                   <input
                     type="number"
                     placeholder="e.g. 170"
@@ -549,16 +585,16 @@ export const AdminDashboard: React.FC = () => {
                       const v = e.target.value;
                       setProfileMinHeightCm(v === '' ? '' : Number(v));
                     }}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-500">Location Contains</label>
+                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Location Contains</label>
                   <input
                     value={profileLocationSearch}
                     onChange={(e) => setProfileLocationSearch(e.target.value)}
                     placeholder="City / state / country"
-                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
                   />
                 </div>
                 <button
@@ -574,7 +610,7 @@ export const AdminDashboard: React.FC = () => {
                     setProfileMinHeightCm('');
                     setProfileLocationSearch('');
                   }}
-                  className="mt-2 w-full border border-zinc-800 rounded-full py-1.5 text-[11px] uppercase tracking-[0.16em] text-zinc-300 hover:bg-zinc-900/80"
+                  className="mt-2 w-full border border-zinc-300 rounded-full py-1.5 text-[11px] uppercase tracking-[0.16em] text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900/80"
                 >
                   Clear Filters
                 </button>
@@ -586,155 +622,221 @@ export const AdminDashboard: React.FC = () => {
             {filteredProfilesDetailed.length === 0 ? (
               <p className="text-zinc-500 text-sm">No profiles match these filters.</p>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {filteredProfilesDetailed.map((p) => {
-                  const status = (p.status ?? 'UNDER_REVIEW') as ProfileStatus;
-                  return (
-                    <div
-                      key={p.id ?? p.model_code ?? p.email}
-                      className="group bg-zinc-900/60 border border-zinc-800 rounded-2xl overflow-hidden"
-                    >
-                      <div className="relative w-full aspect-[3/4] bg-zinc-950">
-                        {p.cover_photo_url ? (
-                          <img
-                            src={p.cover_photo_url}
-                            alt={p.full_name || 'Model image'}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                        ) : null}
-
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-                        <div className="absolute inset-x-0 bottom-0 p-4 flex items-end justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm font-semibold text-white truncate">
-                              {p.full_name || 'Unnamed Model'}
-                            </div>
-                            <div className="text-[11px] text-zinc-300 truncate">
-                              {p.model_code || 'No code'}
-                              {p.category ? ` · ${p.category}` : ''}
-                            </div>
-                          </div>
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                              status === 'ONLINE'
-                                ? 'bg-emerald-900/70 text-emerald-300 border border-emerald-500/60'
-                                : status === 'OFFLINE'
-                                ? 'bg-zinc-900/80 text-zinc-300 border border-zinc-700/60'
-                                : 'bg-amber-900/70 text-amber-200 border border-amber-500/60'
-                            }`}
-                          >
-                            {profileStatusLabel[status]}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => p.id && navigate(`/talents/${p.id}`)}
-                          className="absolute left-4 top-4 px-3 py-1.5 rounded-full border border-zinc-600 bg-black/60 text-[11px] uppercase tracking-[0.16em] text-zinc-100 hover:bg-black/80"
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {sortProfiles(filteredProfilesDetailed).map((p) => {
+                      const status = (p.status ?? 'UNDER_REVIEW') as ProfileStatus;
+                      const isExpanded = expandedProfileId === p.id;
+                      return (
+                        <div
+                          key={p.id ?? p.model_code ?? p.email}
+                          className="group bg-[#f6ead8] text-[#3b2418] border border-[#e0cdb0] rounded-2xl overflow-hidden cursor-pointer transition-colors duration-300 dark:bg-[#111111] dark:text-zinc-100 dark:border-zinc-900"
+                          onClick={() => setExpandedProfileId(isExpanded ? null : (p.id as string | null))}
                         >
-                          View Profile
-                        </button>
+                          <div className="relative w-full aspect-[3/4] bg-[#f2e2cc] dark:bg-[#111111]">
+                            {p.cover_photo_url ? (
+                              <img
+                                src={p.cover_photo_url}
+                                alt={p.full_name || 'Model image'}
+                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            ) : null}
 
-                        <div className="hidden md:block absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                          <div className="h-full w-full p-4 flex flex-col gap-2 text-[11px] text-zinc-200">
-                            <div className="flex items-start justify-between gap-3">
+                            {/* Minimal label on image */}
+                            <div className="absolute inset-x-0 bottom-0 p-4 flex items-end justify-between gap-3">
                               <div className="min-w-0">
-                                <div className="text-sm font-semibold text-white truncate">
+                                <div className="text-sm font-semibold text-[#3b2418] truncate dark:text-white">
                                   {p.full_name || 'Unnamed Model'}
                                 </div>
-                                <div className="text-[11px] text-zinc-400 truncate">
-                                  {p.locationLabel || 'Location TBA'}
+                                <div className="text-[11px] text-[#6b4b30] truncate dark:text-zinc-300">
+                                  {p.model_code || 'No code'}
+                                  {p.category ? ` · ${p.category}` : ''}
                                 </div>
                               </div>
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border backdrop-blur-sm ${
+                                  status === 'ONLINE'
+                                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-400 dark:text-black dark:border-emerald-300'
+                                    : status === 'OFFLINE'
+                                    ? 'bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-700 dark:text-zinc-50 dark:border-zinc-600'
+                                    : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-400 dark:text-black dark:border-amber-300'
+                                }`}
+                              >
+                                {profileStatusLabel[status]}
+                              </span>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 mt-1">
-                              <div>
-                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Age</div>
-                                <div>{p.age != null ? `${p.age} yrs` : 'N/A'}</div>
-                              </div>
-                              <div>
-                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Height</div>
-                                <div>{p.heightLabel}</div>
-                              </div>
-                              <div>
-                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Rating</div>
-                                <div>{(p as any).overall_rating != null ? `${(p as any).overall_rating}/10` : 'N/A'}</div>
-                              </div>
-                              <div>
-                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Budget</div>
-                                <div>
-                                  {(() => {
-                                    const minHalf = (p as any).min_budget_half_day as number | null | undefined;
-                                    const minFull = (p as any).min_budget_full_day as number | null | undefined;
-                                    const legacy = (p as any).expected_budget as string | undefined;
-                                    if (minHalf != null || minFull != null) {
-                                      const parts: string[] = [];
-                                      if (minHalf != null)
-                                        parts.push(`Half-day: INR ${Number(minHalf).toLocaleString()}`);
-                                      if (minFull != null)
-                                        parts.push(`Full-day: INR ${Number(minFull).toLocaleString()}`);
-                                      return parts.join(' | ');
-                                    }
-                                    return legacy || 'N/A';
-                                  })()}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Open to Travel</div>
-                                <div>
-                                  {p.open_to_travel == null
-                                    ? 'Any'
-                                    : p.open_to_travel
-                                    ? 'Yes'
-                                    : 'No'}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Experience</div>
-                                <div>{p.experience_level || 'N/A'}</div>
-                              </div>
-                            </div>
-                            {(p.languages && p.languages.length > 0) || (p.skills && p.skills.length > 0) ? (
-                              <div className="mt-2 space-y-1 text-[11px]">
-                                {p.languages && p.languages.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    <span className="text-zinc-500 uppercase tracking-widest text-[10px] mr-1">
-                                      Languages:
-                                    </span>
-                                    {p.languages.slice(0, 6).map((lang) => (
-                                      <span
-                                        key={lang}
-                                        className="px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-200"
-                                      >
-                                        {lang}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                                {p.skills && p.skills.length > 0 && (
-                                  <div className="flex flex-wrap gap-1">
-                                    <span className="text-zinc-500 uppercase tracking-widest text-[10px] mr-1">
-                                      Skills:
-                                    </span>
-                                    {p.skills.slice(0, 6).map((skill) => (
-                                      <span
-                                        key={skill}
-                                        className="px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-200"
-                                      >
-                                        {skill}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ) : null}
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                p.id && navigate(`/talents/${p.id}`);
+                              }}
+                              className="absolute left-4 top-4 px-3 py-1.5 rounded-full border border-[#f5e4c8] bg-[#f5e4c8] text-[11px] uppercase tracking-[0.16em] text-black hover:bg-[#f7ecd6]"
+                            >
+                              View Profile
+                            </button>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Extending detail panel */}
+                {expandedProfileId && (
+                  <div className="w-full lg:w-[340px] xl:w-[380px] lg:flex-shrink-0 bg-[#f6ead8] border border-[#e0cdb0] rounded-2xl p-4 shadow-sm dark:bg-[#111111] dark:border-zinc-900">
+                    {(() => {
+                      const p = filteredProfilesDetailed.find((pr) => pr.id === expandedProfileId);
+                      if (!p) return null;
+                      const status = (p.status ?? 'UNDER_REVIEW') as ProfileStatus;
+                      const minHalf = (p as any).min_budget_half_day as number | null | undefined;
+                      const minFull = (p as any).min_budget_full_day as number | null | undefined;
+                      const legacyBudget = (p as any).expected_budget as string | undefined;
+                      const budgetText = (() => {
+                        if (minHalf != null || minFull != null) {
+                          const parts: string[] = [];
+                          if (minHalf != null)
+                            parts.push(`Half-day: INR ${Number(minHalf).toLocaleString()}`);
+                          if (minFull != null)
+                            parts.push(`Full-day: INR ${Number(minFull).toLocaleString()}`);
+                          return parts.join(' | ');
+                        }
+                        return legacyBudget || 'N/A';
+                      })();
+
+                      return (
+                        <div className="h-full flex flex-col gap-3 text-xs text-[#3b2418] dark:text-zinc-100">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold truncate">
+                                {p.full_name || 'Unnamed Model'}
+                              </div>
+                              <div className="text-[11px] text-zinc-500 dark:text-zinc-400 truncate">
+                                {p.locationLabel || 'Location TBA'}
+                              </div>
+                            </div>
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${
+                                status === 'ONLINE'
+                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-400 dark:text-black dark:border-emerald-300'
+                                  : status === 'OFFLINE'
+                                  ? 'bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-700 dark:text-zinc-50 dark:border-zinc-600'
+                                  : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-400 dark:text-black dark:border-amber-300'
+                              }`}
+                            >
+                              {profileStatusLabel[status]}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3 mt-1">
+                            <div>
+                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
+                                Age
+                              </div>
+                              <div>{p.age != null ? `${p.age} yrs` : 'N/A'}</div>
+                            </div>
+                            <div>
+                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
+                                Height
+                              </div>
+                              <div>{p.heightLabel}</div>
+                            </div>
+                            <div>
+                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
+                                Rating
+                              </div>
+                              <div>
+                                {(p as any).overall_rating != null
+                                  ? `${(p as any).overall_rating}/10`
+                                  : 'N/A'}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
+                                Budget
+                              </div>
+                              <div>{budgetText}</div>
+                            </div>
+                            <div>
+                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
+                                Open to Travel
+                              </div>
+                              <div>
+                                {p.open_to_travel == null
+                                  ? 'Any'
+                                  : p.open_to_travel
+                                  ? 'Yes'
+                                  : 'No'}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
+                                Experience
+                              </div>
+                              <div>{p.experience_level || 'N/A'}</div>
+                            </div>
+                          </div>
+
+                          {(p.languages && p.languages.length > 0) || (p.skills && p.skills.length > 0) ? (
+                            <div className="mt-2 space-y-2 text-[11px]">
+                              {p.languages && p.languages.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] mr-1">
+                                    Languages:
+                                  </span>
+                                  {p.languages.slice(0, 10).map((lang) => (
+                                    <span
+                                      key={lang}
+                                      className="px-2 py-0.5 rounded-full border border-[#d6c3a6] text-[#3b2418] dark:border-zinc-600 dark:text-zinc-100"
+                                    >
+                                      {lang}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {p.skills && p.skills.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] mr-1">
+                                    Skills:
+                                  </span>
+                                  {p.skills.slice(0, 10).map((skill) => (
+                                    <span
+                                      key={skill}
+                                      className="px-2 py-0.5 rounded-full border border-[#d6c3a6] text-[#3b2418] dark:border-zinc-600 dark:text-zinc-100"
+                                    >
+                                      {skill}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
+
+                          <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedProfileId(null)}
+                              className="px-3 py-1 rounded-full border border-[#c5b196] text-[#3b2418] hover:bg-[#ebddc8] dark:border-zinc-500 dark:text-zinc-100 dark:hover:bg-zinc-900"
+                            >
+                              Close Details
+                            </button>
+                            {p.id && (
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/talents/${p.id}`)}
+                                className="px-3 py-1 rounded-full border border-[#f5e4c8] bg-[#f5e4c8] text-[#3b2418] text-[11px] uppercase tracking-[0.16em] hover:bg-[#f7ecd6] dark:text-black"
+                              >
+                                Open Public View
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1192,66 +1294,68 @@ export const AdminDashboard: React.FC = () => {
       </header>
 
       <div className="flex gap-2 border-b border-zinc-800 pb-2">
-        <button
-          onClick={() => setActiveTab('model-entry')}
-          className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] rounded-full border transition-colors ${
-            activeTab === 'model-entry'
-              ? 'bg-white text-black border-white'
-              : 'border-zinc-800 text-zinc-400 hover:bg-zinc-900'
-          }`}
-        >
-          Model Data Entry
-        </button>
-        <button
-          onClick={() => setActiveTab('profiles')}
-          className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] rounded-full border transition-colors ${
-            activeTab === 'profiles'
-              ? 'bg-white text-black border-white'
-              : 'border-zinc-800 text-zinc-400 hover:bg-zinc-900'
-          }`}
-        >
-          Model Profiles
-        </button>
-        <button
-          onClick={() => setActiveTab('castings')}
-          className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] rounded-full border transition-colors ${
-            activeTab === 'castings'
-              ? 'bg-white text-black border-white'
-              : 'border-zinc-800 text-zinc-400 hover:bg-zinc-900'
-          }`}
-        >
-          Castings
-        </button>
-        <button
-          onClick={() => setActiveTab('applications')}
-          className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] rounded-full border transition-colors ${
-            activeTab === 'applications'
-              ? 'bg-white text-black border-white'
-              : 'border-zinc-800 text-zinc-400 hover:bg-zinc-900'
-          }`}
-        >
-          Applications
-        </button>
-        <button
-          onClick={() => setActiveTab('bookings')}
-          className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] rounded-full border transition-colors ${
-            activeTab === 'bookings'
-              ? 'bg-white text-black border-white'
-              : 'border-zinc-800 text-zinc-400 hover:bg-zinc-900'
-          }`}
-        >
-          Bookings
-        </button>
-        <button
-          onClick={() => setActiveTab('review')}
-          className={`px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] rounded-full border transition-colors ${
-            activeTab === 'review'
-              ? 'bg-white text-black border-white'
-              : 'border-zinc-800 text-zinc-400 hover:bg-zinc-900'
-          }`}
-        >
-          Review Board
-        </button>
+        <div className="flex gap-3 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+          <button
+            onClick={() => setActiveTab('model-entry')}
+            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+              activeTab === 'model-entry'
+                ? 'bg-white text-black border-white'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Model Data Entry
+          </button>
+          <button
+            onClick={() => setActiveTab('profiles')}
+            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+              activeTab === 'profiles'
+                ? 'bg-white text-black border-white'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Model Profiles
+          </button>
+          <button
+            onClick={() => setActiveTab('castings')}
+            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+              activeTab === 'castings'
+                ? 'bg-white text-black border-white'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Castings
+          </button>
+          <button
+            onClick={() => setActiveTab('applications')}
+            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+              activeTab === 'applications'
+                ? 'bg-white text-black border-white'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Applications
+          </button>
+          <button
+            onClick={() => setActiveTab('bookings')}
+            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+              activeTab === 'bookings'
+                ? 'bg-white text-black border-white'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Bookings
+          </button>
+          <button
+            onClick={() => setActiveTab('review')}
+            className={`px-6 py-2 rounded-full border text-xs md:text-sm font-semibold uppercase tracking-[0.16em] md:tracking-wider transition-all duration-300 ${
+              activeTab === 'review'
+                ? 'bg-white text-black border-white'
+                : 'bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            Review Board
+          </button>
+        </div>
       </div>
 
       {activeTab === 'model-entry'
