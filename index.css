@@ -68,8 +68,8 @@ html[data-theme='light'] .text-zinc-700 {
 }
 
 /* Accent utility for light theme (3D211A) */
-html[data-theme='light'] .border-[#dfcda5],
-html[data-theme='light'] .text-[#dfcda5] {
+html[data-theme='light'] .border-\[\#dfcda5\],
+html[data-theme='light'] .text-\[\#dfcda5\] {
   border-color: #3d211a !important;
   color: #3d211a !important;
 }
