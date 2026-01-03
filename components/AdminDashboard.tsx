@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Ruler, Weight } from 'lucide-react';
 import { Country, State, City } from 'country-state-city';
@@ -43,9 +43,97 @@ const castingStatusLabel: Record<CastingUiStatus, string> = {
   CLOSED: 'Closed',
 };
 
-// Height filter limits in inches (4'0" to 8'0")
-const HEIGHT_MIN_IN = 48; // 4 ft 0 in
-const HEIGHT_MAX_IN = 96; // 8 ft 0 in
+// Height filter limits in inches (0'0" to 9'0")
+const HEIGHT_MIN_IN = 0; // 0 ft 0 in
+const HEIGHT_MAX_IN = 108; // 9 ft 0 in
+
+interface HeightRangeSliderProps {
+  min: number;
+  max: number;
+  minValue: number;
+  maxValue: number;
+  onChange: (minValue: number, maxValue: number) => void;
+}
+
+const HeightRangeSlider: React.FC<HeightRangeSliderProps> = ({
+  min,
+  max,
+  minValue,
+  maxValue,
+  onChange,
+}) => {
+  const trackRef = useRef<HTMLDivElement | null>(null);
+
+  const clamp = (value: number) => {
+    return Math.min(max, Math.max(min, value));
+  };
+
+  const valueToPercent = (value: number) => {
+    return ((value - min) / (max - min)) * 100;
+  };
+
+  const startDragging = (thumb: 'min' | 'max', event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+
+    const handleMove = (e: MouseEvent) => {
+      if (!trackRef.current) return;
+      const rect = trackRef.current.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+      const rawValue = min + ratio * (max - min);
+      const snapped = clamp(Math.round(rawValue));
+
+      if (thumb === 'min') {
+        const nextMin = Math.min(snapped, maxValue);
+        onChange(nextMin, maxValue);
+      } else {
+        const nextMax = Math.max(snapped, minValue);
+        onChange(minValue, nextMax);
+      }
+    };
+
+    const handleUp = () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+  };
+
+  const minPercent = valueToPercent(minValue);
+  const maxPercent = valueToPercent(maxValue);
+
+  return (
+    <div ref={trackRef} className="relative h-6 flex items-center">
+      {/* Track */}
+      <div className="absolute inset-x-0 h-1 rounded-full bg-zinc-200 dark:bg-zinc-800" />
+      {/* Selected range highlight - matches min rating accent */}
+      <div
+        className="absolute h-1 rounded-full bg-[#dfcda5] shadow-[0_0_8px_rgba(223,205,165,0.8)]"
+        style={{
+          left: `${minPercent}%`,
+          right: `${100 - maxPercent}%`,
+        }}
+      />
+      {/* Min thumb */}
+      <button
+        type="button"
+        aria-label="Minimum height"
+        onMouseDown={(e) => startDragging('min', e)}
+        className="absolute -translate-x-1/2 h-4 w-4 rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.25),0_0_0_4px_rgba(223,205,165,0.7)] dark:bg-zinc-50"
+        style={{ left: `${minPercent}%` }}
+      />
+      {/* Max thumb */}
+      <button
+        type="button"
+        aria-label="Maximum height"
+        onMouseDown={(e) => startDragging('max', e)}
+        className="absolute -translate-x-1/2 h-4 w-4 rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.25),0_0_0_4px_rgba(223,205,165,0.7)] dark:bg-zinc-50"
+        style={{ left: `${maxPercent}%` }}
+      />
+    </div>
+  );
+};
 
 type ScreenSize = 'mobile' | 'tablet' | 'desktop';
 
@@ -93,11 +181,12 @@ export const AdminDashboard: React.FC = () => {
   const [profileGenderFilter, setProfileGenderFilter] = useState<'All' | 'male' | 'female' | 'other'>('All');
   const [profileOpenToTravel, setProfileOpenToTravel] = useState<'any' | 'yes' | 'no'>('any');
   const [profileMinRating, setProfileMinRating] = useState<number>(0);
-  const [profileMinAge, setProfileMinAge] = useState<number | ''>('');
-  const [profileMaxAge, setProfileMaxAge] = useState<number | ''>('');
-  // Height filter stored as inches, min and max, default 5'8" to 8'0"
-  const [profileMinHeightIn, setProfileMinHeightIn] = useState<number>(68);
-  const [profileMaxHeightIn, setProfileMaxHeightIn] = useState<number>(96);
+  // Age filter in years, default 0–100 (no filter)
+  const [profileMinAge, setProfileMinAge] = useState<number>(0);
+  const [profileMaxAge, setProfileMaxAge] = useState<number>(100);
+  // Height filter stored as inches, min and max, default 0'0" to 9'0" (no filter)
+  const [profileMinHeightIn, setProfileMinHeightIn] = useState<number>(HEIGHT_MIN_IN);
+  const [profileMaxHeightIn, setProfileMaxHeightIn] = useState<number>(HEIGHT_MAX_IN);
   const [profileLocationSearch, setProfileLocationSearch] = useState('');
   const [profileSortBy, setProfileSortBy] = useState<'rating' | 'model_code' | 'age'>('rating');
   const [expandedProfileId, setExpandedProfileId] = useState<string | null>(null);
@@ -278,11 +367,13 @@ export const AdminDashboard: React.FC = () => {
         }
       }
 
-      if (typeof profileMinAge === 'number' && profileMinAge >= 0 && p.age != null) {
-        if (p.age < profileMinAge) return false;
-      }
-      if (typeof profileMaxAge === 'number' && profileMaxAge > 0 && p.age != null) {
-        if (p.age > profileMaxAge) return false;
+      if (p.age != null) {
+        const minAge = typeof profileMinAge === 'number' ? profileMinAge : 0;
+        const maxAge = typeof profileMaxAge === 'number' ? profileMaxAge : 100;
+        // Only apply age filter if the range is narrowed from 0–100
+        if (minAge > 0 || maxAge < 100) {
+          if (p.age < minAge || p.age > maxAge) return false;
+        }
       }
 
       if (p.heightCm != null) {
@@ -596,32 +687,80 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Age Range</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
+                  {/* Age range selector - same style as height */}
+                  <div className="flex items-center justify-between">
+                    <span className="uppercase tracking-widest text-[11px] text-zinc-600 dark:text-zinc-500">
+                      Age
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProfileMinAge(0);
+                        setProfileMaxAge(100);
+                      }}
+                      className="h-5 w-5 flex items-center justify-center rounded-full border border-zinc-300 text-[10px] hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900 text-zinc-500 dark:text-zinc-400"
+                      aria-label="Reset age range"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <HeightRangeSlider
                       min={0}
                       max={100}
-                      placeholder="Min"
-                      value={profileMinAge === '' ? '' : profileMinAge}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setProfileMinAge(v === '' ? '' : Number(v));
+                      minValue={profileMinAge}
+                      maxValue={profileMaxAge}
+                      onChange={(minV, maxV) => {
+                        setProfileMinAge(minV);
+                        setProfileMaxAge(maxV);
                       }}
-                      className="w-1/2 bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
                     />
-                    <input
-                      type="number"
-                      min={0}
-                      max={100}
-                      placeholder="Max"
-                      value={profileMaxAge === '' ? '' : profileMaxAge}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setProfileMaxAge(v === '' ? '' : Number(v));
-                      }}
-                      className="w-1/2 bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
-                    />
+                    <div className="grid grid-cols-2 gap-3 text-[11px] text-[#8b5b34] dark:text-zinc-300">
+                      <div className="space-y-1">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+                          Min Age
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={profileMinAge}
+                              onChange={(e) => {
+                                const raw = Number(e.target.value || 0);
+                                const clamped = Math.max(0, Math.min(raw, profileMaxAge));
+                                setProfileMinAge(clamped);
+                              }}
+                              className="w-full bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
+                            />
+                            <span className="ml-2 text-[10px] text-[#8b5b34] dark:text-zinc-400">yrs</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+                          Max Age
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={profileMaxAge}
+                              onChange={(e) => {
+                                const raw = Number(e.target.value || 0);
+                                const clamped = Math.min(100, Math.max(raw, profileMinAge));
+                                setProfileMaxAge(clamped);
+                              }}
+                              className="w-full bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
+                            />
+                            <span className="ml-2 text-[10px] text-[#8b5b34] dark:text-zinc-400">yrs</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -637,8 +776,8 @@ export const AdminDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          setProfileMinHeightIn(68);
-                          setProfileMaxHeightIn(96);
+                          setProfileMinHeightIn(HEIGHT_MIN_IN);
+                          setProfileMaxHeightIn(HEIGHT_MAX_IN);
                         }}
                         className="h-5 w-5 flex items-center justify-center rounded-full border border-zinc-300 text-[10px] hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
                         aria-label="Reset height range"
@@ -647,56 +786,30 @@ export const AdminDashboard: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  <div className="space-y-3 rounded-2xl border border-zinc-200 bg-white/70 p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
-                    {/* Dual-handle slider using two range inputs */}
-                    <div className="space-y-2">
-                      <div className="relative h-1 rounded-full bg-[#fde6c8] dark:bg-zinc-800">
-                        <div
-                          className="absolute inset-y-0 rounded-full bg-[#8b5b34] dark:bg-zinc-200"
-                          style={{
-                            left: `${((profileMinHeightIn - HEIGHT_MIN_IN) / (HEIGHT_MAX_IN - HEIGHT_MIN_IN)) * 100}%`,
-                            right: `${100 -
-                              ((profileMaxHeightIn - HEIGHT_MIN_IN) / (HEIGHT_MAX_IN - HEIGHT_MIN_IN)) * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="range"
-                          min={HEIGHT_MIN_IN}
-                          max={HEIGHT_MAX_IN}
-                          value={profileMinHeightIn}
-                          onChange={(e) => {
-                            const next = Math.min(Number(e.target.value), profileMaxHeightIn);
-                            setProfileMinHeightIn(next);
-                          }}
-                          className="w-full accent-[#dfcda5] bg-transparent"
-                        />
-                        <input
-                          type="range"
-                          min={HEIGHT_MIN_IN}
-                          max={HEIGHT_MAX_IN}
-                          value={profileMaxHeightIn}
-                          onChange={(e) => {
-                            const next = Math.max(Number(e.target.value), profileMinHeightIn);
-                            setProfileMaxHeightIn(next);
-                          }}
-                          className="w-full accent-[#dfcda5] bg-transparent"
-                        />
-                      </div>
-                    </div>
+                  <div className="space-y-2">
+                    {/* Dual-thumb range slider on a single track */}
+                    <HeightRangeSlider
+                      min={HEIGHT_MIN_IN}
+                      max={HEIGHT_MAX_IN}
+                      minValue={profileMinHeightIn}
+                      maxValue={profileMaxHeightIn}
+                      onChange={(minV, maxV) => {
+                        setProfileMinHeightIn(minV);
+                        setProfileMaxHeightIn(maxV);
+                      }}
+                    />
                     {/* Inputs for min and max height in ft/in */}
-                    <div className="grid grid-cols-2 gap-3 text-[11px] text-zinc-700 dark:text-zinc-300">
+                    <div className="grid grid-cols-2 gap-3 text-[11px] text-[#8b5b34] dark:text-zinc-300">
                       <div className="space-y-1">
                         <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
                           Min Height
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center rounded-full border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
                             <input
                               type="number"
-                              min={4}
-                              max={8}
+                              min={0}
+                              max={9}
                               value={Math.floor(profileMinHeightIn / 12)}
                               onChange={(e) => {
                                 const ft = Number(e.target.value);
@@ -704,11 +817,11 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.min(Math.max(ft * 12 + inches, HEIGHT_MIN_IN), profileMaxHeightIn);
                                 setProfileMinHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center"
+                              className="w-10 bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
                             />
-                            <span className="ml-1 text-[10px] text-zinc-500 dark:text-zinc-400">ft</span>
+                            <span className="ml-1 text-[10px] text-[#8b5b34] dark:text-zinc-400">ft</span>
                           </div>
-                          <div className="flex-1 flex items-center rounded-full border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
                             <input
                               type="number"
                               min={0}
@@ -720,9 +833,9 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.min(Math.max(ft * 12 + inch, HEIGHT_MIN_IN), profileMaxHeightIn);
                                 setProfileMinHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center"
+                              className="w-10 bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
                             />
-                            <span className="ml-1 text-[10px] text-zinc-500 dark:text-zinc-400">in</span>
+                            <span className="ml-1 text-[10px] text-[#8b5b34] dark:text-zinc-400">in</span>
                           </div>
                         </div>
                       </div>
@@ -731,11 +844,11 @@ export const AdminDashboard: React.FC = () => {
                           Max Height
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center rounded-full border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
                             <input
                               type="number"
-                              min={4}
-                              max={8}
+                              min={0}
+                              max={9}
                               value={Math.floor(profileMaxHeightIn / 12)}
                               onChange={(e) => {
                                 const ft = Number(e.target.value);
@@ -743,11 +856,11 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.max(Math.min(ft * 12 + inches, HEIGHT_MAX_IN), profileMinHeightIn);
                                 setProfileMaxHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center"
+                              className="w-10 bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
                             />
-                            <span className="ml-1 text-[10px] text-zinc-500 dark:text-zinc-400">ft</span>
+                            <span className="ml-1 text-[10px] text-[#8b5b34] dark:text-zinc-400">ft</span>
                           </div>
-                          <div className="flex-1 flex items-center rounded-full border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
                             <input
                               type="number"
                               min={0}
@@ -759,9 +872,9 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.max(Math.min(ft * 12 + inch, HEIGHT_MAX_IN), profileMinHeightIn);
                                 setProfileMaxHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center"
+                              className="w-10 bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
                             />
-                            <span className="ml-1 text-[10px] text-zinc-500 dark:text-zinc-400">in</span>
+                            <span className="ml-1 text-[10px] text-[#8b5b34] dark:text-zinc-400">in</span>
                           </div>
                         </div>
                       </div>
@@ -785,10 +898,10 @@ export const AdminDashboard: React.FC = () => {
                     setProfileGenderFilter('All');
                     setProfileOpenToTravel('any');
                     setProfileMinRating(0);
-                    setProfileMinAge('');
-                    setProfileMaxAge('');
-                    setProfileMinHeightIn(68);
-                    setProfileMaxHeightIn(96);
+                    setProfileMinAge(0);
+                    setProfileMaxAge(100);
+                    setProfileMinHeightIn(HEIGHT_MIN_IN);
+                    setProfileMaxHeightIn(HEIGHT_MAX_IN);
                     setProfileLocationSearch('');
                   }}
                   className="mt-2 w-full border border-zinc-300 rounded-full py-1.5 text-[11px] uppercase tracking-[0.16em] text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900/80"
