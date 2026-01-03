@@ -39,14 +39,6 @@ const pathToView = (p: string): ViewKey => {
   return 'home';
 };
 
-const ProfileRouteContent: React.FC = () => {
-  const { user } = useAuth();
-  if (user?.role === 'admin') {
-    return <AdminDashboard />;
-  }
-  return <ProfileDashboard />;
-};
-
 const AppRouterContent: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -173,20 +165,9 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/profile"
           element={
-            <ProtectedRoute requireAuth={true}>
+            <ProtectedRoute requireAuth={true} requireRole="admin">
               <main className="pt-20 relative z-10">
-                <ProfileRouteContent />
-              </main>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/profile/edit"
-          element={
-            <ProtectedRoute requireAuth={true} requireRole="model">
-              <main className="pt-20 relative z-10">
-                <ProfileEdit />
+                <AdminDashboard />
               </main>
             </ProtectedRoute>
           }

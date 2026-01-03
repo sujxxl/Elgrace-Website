@@ -1,21 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Key, User } from 'lucide-react';
+import { Mail, Lock, Key } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
 export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuccess }) => {
-  const { login, loginWithMagicLink, signup, requestPasswordReset, updatePassword } = useAuth();
+  const { login, loginWithMagicLink, requestPasswordReset, updatePassword } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'model' | 'client'>('model');
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<'login' | 'signup' | 'reset-request' | 'reset-update'>('login');
+  const [mode, setMode] = useState<'login' | 'reset-request' | 'reset-update'>('login');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -47,24 +45,6 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
     const res = await loginWithMagicLink(email);
     setLoading(false);
     setMsg(res.success ? 'Magic link sent — check your inbox' : res.message ?? 'Failed to send magic link');
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMsg(null);
-    setLoading(true);
-    const res = await signup(email, password, displayName, role);
-    setLoading(false);
-    if (res.success) {
-      showToast('🎉 Account created! Check your email to confirm.');
-      setMsg(
-        'We\'ve sent a confirmation link to your email. Please open it to verify your account and you will be logged in automatically.'
-      );
-      // Do not auto-navigate; user will come back logged in after confirming via email.
-      setPassword('');
-    } else {
-      setMsg(res.message ?? 'Signup failed');
-    }
   };
 
   const handleResetRequest = async (e: React.FormEvent) => {
@@ -99,9 +79,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
     }
   };
 
-  const formMode = mode === 'signup'
-    ? handleSignup
-    : mode === 'reset-request'
+  const formMode = mode === 'reset-request'
       ? handleResetRequest
       : mode === 'reset-update'
         ? handlePasswordUpdate
@@ -115,9 +93,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
           <div className="hidden md:flex flex-col justify-center p-10 rounded-2xl bg-zinc-900/60 border border-zinc-800 backdrop-blur-sm">
             <h1 className="text-4xl font-['Syne'] font-bold mb-4">Elgrace Talents</h1>
             <p className="text-zinc-400 leading-relaxed">
-              {mode === 'signup'
-                ? 'Create an account to manage your profile, view castings, and apply for castings.'
-                : 'Sign in to manage your profile, view castings and apply for castings.'}
+              Employee access only. Sign in with your Elgrace staff account to manage models and castings.
             </p>
 
             <div className="mt-8 space-y-4">
@@ -142,22 +118,18 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
           {/* Right - Form */}
           <div className="p-8 rounded-2xl bg-zinc-900/60 border border-zinc-800 backdrop-blur-sm">
             <h2 className="text-2xl font-['Syne'] font-bold mb-2">
-              {mode === 'signup'
-                ? 'Create account'
-                : mode === 'reset-request'
-                  ? 'Reset password'
-                  : mode === 'reset-update'
-                    ? 'Set a new password'
-                    : 'Welcome back'}
+              {mode === 'reset-request'
+                ? 'Reset password'
+                : mode === 'reset-update'
+                  ? 'Set a new password'
+                  : 'Employee login'}
             </h2>
             <p className="text-zinc-400 mb-6">
-              {mode === 'signup'
-                ? 'Sign up to get started.'
-                : mode === 'reset-request'
-                  ? 'Enter your email to get a reset link.'
-                  : mode === 'reset-update'
-                    ? 'Set a new password for your account.'
-                    : 'Log in to continue — or request a magic link.'}
+              {mode === 'reset-request'
+                ? 'Enter your work email to get a reset link.'
+                : mode === 'reset-update'
+                  ? 'Set a new password for your staff account.'
+                  : 'Log in with your staff credentials — or request a magic link.'}
             </p>
 
             <form onSubmit={formMode} className="space-y-4">
@@ -178,25 +150,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                 </label>
               )}
 
-              {/* Full name field: ONLY show during signup */}
-              {mode === 'signup' && (
-                <label className="block">
-                  <div className="flex items-center gap-3 mb-2 text-zinc-400">
-                    <User className="w-4 h-4" />
-                    <span className="text-sm">Full Name</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={e => setDisplayName(e.target.value)}
-                    required
-                    className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-zinc-300/60 text-white placeholder:text-zinc-400"
-                    placeholder="Your full name"
-                  />
-                </label>
-              )}
-
-              {(mode === 'login' || mode === 'signup') && (
+              {(mode === 'login') && (
                 <label className="block">
                   <div className="flex items-center gap-3 mb-2 text-zinc-400">
                     <Lock className="w-4 h-4" />
@@ -223,35 +177,6 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                     }}
                   >
                     Forgot password?
-                  </button>
-                </div>
-              )}
-
-              {/* Role selector: ONLY show during signup */}
-              {mode === 'signup' && (
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRole('model')}
-                    className={`px-4 py-3 rounded-xl font-medium border transition-all backdrop-blur-md ${
-                      role === 'model'
-                        ? 'bg-white/10 border-[#dfcda5] text-white shadow-lg shadow-black/30'
-                        : 'bg-white/5 border-white/10 text-white hover:border-[#dfcda5]'
-                    }`}
-                  >
-                    I’m a model
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setRole('client')}
-                    className={`px-4 py-3 rounded-xl font-medium border transition-all backdrop-blur-md ${
-                      role === 'client'
-                        ? 'bg-white/10 border-[#dfcda5] text-white shadow-lg shadow-black/30'
-                        : 'bg-white/5 border-white/10 text-white hover:border-[#dfcda5]'
-                    }`}
-                  >
-                    I’m a client
                   </button>
                 </div>
               )}
@@ -304,13 +229,11 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
               >
                 {loading
                   ? 'Loading...'
-                  : mode === 'signup'
-                    ? 'Sign up'
-                    : mode === 'reset-request'
-                      ? 'Send reset link'
-                      : mode === 'reset-update'
-                        ? 'Update password'
-                        : 'Log in'}
+                  : mode === 'reset-request'
+                    ? 'Send reset link'
+                    : mode === 'reset-update'
+                      ? 'Update password'
+                      : 'Log in'}
               </button>
             </form>
 
@@ -335,26 +258,15 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
 
             {/* Footer */}
             <div className="mt-6 text-center text-sm text-zinc-400">
-              {mode === 'signup' ? (
+              {mode === 'login' ? (
                 <>
-                  Already have an account?{' '}
+                  Forgot your password?{' '}
                   <button
                     type="button"
-                    onClick={() => setMode('login')}
+                    onClick={() => setMode('reset-request')}
                     className="text-[#dfcda5] hover:underline"
                   >
-                    Log in
-                  </button>
-                </>
-              ) : mode === 'login' ? (
-                <>
-                  Don’t have an account yet?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setMode('signup')}
-                    className="text-[#dfcda5] hover:underline"
-                  >
-                    Sign up
+                    Reset here
                   </button>
                 </>
               ) : (

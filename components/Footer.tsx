@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
   return (
@@ -22,6 +23,12 @@ export const Footer: React.FC = () => {
         <div className="flex gap-6">
           <a href="#" className="text-zinc-500 hover:text-white transition-colors text-sm border-b border-transparent hover:border-[#dfcda5] pb-0.5">Privacy Policy</a>
           <a href="#" className="text-zinc-500 hover:text-white transition-colors text-sm border-b border-transparent hover:border-[#dfcda5] pb-0.5">Terms of Service</a>
+          <Link
+            to="/auth"
+            className="text-zinc-500 hover:text-white transition-colors text-sm border-b border-transparent hover:border-[#dfcda5] pb-0.5"
+          >
+            Employee Login
+          </Link>
           <a
             href="https://www.instagram.com/elgracetalents/"
             target="_blank"

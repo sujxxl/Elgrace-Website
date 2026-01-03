@@ -7,7 +7,7 @@ export type InstagramHandle = {
 
 export type ProfileData = {
   id?: string;
-  user_id: string;
+  user_id?: string;
   full_name: string;
   dob: string; // ISO date
   gender: 'male' | 'female' | 'other';
@@ -36,8 +36,13 @@ export type ProfileData = {
   // Media
   cover_photo_url?: string;
   portfolio_folder_link?: string;
+  // Admin review & commercial
+  overall_rating?: number | null; // 0-10
+  expected_budget?: string | null; // free-form, e.g. "₹10k/day"
   // Admin moderation
   status?: 'UNDER_REVIEW' | 'ONLINE' | 'OFFLINE';
+  // Human-facing code like M-1000001
+  model_code?: string | null;
 };
 
 // Brand profiles (clients)
@@ -98,11 +103,53 @@ export type CastingApplication = {
   casting?: Casting;
 };
 
+// Utility: generate next model_code like M-1000001, M-1000002, ...
+export async function getNextModelUserId() {
+  const prefix = 'M-';
+  const base = 1000001;
+  const { data, error } = await supabase
+    .from(PROFILE_TABLE)
+    .select('model_code')
+    .like('model_code', `${prefix}%`)
+    .order('model_code', { ascending: false })
+    .limit(1);
+
+  if (error) {
+    console.error('Failed to fetch latest model user_id', error);
+    return `${prefix}${base}`;
+  }
+
+  const last = data && (data[0] as any)?.model_code as string | undefined;
+  if (typeof last === 'string') {
+    const m = last.match(/^M\-(\d+)$/);
+    if (m) {
+      const currentNum = Number(m[1]);
+      if (Number.isFinite(currentNum)) {
+        const next = currentNum + 1;
+        return `${prefix}${next}`;
+      }
+    }
+  }
+
+  return `${prefix}${base}`;
+}
+
 export async function getProfileByUserId(userId: string) {
   const { data, error } = await supabase
     .from(PROFILE_TABLE)
     .select('*')
-    .eq('user_id', userId)
+    // In the new schema, profiles are tracked by their own primary key id
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as ProfileData | null;
+}
+
+export async function getProfileByModelCode(modelCode: string) {
+  const { data, error } = await supabase
+    .from(PROFILE_TABLE)
+    .select('*')
+    .eq('model_code', modelCode)
     .maybeSingle();
   if (error) throw error;
   return data as ProfileData | null;
@@ -111,7 +158,9 @@ export async function getProfileByUserId(userId: string) {
 export async function upsertProfile(payload: ProfileData) {
   const { data, error } = await supabase
     .from(PROFILE_TABLE)
-    .upsert(payload, { onConflict: 'user_id' })
+    // In the new admin-only schema, model_profiles.user_id is optional and not unique,
+    // but model_code is unique. Use model_code for conflict resolution.
+    .upsert(payload, { onConflict: 'model_code' })
     .select()
     .maybeSingle();
   if (error) throw error;
@@ -180,7 +229,7 @@ export async function listOnlineProfiles() {
   return (data ?? []) as ProfileData[];
 }
 
-// ADMIN/MODEL: update profile status by user_id (unique)
+// ADMIN: update profile status by profile id (primary key)
 export async function updateProfileStatus(
   userId: string,
   status: 'UNDER_REVIEW' | 'ONLINE' | 'OFFLINE'
@@ -188,7 +237,7 @@ export async function updateProfileStatus(
   const { data, error } = await supabase
     .from(PROFILE_TABLE)
     .update({ status })
-    .eq('user_id', userId)
+    .eq('id', userId)
     .select()
     .maybeSingle();
   if (error) throw error;

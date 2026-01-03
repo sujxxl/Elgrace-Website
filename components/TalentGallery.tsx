@@ -304,7 +304,7 @@ export const TalentGallery: React.FC = () => {
                         const location = [p.city, p.state, p.country].filter(Boolean).join(', ');
                         const instagramHandle = p.instagram?.[0]?.handle;
                         return {
-                            id: p.user_id,
+                            id: p.id as string,
                             name: p.full_name,
                             category,
                             image: p.cover_photo_url || '',
