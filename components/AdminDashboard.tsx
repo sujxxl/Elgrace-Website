@@ -298,8 +298,8 @@ export const AdminDashboard: React.FC = () => {
     profileSearch,
   ]);
 
-  const renderProfiles = () => (
-    <div className="mt-8">
+  const renderProfiles = () => {
+    const header = (
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
         <h2 className="text-xl font-semibold">Model Profiles</h2>
         <div className="flex items-center gap-3">
@@ -335,334 +335,413 @@ export const AdminDashboard: React.FC = () => {
           </button>
         </div>
       </div>
+    );
 
-      {profilesLoading ? (
-        <p className="text-zinc-400 text-sm">Loading profiles...</p>
-      ) : profiles.length === 0 ? (
-        <p className="text-zinc-500 text-sm">No profiles found.</p>
-      ) : profileViewMode === 'table' ? (
-        <div className="overflow-x-auto border border-zinc-800 rounded-xl">
-          <table className="w-full text-sm">
-            <thead className="bg-zinc-900/80 text-zinc-400 uppercase text-xs">
-              <tr>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Location</th>
-                <th className="px-4 py-3 text-left">Instagram</th>
-                <th className="px-4 py-3 text-left">Experience</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-              {profiles.map((p) => {
-                const status = (p.status ?? 'UNDER_REVIEW') as ProfileStatus;
-                const locationParts = [p.city, p.state, p.country].filter(Boolean).join(', ');
-                const ig = (p.instagram ?? []).map((i) => i.handle).join(', ');
-                return (
-                  <tr key={p.id ?? p.model_code ?? p.email} className="hover:bg-zinc-900/40">
-                    <td className="px-4 py-3 text-sm text-white">
-                      <button
-                        type="button"
-                        onClick={() => p.id && navigate(`/talents/${p.id}`)}
-                        className="hover:underline text-left"
-                      >
-                        {p.full_name}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-zinc-300">{locationParts || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-zinc-300">{ig || '—'}</td>
-                    <td className="px-4 py-3 text-sm text-zinc-300">{p.experience_level ?? '—'}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                          status === 'ONLINE'
-                            ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-500/40'
-                            : status === 'OFFLINE'
-                            ? 'bg-zinc-900/60 text-zinc-300 border border-zinc-700/60'
-                            : 'bg-amber-900/40 text-amber-200 border border-amber-500/40'
-                        }`}
-                      >
-                        {profileStatusLabel[status]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs">
-                      <div className="flex gap-2 flex-wrap">
-                        <button
-                          onClick={() => handleProfileStatusChange(p, 'UNDER_REVIEW')}
-                          className="px-2 py-1 rounded border border-amber-500/40 text-amber-200 hover:bg-amber-900/30"
-                        >
-                          Under Review
-                        </button>
-                        <button
-                          onClick={() => handleProfileStatusChange(p, 'ONLINE')}
-                          className="px-2 py-1 rounded border border-emerald-500/40 text-emerald-200 hover:bg-emerald-900/30"
-                        >
-                          Online
-                        </button>
-                        <button
-                          onClick={() => handleProfileStatusChange(p, 'OFFLINE')}
-                          className="px-2 py-1 rounded border border-zinc-600 text-zinc-200 hover:bg-zinc-900/60"
-                        >
-                          Offline
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+    if (profilesLoading) {
+      return (
+        <div className="mt-8">
+          {header}
+          <p className="text-zinc-400 text-sm">Loading profiles...</p>
         </div>
-      ) : (
-        <>
-          <div className="mb-4 bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 text-xs">
-            <div className="space-y-2">
-              <label className="uppercase tracking-widest text-zinc-500">Search</label>
-              <input
-                value={profileSearch}
-                onChange={(e) => setProfileSearch(e.target.value)}
-                placeholder="Name, email, model code, budget..."
-                className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="uppercase tracking-widest text-zinc-500">Status</label>
-              <select
-                value={profileStatusFilter}
-                onChange={(e) => setProfileStatusFilter(e.target.value as 'ALL' | ProfileStatus)}
-                className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
-              >
-                <option value="ALL">Any Status</option>
-                <option value="UNDER_REVIEW">Under Review</option>
-                <option value="ONLINE">Online</option>
-                <option value="OFFLINE">Offline</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="uppercase tracking-widest text-zinc-500">Gender</label>
-              <select
-                value={profileGenderFilter}
-                onChange={(e) => setProfileGenderFilter(e.target.value as any)}
-                className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
-              >
-                <option value="All">Any</option>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="uppercase tracking-widest text-zinc-500">Open to Travel</label>
-              <select
-                value={profileOpenToTravel}
-                onChange={(e) => setProfileOpenToTravel(e.target.value as 'any' | 'yes' | 'no')}
-                className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
-              >
-                <option value="any">Any</option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label className="uppercase tracking-widest text-zinc-500">Min Rating</label>
-              <input
-                type="number"
-                min={0}
-                max={10}
-                value={profileMinRating === '' ? '' : profileMinRating}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setProfileMinRating(v === '' ? '' : Number(v));
-                }}
-                className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="uppercase tracking-widest text-zinc-500">Age Range</label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  placeholder="Min"
-                  value={profileMinAge === '' ? '' : profileMinAge}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setProfileMinAge(v === '' ? '' : Number(v));
-                  }}
-                  className="w-1/2 bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
-                />
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  placeholder="Max"
-                  value={profileMaxAge === '' ? '' : profileMaxAge}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setProfileMaxAge(v === '' ? '' : Number(v));
-                  }}
-                  className="w-1/2 bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
-                />
+      );
+    }
+
+    if (profiles.length === 0) {
+      return (
+        <div className="mt-8">
+          {header}
+          <p className="text-zinc-500 text-sm">No profiles found.</p>
+        </div>
+      );
+    }
+
+    if (profileViewMode === 'table') {
+      return (
+        <div className="mt-8">
+          {header}
+          <div className="overflow-x-auto border border-zinc-800 rounded-xl">
+            <table className="w-full text-sm">
+              <thead className="bg-zinc-900/80 text-zinc-400 uppercase text-xs">
+                <tr>
+                  <th className="px-4 py-3 text-left">Name</th>
+                  <th className="px-4 py-3 text-left">Location</th>
+                  <th className="px-4 py-3 text-left">Instagram</th>
+                  <th className="px-4 py-3 text-left">Experience</th>
+                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800">
+                {profiles.map((p) => {
+                  const status = (p.status ?? 'UNDER_REVIEW') as ProfileStatus;
+                  const locationParts = [p.city, p.state, p.country].filter(Boolean).join(', ');
+                  const ig = (p.instagram ?? []).map((i) => i.handle).join(', ');
+                  return (
+                    <tr key={p.id ?? p.model_code ?? p.email} className="hover:bg-zinc-900/40">
+                      <td className="px-4 py-3 text-sm text-white">
+                        <button
+                          type="button"
+                          onClick={() => p.id && navigate(`/talents/${p.id}`)}
+                          className="hover:underline text-left"
+                        >
+                          {p.full_name}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-zinc-300">{locationParts || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-zinc-300">{ig || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-zinc-300">{p.experience_level ?? '—'}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                            status === 'ONLINE'
+                              ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-500/40'
+                              : status === 'OFFLINE'
+                              ? 'bg-zinc-900/60 text-zinc-300 border border-zinc-700/60'
+                              : 'bg-amber-900/40 text-amber-200 border border-amber-500/40'
+                          }`}
+                        >
+                          {profileStatusLabel[status]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        <div className="flex gap-2 flex-wrap">
+                          <button
+                            onClick={() => handleProfileStatusChange(p, 'UNDER_REVIEW')}
+                            className="px-2 py-1 rounded border border-amber-500/40 text-amber-200 hover:bg-amber-900/30"
+                          >
+                            Under Review
+                          </button>
+                          <button
+                            onClick={() => handleProfileStatusChange(p, 'ONLINE')}
+                            className="px-2 py-1 rounded border border-emerald-500/40 text-emerald-200 hover:bg-emerald-900/30"
+                          >
+                            Online
+                          </button>
+                          <button
+                            onClick={() => handleProfileStatusChange(p, 'OFFLINE')}
+                            className="px-2 py-1 rounded border border-zinc-600 text-zinc-200 hover:bg-zinc-900/60"
+                          >
+                            Offline
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    // Detailed view
+    return (
+      <div className="mt-8">
+        {header}
+        <div className="mt-4 flex flex-col lg:flex-row gap-4">
+          <div className="w-full lg:w-80 lg:flex-shrink-0 text-xs">
+            <div className="lg:sticky lg:top-24 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="uppercase tracking-[0.16em] text-[11px] text-zinc-500">Filters</span>
+                <span className="text-[11px] text-zinc-500">
+                  {filteredProfilesDetailed.length} / {profiles.length}
+                </span>
               </div>
-            </div>
-            <div className="space-y-2">
-              <label className="uppercase tracking-widest text-zinc-500">Min Height (cm)</label>
-              <input
-                type="number"
-                placeholder="e.g. 170"
-                value={profileMinHeightCm === '' ? '' : profileMinHeightCm}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setProfileMinHeightCm(v === '' ? '' : Number(v));
-                }}
-                className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="uppercase tracking-widest text-zinc-500">Location Contains</label>
-              <input
-                value={profileLocationSearch}
-                onChange={(e) => setProfileLocationSearch(e.target.value)}
-                placeholder="City / state / country"
-                className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
-              />
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-2">
+                  <label className="uppercase tracking-widest text-zinc-500">Search</label>
+                  <input
+                    value={profileSearch}
+                    onChange={(e) => setProfileSearch(e.target.value)}
+                    placeholder="Name, email, model code, budget..."
+                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="uppercase tracking-widest text-zinc-500">Status</label>
+                  <select
+                    value={profileStatusFilter}
+                    onChange={(e) => setProfileStatusFilter(e.target.value as 'ALL' | ProfileStatus)}
+                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                  >
+                    <option value="ALL">Any Status</option>
+                    <option value="UNDER_REVIEW">Under Review</option>
+                    <option value="ONLINE">Online</option>
+                    <option value="OFFLINE">Offline</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="uppercase tracking-widest text-zinc-500">Gender</label>
+                  <select
+                    value={profileGenderFilter}
+                    onChange={(e) => setProfileGenderFilter(e.target.value as any)}
+                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                  >
+                    <option value="All">Any</option>
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="uppercase tracking-widest text-zinc-500">Open to Travel</label>
+                  <select
+                    value={profileOpenToTravel}
+                    onChange={(e) => setProfileOpenToTravel(e.target.value as 'any' | 'yes' | 'no')}
+                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                  >
+                    <option value="any">Any</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="uppercase tracking-widest text-zinc-500">Min Rating</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={profileMinRating === '' ? '' : profileMinRating}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setProfileMinRating(v === '' ? '' : Number(v));
+                    }}
+                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="uppercase tracking-widest text-zinc-500">Age Range</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="Min"
+                      value={profileMinAge === '' ? '' : profileMinAge}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setProfileMinAge(v === '' ? '' : Number(v));
+                      }}
+                      className="w-1/2 bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      placeholder="Max"
+                      value={profileMaxAge === '' ? '' : profileMaxAge}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setProfileMaxAge(v === '' ? '' : Number(v));
+                      }}
+                      className="w-1/2 bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="uppercase tracking-widest text-zinc-500">Min Height (cm)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 170"
+                    value={profileMinHeightCm === '' ? '' : profileMinHeightCm}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setProfileMinHeightCm(v === '' ? '' : Number(v));
+                    }}
+                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="uppercase tracking-widest text-zinc-500">Location Contains</label>
+                  <input
+                    value={profileLocationSearch}
+                    onChange={(e) => setProfileLocationSearch(e.target.value)}
+                    placeholder="City / state / country"
+                    className="w-full bg-zinc-950 border border-zinc-800 p-2 rounded text-sm text-white"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfileSearch('');
+                    setProfileStatusFilter('ALL');
+                    setProfileGenderFilter('All');
+                    setProfileOpenToTravel('any');
+                    setProfileMinRating('');
+                    setProfileMinAge('');
+                    setProfileMaxAge('');
+                    setProfileMinHeightCm('');
+                    setProfileLocationSearch('');
+                  }}
+                  className="mt-2 w-full border border-zinc-800 rounded-full py-1.5 text-[11px] uppercase tracking-[0.16em] text-zinc-300 hover:bg-zinc-900/80"
+                >
+                  Clear Filters
+                </button>
+              </div>
             </div>
           </div>
 
-          {filteredProfilesDetailed.length === 0 ? (
-            <p className="text-zinc-500 text-sm">No profiles match these filters.</p>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {filteredProfilesDetailed.map((p) => {
-                const status = (p.status ?? 'UNDER_REVIEW') as ProfileStatus;
-                return (
-                  <div
-                    key={p.id ?? p.model_code ?? p.email}
-                    className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 flex flex-col gap-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold text-white truncate">{p.full_name || 'Unnamed Model'}</div>
-                        <div className="text-[11px] text-zinc-400 truncate">
-                          {(p.model_code || 'No code') + (p.category ? ` • ${p.category}` : '')}
-                        </div>
-                        <div className="text-[11px] text-zinc-500 truncate">
-                          {p.locationLabel || 'Location TBA'}
-                        </div>
-                      </div>
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                          status === 'ONLINE'
-                            ? 'bg-emerald-900/40 text-emerald-300 border border-emerald-500/40'
-                            : status === 'OFFLINE'
-                            ? 'bg-zinc-900/60 text-zinc-300 border border-zinc-700/60'
-                            : 'bg-amber-900/40 text-amber-200 border border-amber-500/40'
-                        }`}
-                      >
-                        {profileStatusLabel[status]}
-                      </span>
-                    </div>
+          <div className="flex-1 min-h-[260px]">
+            {filteredProfilesDetailed.length === 0 ? (
+              <p className="text-zinc-500 text-sm">No profiles match these filters.</p>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {filteredProfilesDetailed.map((p) => {
+                  const status = (p.status ?? 'UNDER_REVIEW') as ProfileStatus;
+                  return (
+                    <div
+                      key={p.id ?? p.model_code ?? p.email}
+                      className="group bg-zinc-900/60 border border-zinc-800 rounded-2xl overflow-hidden"
+                    >
+                      <div className="relative w-full aspect-[3/4] bg-zinc-950">
+                        {p.cover_photo_url ? (
+                          <img
+                            src={p.cover_photo_url}
+                            alt={p.full_name || 'Model image'}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        ) : null}
 
-                    <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-300 mt-1">
-                      <div>
-                        <span className="block text-zinc-500 uppercase tracking-widest text-[10px]">Age</span>
-                        <span>{p.age != null ? `${p.age} yrs` : '—'}</span>
-                      </div>
-                      <div>
-                        <span className="block text-zinc-500 uppercase tracking-widest text-[10px]">Height</span>
-                        <span>{p.heightLabel}</span>
-                      </div>
-                      <div>
-                        <span className="block text-zinc-500 uppercase tracking-widest text-[10px]">Rating</span>
-                        <span>{(p as any).overall_rating != null ? `${(p as any).overall_rating}/10` : '—'}</span>
-                      </div>
-                      <div>
-                        <span className="block text-zinc-500 uppercase tracking-widest text-[10px]">Budget</span>
-                        <span>
-                          {(() => {
-                            const minHalf = (p as any).min_budget_half_day as number | null | undefined;
-                            const minFull = (p as any).min_budget_full_day as number | null | undefined;
-                            const legacy = (p as any).expected_budget as string | undefined;
-                            if (minHalf != null || minFull != null) {
-                              const parts: string[] = [];
-                              if (minHalf != null) parts.push(`½-day: ₹${Number(minHalf).toLocaleString()}`);
-                              if (minFull != null) parts.push(`Full-day: ₹${Number(minFull).toLocaleString()}`);
-                              return parts.join(' | ');
-                            }
-                            return legacy || '—';
-                          })()}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-zinc-500 uppercase tracking-widest text-[10px]">Open to Travel</span>
-                        <span>
-                          {p.open_to_travel == null
-                            ? '—'
-                            : p.open_to_travel
-                            ? 'Yes'
-                            : 'No'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="block text-zinc-500 uppercase tracking-widest text-[10px]">Experience</span>
-                        <span>{p.experience_level || '—'}</span>
-                      </div>
-                    </div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-                    {(p.languages && p.languages.length > 0) || (p.skills && p.skills.length > 0) ? (
-                      <div className="mt-2 space-y-1 text-[11px]">
-                        {p.languages && p.languages.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            <span className="text-zinc-500 uppercase tracking-widest text-[10px] mr-1">
-                              Languages:
-                            </span>
-                            {p.languages.slice(0, 6).map((lang) => (
-                              <span
-                                key={lang}
-                                className="px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-200"
-                              >
-                                {lang}
-                              </span>
-                            ))}
+                        <div className="absolute inset-x-0 bottom-0 p-4 flex items-end justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-white truncate">
+                              {p.full_name || 'Unnamed Model'}
+                            </div>
+                            <div className="text-[11px] text-zinc-300 truncate">
+                              {p.model_code || 'No code'}
+                              {p.category ? ` · ${p.category}` : ''}
+                            </div>
                           </div>
-                        )}
-                        {p.skills && p.skills.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            <span className="text-zinc-500 uppercase tracking-widest text-[10px] mr-1">
-                              Skills:
-                            </span>
-                            {p.skills.slice(0, 6).map((skill) => (
-                              <span
-                                key={skill}
-                                className="px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-200"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ) : null}
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                              status === 'ONLINE'
+                                ? 'bg-emerald-900/70 text-emerald-300 border border-emerald-500/60'
+                                : status === 'OFFLINE'
+                                ? 'bg-zinc-900/80 text-zinc-300 border border-zinc-700/60'
+                                : 'bg-amber-900/70 text-amber-200 border border-amber-500/60'
+                            }`}
+                          >
+                            {profileStatusLabel[status]}
+                          </span>
+                        </div>
 
-                    <div className="mt-3 pt-3 border-t border-zinc-800 flex items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        onClick={() => p.id && navigate(`/talents/${p.id}`)}
-                        className="px-3 py-1 rounded-full border border-zinc-700 text-[11px] uppercase tracking-widest text-zinc-200 hover:bg-zinc-900/60"
-                      >
-                        View Full Profile
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => p.id && navigate(`/talents/${p.id}`)}
+                          className="absolute left-4 top-4 px-3 py-1.5 rounded-full border border-zinc-600 bg-black/60 text-[11px] uppercase tracking-[0.16em] text-zinc-100 hover:bg-black/80"
+                        >
+                          View Profile
+                        </button>
+
+                        <div className="hidden md:block absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <div className="h-full w-full p-4 flex flex-col gap-2 text-[11px] text-zinc-200">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="text-sm font-semibold text-white truncate">
+                                  {p.full_name || 'Unnamed Model'}
+                                </div>
+                                <div className="text-[11px] text-zinc-400 truncate">
+                                  {p.locationLabel || 'Location TBA'}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2 mt-1">
+                              <div>
+                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Age</div>
+                                <div>{p.age != null ? `${p.age} yrs` : 'N/A'}</div>
+                              </div>
+                              <div>
+                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Height</div>
+                                <div>{p.heightLabel}</div>
+                              </div>
+                              <div>
+                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Rating</div>
+                                <div>{(p as any).overall_rating != null ? `${(p as any).overall_rating}/10` : 'N/A'}</div>
+                              </div>
+                              <div>
+                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Budget</div>
+                                <div>
+                                  {(() => {
+                                    const minHalf = (p as any).min_budget_half_day as number | null | undefined;
+                                    const minFull = (p as any).min_budget_full_day as number | null | undefined;
+                                    const legacy = (p as any).expected_budget as string | undefined;
+                                    if (minHalf != null || minFull != null) {
+                                      const parts: string[] = [];
+                                      if (minHalf != null)
+                                        parts.push(`Half-day: INR ${Number(minHalf).toLocaleString()}`);
+                                      if (minFull != null)
+                                        parts.push(`Full-day: INR ${Number(minFull).toLocaleString()}`);
+                                      return parts.join(' | ');
+                                    }
+                                    return legacy || 'N/A';
+                                  })()}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Open to Travel</div>
+                                <div>
+                                  {p.open_to_travel == null
+                                    ? 'Any'
+                                    : p.open_to_travel
+                                    ? 'Yes'
+                                    : 'No'}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-zinc-500 uppercase tracking-widest text-[10px]">Experience</div>
+                                <div>{p.experience_level || 'N/A'}</div>
+                              </div>
+                            </div>
+                            {(p.languages && p.languages.length > 0) || (p.skills && p.skills.length > 0) ? (
+                              <div className="mt-2 space-y-1 text-[11px]">
+                                {p.languages && p.languages.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    <span className="text-zinc-500 uppercase tracking-widest text-[10px] mr-1">
+                                      Languages:
+                                    </span>
+                                    {p.languages.slice(0, 6).map((lang) => (
+                                      <span
+                                        key={lang}
+                                        className="px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-200"
+                                      >
+                                        {lang}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {p.skills && p.skills.length > 0 && (
+                                  <div className="flex flex-wrap gap-1">
+                                    <span className="text-zinc-500 uppercase tracking-widest text-[10px] mr-1">
+                                      Skills:
+                                    </span>
+                                    {p.skills.slice(0, 6).map((skill) => (
+                                      <span
+                                        key={skill}
+                                        className="px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-200"
+                                      >
+                                        {skill}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderCastings = () => (
     <div className="mt-8">
@@ -1700,7 +1779,7 @@ const ModelDataEntry: React.FC = () => {
           </label>
           <input
             type="number"
-            min={0}
+            min={1500}
             value={profile.min_budget_half_day ?? ''}
             onChange={(e) =>
               setProfile({
@@ -1709,7 +1788,7 @@ const ModelDataEntry: React.FC = () => {
               })
             }
             className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-            placeholder="e.g. 10000"
+            placeholder="e.g. 1500"
           />
         </div>
         <div>
@@ -1718,7 +1797,7 @@ const ModelDataEntry: React.FC = () => {
           </label>
           <input
             type="number"
-            min={0}
+            min={2000}
             value={profile.min_budget_full_day ?? ''}
             onChange={(e) =>
               setProfile({
@@ -1727,7 +1806,7 @@ const ModelDataEntry: React.FC = () => {
               })
             }
             className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-            placeholder="e.g. 20000"
+            placeholder="e.g. 2000"
           />
         </div>
       </div>
