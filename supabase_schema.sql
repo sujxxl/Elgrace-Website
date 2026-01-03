@@ -46,6 +46,11 @@ create table if not exists public.model_profiles (
   shoe_size text,
   overall_rating integer check (overall_rating >= 0 and overall_rating <= 10),
   expected_budget text,
+  -- New structured commercial fields (additive; keep expected_budget for legacy data)
+  min_budget_half_day numeric,
+  min_budget_full_day numeric,
+  -- Clothing size (e.g., XS, S, M, L). Kept separate from legacy weight.
+  size text,
   cover_photo_url text,
   portfolio_folder_link text,
   status text not null default 'UNDER_REVIEW' check (status in ('UNDER_REVIEW','ONLINE','OFFLINE')),
@@ -59,6 +64,9 @@ create table if not exists public.model_profiles (
 alter table public.model_profiles add column if not exists model_code text;
 alter table public.model_profiles add column if not exists overall_rating integer check (overall_rating >= 0 and overall_rating <= 10);
 alter table public.model_profiles add column if not exists expected_budget text;
+alter table public.model_profiles add column if not exists min_budget_half_day numeric;
+alter table public.model_profiles add column if not exists min_budget_full_day numeric;
+alter table public.model_profiles add column if not exists size text;
 
 do $$
 begin

@@ -370,6 +370,20 @@ const ModelProfileView: React.FC = () => {
   );
   const portfolioFolder = profile?.portfolio_folder_link?.trim() || '';
 
+  const computeAge = (dob?: string | null) => {
+    if (!dob) return null;
+    const d = new Date(dob);
+    if (Number.isNaN(d.getTime())) return null;
+    const today = new Date();
+    const age =
+      today.getFullYear() -
+      d.getFullYear() -
+      (today < new Date(today.getFullYear(), d.getMonth(), d.getDate()) ? 1 : 0);
+    return age;
+  };
+
+  const age = computeAge(profile?.dob);
+
   if (loading) {
     return (
       <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm text-zinc-400">Loading your profile...</div>
@@ -459,7 +473,7 @@ const ModelProfileView: React.FC = () => {
           <div><span className="text-zinc-500 text-xs uppercase">Full Name</span><div className="font-medium">{profile.full_name}</div></div>
           <div><span className="text-zinc-500 text-xs uppercase">Email</span><div className="font-medium">{profile.email}</div></div>
           <div><span className="text-zinc-500 text-xs uppercase">Phone</span><div className="font-medium">{profile.phone}</div></div>
-          <div><span className="text-zinc-500 text-xs uppercase">DOB</span><div className="font-medium">{profile.dob}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Age</span><div className="font-medium">{age != null ? `${age} yrs` : '—'}</div></div>
           <div><span className="text-zinc-500 text-xs uppercase">Gender</span><div className="font-medium">{profile.gender}</div></div>
           <div><span className="text-zinc-500 text-xs uppercase">Location</span><div className="font-medium">{[profile.city, profile.state, profile.country].filter(Boolean).join(', ')}</div></div>
         </div>
@@ -495,7 +509,7 @@ const ModelProfileView: React.FC = () => {
           <div><span className="text-zinc-500 text-xs uppercase">Bust/Chest</span><div className="font-medium">{profile.bust_chest ? `${profile.bust_chest}"` : '—'}</div></div>
           <div><span className="text-zinc-500 text-xs uppercase">Waist</span><div className="font-medium">{profile.waist ? `${profile.waist}"` : '—'}</div></div>
           <div><span className="text-zinc-500 text-xs uppercase">Hips</span><div className="font-medium">{profile.hips ? `${profile.hips}"` : '—'}</div></div>
-          <div><span className="text-zinc-500 text-xs uppercase">Weight</span><div className="font-medium">{profile.weight ? `${profile.weight} kg` : '—'}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Size</span><div className="font-medium">{(profile as any).size || '—'}</div></div>
           <div><span className="text-zinc-500 text-xs uppercase">Shoe Size</span><div className="font-medium">{profile.shoe_size || '—'}</div></div>
         </div>
       </div>

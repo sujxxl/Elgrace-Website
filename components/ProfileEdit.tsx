@@ -167,12 +167,35 @@ export const ProfileEdit: React.FC = () => {
 const PersonalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (patch: Partial<ProfileData>) => void; }> = ({ profile, onSave, saving }) => {
   const [form, setForm] = useState<ProfileData>(profile);
   useEffect(() => setForm(profile), [profile]);
+  const [ageInput, setAgeInput] = useState<number | ''>(() => {
+    if (!profile.dob) return '';
+    const d = new Date(profile.dob);
+    if (Number.isNaN(d.getTime())) return '';
+    const today = new Date();
+    const age =
+      today.getFullYear() -
+      d.getFullYear() -
+      (today < new Date(today.getFullYear(), d.getMonth(), d.getDate()) ? 1 : 0);
+    return age;
+  });
 
-  const normalizeDateInput = (d?: string | null) => {
-    if (!d) return '';
-    const s = String(d);
-    return s.includes('T') ? s.split('T')[0] : s;
-  };
+  useEffect(() => {
+    if (!form.dob) {
+      setAgeInput('');
+      return;
+    }
+    const d = new Date(form.dob);
+    if (Number.isNaN(d.getTime())) {
+      setAgeInput('');
+      return;
+    }
+    const today = new Date();
+    const age =
+      today.getFullYear() -
+      d.getFullYear() -
+      (today < new Date(today.getFullYear(), d.getMonth(), d.getDate()) ? 1 : 0);
+    setAgeInput(age);
+  }, [form.dob]);
 
   // Country-State-City logic
   const countries = Country.getAllCountries();
@@ -212,11 +235,30 @@ const PersonalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (p
           <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50" />
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Date of Birth</label>
+          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Age (years)</label>
           <input
-            type="date"
-            value={normalizeDateInput(form.dob)}
-            onChange={(e) => setForm({ ...form, dob: e.target.value })}
+            type="number"
+            min={0}
+            max={100}
+            value={ageInput === '' ? '' : ageInput}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === '') {
+                setAgeInput('');
+                return;
+              }
+              const num = Number(v);
+              if (!Number.isFinite(num) || num < 0) return;
+              setAgeInput(num);
+              const today = new Date();
+              const dob = new Date(
+                today.getFullYear() - num,
+                today.getMonth(),
+                today.getDate()
+              );
+              const iso = dob.toISOString().split('T')[0];
+              setForm({ ...form, dob: iso });
+            }}
             required
             className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
           />
@@ -397,7 +439,7 @@ const MeasurementsForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
   const feet = nums(4, 7);
   const inches = nums(0, 11);
   const measureInches = nums(20, 50);
-  const weights = nums(40, 120);
+  const sizes = ['XXS','XS','S','M','L','XL','XXL'];
   const shoeSizes = ['UK-5','UK-6','UK-7','UK-8','UK-9','UK-10','US-6','US-7','US-8','US-9','US-10','US-11'];
 
   return (
@@ -437,10 +479,10 @@ const MeasurementsForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
           </select>
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Weight (kg)</label>
-          <select value={form.weight ?? ''} onChange={(e) => setForm({ ...form, weight: Number(e.target.value) })} className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white">
+          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Size</label>
+          <select value={form.size ?? ''} onChange={(e) => setForm({ ...form, size: e.target.value || null })} className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white">
             <option value="">—</option>
-            {weights.map(w => <option key={w} value={w}>{w}</option>)}
+            {sizes.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
@@ -457,7 +499,7 @@ const MeasurementsForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
           bust_chest: form.bust_chest,
           waist: form.waist,
           hips: form.hips ?? null,
-          weight: form.weight ?? null,
+          size: form.size ?? null,
           shoe_size: form.shoe_size,
         })} className="px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-bold uppercase tracking-widest border-2 border-[#dfcda5]">Save Measurements</button>
       </div>

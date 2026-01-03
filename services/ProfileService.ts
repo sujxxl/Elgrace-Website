@@ -33,12 +33,17 @@ export type ProfileData = {
   hips?: number | null;
   weight?: number | null;
   shoe_size?: string; // e.g., 'UK-8' or 'US-9'
+  // Clothing size (e.g., XS, S, M). Preferred over legacy weight.
+  size?: string | null;
   // Media
   cover_photo_url?: string;
   portfolio_folder_link?: string;
   // Admin review & commercial
   overall_rating?: number | null; // 0-10
-  expected_budget?: string | null; // free-form, e.g. "₹10k/day"
+  expected_budget?: string | null; // legacy free-form, e.g. "₹10k/day"
+  // Structured commercial minimum budgets (new, additive)
+  min_budget_half_day?: number | null;
+  min_budget_full_day?: number | null;
   // Admin moderation
   status?: 'UNDER_REVIEW' | 'ONLINE' | 'OFFLINE';
   // Human-facing code like M-1000001

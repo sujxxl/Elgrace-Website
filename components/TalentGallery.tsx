@@ -14,7 +14,7 @@ interface Talent {
     category: Category;
     image: string;
     height: string;
-    weight: string;
+    size: string;
     location: string;
     age: number;
     gender: 'Male' | 'Female' | 'Other';
@@ -152,8 +152,8 @@ const TalentCard: React.FC<{
                                                     <p className="text-white font-medium">{talent.height}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-zinc-500 text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1"><Weight className="w-3 h-3" /> Weight</p>
-                                                    <p className="text-white font-medium">{talent.weight}</p>
+                                                        <p className="text-zinc-500 text-[10px] uppercase tracking-wider mb-1 flex items-center gap-1"><Weight className="w-3 h-3" /> Size</p>
+                                                        <p className="text-white font-medium">{talent.size}</p>
                                                 </div>
                                             </div>
                                         )}
@@ -292,7 +292,7 @@ export const TalentGallery: React.FC = () => {
                         const inches = p.height_inches ?? 0;
                         const heightCm = Math.round(feet * 30.48 + inches * 2.54);
                         const heightLabel = feet || inches ? `${feet}'${inches}"` : 'N/A';
-                        const weightLabel = p.weight ? `${p.weight} kg` : 'N/A';
+                        const sizeLabel = (p as any).size ? String((p as any).size) : 'N/A';
                         const gender: 'Male' | 'Female' | 'Other' =
                             p.gender === 'male' ? 'Male' : p.gender === 'female' ? 'Female' : 'Other';
                         // Derive display category for filters
@@ -309,7 +309,7 @@ export const TalentGallery: React.FC = () => {
                             category,
                             image: p.cover_photo_url || '',
                             height: heightLabel,
-                            weight: weightLabel,
+                            size: sizeLabel,
                             location: location || 'Location TBA',
                             age,
                             gender,

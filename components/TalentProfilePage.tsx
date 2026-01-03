@@ -63,7 +63,19 @@ export const TalentProfilePage: React.FC = () => {
   const feet = profile.height_feet ?? 0;
   const inches = profile.height_inches ?? 0;
   const heightLabel = feet || inches ? `${feet}'${inches}"` : 'N/A';
-  const weightLabel = profile.weight ? `${profile.weight} kg` : 'N/A';
+  const sizeLabel = (profile as any).size ? String((profile as any).size) : 'N/A';
+  const computeAge = (dob?: string | null) => {
+    if (!dob) return null;
+    const d = new Date(dob);
+    if (Number.isNaN(d.getTime())) return null;
+    const today = new Date();
+    const age =
+      today.getFullYear() -
+      d.getFullYear() -
+      (today < new Date(today.getFullYear(), d.getMonth(), d.getDate()) ? 1 : 0);
+    return age;
+  };
+  const age = computeAge(profile.dob);
   const coverCandidates = buildDriveImageUrls(profile.cover_photo_url || '');
   const hasCover = !!profile.cover_photo_url;
 
@@ -123,7 +135,7 @@ export const TalentProfilePage: React.FC = () => {
                   <Ruler className="w-3 h-3 text-zinc-400" /> {heightLabel}
                 </span>
                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-zinc-700">
-                  <Weight className="w-3 h-3 text-zinc-400" /> {weightLabel}
+                  <Weight className="w-3 h-3 text-zinc-400" /> Size: {sizeLabel}
                 </span>
               </div>
             </div>
@@ -136,7 +148,7 @@ export const TalentProfilePage: React.FC = () => {
                 <div className="space-y-1 text-sm text-zinc-200">
                   <p>Email: <span className="text-zinc-300">{profile.email}</span></p>
                   <p>Phone: <span className="text-zinc-300">{profile.phone}</span></p>
-                  <p>DOB: <span className="text-zinc-300">{profile.dob}</span></p>
+                  <p>Age: <span className="text-zinc-300">{age != null ? `${age} yrs` : '—'}</span></p>
                   <p>Gender: <span className="text-zinc-300">{profile.gender}</span></p>
                 </div>
               </div>
