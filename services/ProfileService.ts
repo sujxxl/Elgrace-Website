@@ -38,6 +38,8 @@ export type ProfileData = {
   // Media
   cover_photo_url?: string;
   portfolio_folder_link?: string;
+  // Media (intro video)
+  intro_video_url?: string | null;
   // Admin review & commercial
   overall_rating?: number | null; // 0-11 (F=0 to A*=11)
   expected_budget?: string | null; // legacy free-form, e.g. "₹10k/day"

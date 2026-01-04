@@ -5,6 +5,29 @@ import { MapPin, Ruler, Weight, ArrowLeft } from 'lucide-react';
 import { getProfileByUserId, ProfileData } from '../services/ProfileService';
 import { buildDriveImageUrls } from '../services/gdrive';
 
+const toYouTubeEmbedUrl = (url: string): string | null => {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '');
+    if (host === 'youtu.be') {
+      const id = parsed.pathname.split('/').filter(Boolean)[0];
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    if (host.endsWith('youtube.com')) {
+      // watch URLs carry ?v=ID; shorts/embed carry ID in path
+      const vid = parsed.searchParams.get('v');
+      if (vid) return `https://www.youtube.com/embed/${vid}`;
+      const parts = parsed.pathname.split('/').filter(Boolean);
+      if (parts[0] === 'embed' && parts[1]) return `https://www.youtube.com/embed/${parts[1]}`;
+      if (parts[0] === 'shorts' && parts[1]) return `https://www.youtube.com/embed/${parts[1]}`;
+    }
+  } catch (err) {
+    return null;
+  }
+  return null;
+};
+
 export const TalentProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -78,6 +101,7 @@ export const TalentProfilePage: React.FC = () => {
   const age = computeAge(profile.dob);
   const coverCandidates = buildDriveImageUrls(profile.cover_photo_url || '');
   const hasCover = !!profile.cover_photo_url;
+  const introEmbedUrl = profile.intro_video_url ? toYouTubeEmbedUrl(profile.intro_video_url) : null;
 
   return (
     <section className="min-h-screen bg-zinc-950 pt-10 pb-16 px-6">
@@ -143,6 +167,32 @@ export const TalentProfilePage: React.FC = () => {
 
           <div className="p-8 md:p-10 grid md:grid-cols-3 gap-10">
             <div className="space-y-6 md:col-span-2">
+              {profile.intro_video_url && (
+                <div>
+                  <h2 className="text-sm uppercase tracking-[0.25em] text-zinc-500 mb-2">Intro Video</h2>
+                  {introEmbedUrl ? (
+                    <div className="relative w-full pb-[56.25%] overflow-hidden rounded-2xl border border-zinc-800 bg-black">
+                      <iframe
+                        src={`${introEmbedUrl}?rel=0`}
+                        className="absolute inset-0 w-full h-full"
+                        title="Intro video"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : (
+                    <a
+                      href={profile.intro_video_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#dfcda5] underline"
+                    >
+                      View intro video
+                    </a>
+                  )}
+                </div>
+              )}
+
               <div>
                 <h2 className="text-sm uppercase tracking-[0.25em] text-zinc-500 mb-2">Profile</h2>
                 <div className="space-y-1 text-sm text-zinc-200">

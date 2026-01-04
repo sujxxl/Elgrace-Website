@@ -261,6 +261,7 @@ export const TalentGallery: React.FC = () => {
     instagram: [{ handle: '', followers: 'under_5k' }],
     status: 'UNDER_REVIEW',
     model_code: null,
+    intro_video_url: '',
   });
   const [submitAgeInput, setSubmitAgeInput] = useState<number | ''>('');
   const [submitLanguageInput, setSubmitLanguageInput] = useState('');
@@ -302,6 +303,7 @@ export const TalentGallery: React.FC = () => {
         instagram: [{ handle: '', followers: 'under_5k' }],
         status: 'UNDER_REVIEW',
         model_code: nextId,
+        intro_video_url: '',
       });
       setSubmitAgeInput('');
       setSubmitLanguageInput('');
@@ -627,7 +629,7 @@ export const TalentGallery: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowSubmitProfileModal(false)}
-            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 overflow-y-auto"
+            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 pt-24 overflow-y-auto"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -1047,7 +1049,7 @@ export const TalentGallery: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
+              <div className="grid md:grid-cols-3 gap-4 mb-6">
                 <div>
                   <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Cover Photo URL</label>
                   <input
@@ -1064,6 +1066,15 @@ export const TalentGallery: React.FC = () => {
                     onChange={(e) => setSubmitProfile({ ...submitProfile, portfolio_folder_link: e.target.value })}
                     className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
                     placeholder="Google Drive folder link"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Intro Video URL (YouTube)</label>
+                  <input
+                    value={submitProfile.intro_video_url ?? ''}
+                    onChange={(e) => setSubmitProfile({ ...submitProfile, intro_video_url: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    placeholder="YouTube link to intro / self-tape"
                   />
                 </div>
               </div>

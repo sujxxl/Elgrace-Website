@@ -51,6 +51,7 @@ export const ProfileEdit: React.FC = () => {
           city: '',
           category: 'model',
           instagram: [{ handle: '', followers: 'under_5k' }],
+          intro_video_url: '',
         });
       } catch (e) {
         console.error(e);
@@ -67,6 +68,7 @@ export const ProfileEdit: React.FC = () => {
           city: '',
           category: 'model',
           instagram: [{ handle: '', followers: 'under_5k' }],
+          intro_video_url: '',
         });
       } finally {
         setLoading(false);
@@ -539,7 +541,7 @@ const MediaForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (patc
   return (
     <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
       <h4 className="text-lg font-['Syne'] font-bold mb-4">Photos / Media</h4>
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         <div>
           <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Cover Photo</label>
           <input
@@ -614,6 +616,29 @@ const MediaForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (patc
             </a>
           )}
         </div>
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Intro Video URL (YouTube)</label>
+          <input
+            type="url"
+            value={form.intro_video_url || ''}
+            onChange={(e) => setForm({ ...form, intro_video_url: e.target.value })}
+            placeholder="YouTube link to intro / self-tape"
+            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 rounded-lg"
+          />
+          <p className="text-xs text-zinc-500 mt-1">
+            Use a public or unlisted YouTube link. We embed it on your profile.
+          </p>
+          {form.intro_video_url && (
+            <a
+              href={form.intro_video_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-[#dfcda5] hover:underline text-sm"
+            >
+              Preview intro video →
+            </a>
+          )}
+        </div>
       </div>
       <div className="pt-4 flex gap-3">
         <button
@@ -621,6 +646,7 @@ const MediaForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (patc
           onClick={() => onSave({
             cover_photo_url: form.cover_photo_url,
             portfolio_folder_link: form.portfolio_folder_link,
+            intro_video_url: form.intro_video_url,
           })}
           className="px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-bold uppercase tracking-widest border-2 border-[#dfcda5]"
         >

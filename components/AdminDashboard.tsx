@@ -1811,6 +1811,7 @@ const emptyProfile: ProfileData = {
   instagram: [{ handle: '', followers: 'under_5k' }],
   status: 'UNDER_REVIEW',
   model_code: null,
+  intro_video_url: '',
 };
 
 const ModelDataEntry: React.FC = () => {
@@ -2417,7 +2418,7 @@ const ModelDataEntry: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 mb-6">
+      <div className="grid md:grid-cols-3 gap-4 mb-6">
         <div>
           <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Cover Photo URL</label>
           <input
@@ -2434,6 +2435,15 @@ const ModelDataEntry: React.FC = () => {
             onChange={(e) => setProfile({ ...profile, portfolio_folder_link: e.target.value })}
             className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
             placeholder="Google Drive folder link"
+          />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Intro Video URL (YouTube)</label>
+          <input
+            value={profile.intro_video_url ?? ''}
+            onChange={(e) => setProfile({ ...profile, intro_video_url: e.target.value })}
+            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
+            placeholder="YouTube link to intro / self-tape"
           />
         </div>
       </div>
