@@ -318,9 +318,11 @@ const PersonalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (p
               <select value={ig.followers} onChange={(e) => updateInstagram(idx, 'followers', e.target.value)} className="w-full bg-white border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
                 {followerBuckets.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
-              <div className="md:col-span-2 flex gap-3">
-                <button type="button" onClick={() => setForm({ ...form, instagram: form.instagram.filter((_, i) => i !== idx) })} className="px-3 py-2 rounded-full border-2 border-[#dfcda5] bg-white text-gray-700 hover:bg-[#fbf3e4] font-semibold text-xs uppercase tracking-widest">Remove</button>
-              </div>
+              {idx > 0 && (
+                <div className="md:col-span-2 flex gap-3">
+                  <button type="button" onClick={() => setForm({ ...form, instagram: form.instagram.filter((_, i) => i !== idx) })} className="px-3 py-2 rounded-full border-2 border-[#dfcda5] bg-white text-gray-700 hover:bg-[#fbf3e4] font-semibold text-xs uppercase tracking-widest">Remove</button>
+                </div>
+              )}
             </div>
           ))}
           <button type="button" onClick={() => setForm({ ...form, instagram: [...form.instagram, { handle: '', followers: 'under_5k' }] })} className="px-4 py-3 rounded-full bg-[#c9a961] text-white border-none font-semibold text-xs uppercase tracking-widest hover:bg-[#b8985a]">Add another handle</button>

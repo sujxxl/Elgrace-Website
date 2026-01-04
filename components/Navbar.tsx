@@ -7,9 +7,10 @@ import { siteConfig, ViewKey } from '../siteConfig';
 interface NavbarProps {
   onNavigate: (view: ViewKey) => void;
   currentView: ViewKey;
+  forceLight?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView, forceLight = false }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
@@ -25,6 +26,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
 
   // Initialize / sync theme: only allow light theme on the admin (profile) view.
   useEffect(() => {
+    if (forceLight) {
+      setTheme('light');
+      document.documentElement.dataset.theme = 'light';
+      return;
+    }
+
     if (currentView !== 'profile') {
       setTheme('dark');
       document.documentElement.dataset.theme = 'dark';
@@ -41,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
     const initial = prefersDark ? 'dark' : 'light';
     setTheme(initial);
     document.documentElement.dataset.theme = initial;
-  }, [currentView]);
+  }, [currentView, forceLight]);
 
   // Apply theme changes
   useEffect(() => {
@@ -92,6 +99,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
 
   const topClasses = 'bg-transparent py-3';
 
+  const linkActive = theme === 'light' ? 'text-black font-bold' : 'text-white font-bold';
+  const linkIdle = theme === 'light' ? 'text-zinc-600 hover:text-black' : 'text-zinc-400 hover:text-white';
+
   const themeToggleClasses =
     theme === 'light'
       ? 'p-2 rounded-full border border-zinc-800/30 bg-white text-black hover:border-[#dfcda5] hover:text-black transition-colors flex items-center justify-center'
@@ -129,8 +139,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
               onClick={(e) => handleLinkClick(e, link.view === 'home' ? link.href : '#', link.view)}
               className={`text-sm uppercase tracking-widest transition-colors duration-300 relative group ${
                 currentView === link.view && (link.view !== 'home' || link.name === 'Mission') 
-                  ? 'text-white font-bold' 
-                  : 'text-zinc-400 hover:text-white'
+                  ? linkActive 
+                  : linkIdle
               }`}
             >
               {link.name}

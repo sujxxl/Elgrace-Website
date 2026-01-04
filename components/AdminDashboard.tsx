@@ -2145,6 +2145,17 @@ const ModelDataEntry: React.FC = () => {
                 <option value="20k_50k">20K–50K</option>
                 <option value="50k_100k">50K–100K</option>
                 <option value="100k_plus">100K+</option>
+                                {idx > 0 && (
+                                  <div className="md:col-span-2 flex gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => setProfile({ ...profile, instagram: profile.instagram.filter((_, i) => i !== idx) })}
+                                      className="px-3 py-2 rounded-full border-2 border-[#dfcda5] bg-white text-gray-700 hover:bg-[#fbf3e4] font-semibold text-xs uppercase tracking-widest"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                )}
               </select>
             </div>
           ))}
