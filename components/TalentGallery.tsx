@@ -265,6 +265,22 @@ export const TalentGallery: React.FC = () => {
   });
   const [submitAgeInput, setSubmitAgeInput] = useState<number | ''>('');
   const [submitLanguageInput, setSubmitLanguageInput] = useState('');
+  
+  const POPULAR_LANGUAGES = [
+    'English', 'Hindi', 'Spanish', 'Mandarin Chinese', 'French', 'Arabic',
+    'Bengali', 'Russian', 'Portuguese', 'Urdu', 'Indonesian', 'German',
+    'Japanese', 'Swahili', 'Marathi', 'Telugu', 'Turkish', 'Tamil',
+    'Korean', 'Italian'
+  ];
+  
+  const SHOE_SIZES = [
+    'UK 3 (US 5)', 'UK 3.5 (US 5.5)', 'UK 4 (US 6)', 'UK 4.5 (US 6.5)',
+    'UK 5 (US 7)', 'UK 5.5 (US 7.5)', 'UK 6 (US 8)', 'UK 6.5 (US 8.5)',
+    'UK 7 (US 9)', 'UK 7.5 (US 9.5)', 'UK 8 (US 10)', 'UK 8.5 (US 10.5)',
+    'UK 9 (US 11)', 'UK 9.5 (US 11.5)', 'UK 10 (US 12)', 'UK 10.5 (US 12.5)',
+    'UK 11 (US 13)', 'UK 11.5 (US 13.5)', 'UK 12 (US 14)', 'UK 12.5 (US 14.5)',
+    'UK 13 (US 15)'
+  ];
 
   const SKILL_PRESETS = [
     'Ramp Walk',
@@ -354,8 +370,8 @@ export const TalentGallery: React.FC = () => {
   };
 
   const addSubmitLanguage = () => {
-    if (!submitLanguageInput.trim()) return;
-    const next = [...(submitProfile.languages || []), submitLanguageInput.trim()];
+    if (!submitLanguageInput || submitProfile.languages?.includes(submitLanguageInput)) return;
+    const next = [...(submitProfile.languages || []), submitLanguageInput];
     setSubmitProfile({ ...submitProfile, languages: next });
     setSubmitLanguageInput('');
   };
@@ -464,9 +480,9 @@ export const TalentGallery: React.FC = () => {
   }, [filter, filteredTalents.length]);
 
   return (
-    <section className="py-24 bg-zinc-950 relative border-t border-zinc-900 min-h-screen">
+    <section className="pt-8 pb-12 bg-zinc-950 relative border-t border-zinc-900 min-h-screen">
       <div className="container mx-auto px-6">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start mb-8">
           <div>
             <h2 className="text-zinc-500 uppercase tracking-widest text-sm mb-4">Discover</h2>
             <h3 className="text-4xl md:text-5xl font-['Syne'] font-bold text-white">Our Talent</h3>
@@ -636,50 +652,50 @@ export const TalentGallery: React.FC = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto my-8"
+              className="bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto my-8"
             >
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold text-white">Submit Your Profile</h2>
+                <h2 className="text-2xl font-semibold text-black">Submit Your Profile</h2>
                 <button
                   onClick={() => setShowSubmitProfileModal(false)}
-                  className="text-zinc-400 hover:text-white"
+                  className="text-gray-500 hover:text-black"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              <p className="text-sm text-zinc-400 mb-6">
+              <p className="text-sm text-gray-600 mb-6">
                 Complete this form to submit your talent profile to Elgrace.
               </p>
 
               <div className="grid md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Full Name</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Full Name</label>
                   <input
                     value={submitProfile.full_name}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, full_name: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Email</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Email</label>
                   <input
                     type="email"
                     value={submitProfile.email}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, email: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Phone</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Phone</label>
                   <input
                     value={submitProfile.phone}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, phone: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Age (years)</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Age (years)</label>
                   <input
                     type="number"
                     min={0}
@@ -703,15 +719,15 @@ export const TalentGallery: React.FC = () => {
                       const iso = dob.toISOString().split('T')[0];
                       setSubmitProfile({ ...submitProfile, dob: iso });
                     }}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Gender</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Gender</label>
                   <select
                     value={submitProfile.gender}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, gender: e.target.value as any })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
                   >
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -719,11 +735,11 @@ export const TalentGallery: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Country</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Country</label>
                   <select
                     value={submitProfile.country}
                     onChange={(e) => handleCountryChange(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
                   >
                     <option value="">Select Country</option>
                     {submitCountries.map((c) => (
@@ -734,12 +750,12 @@ export const TalentGallery: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">State</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">State</label>
                   <select
                     value={submitProfile.state}
                     onChange={(e) => handleStateChange(e.target.value)}
                     disabled={!submitProfile.country}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded disabled:opacity-50"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961] disabled:opacity-50"
                   >
                     <option value="">Select State</option>
                     {submitStates.map((s) => (
@@ -750,12 +766,12 @@ export const TalentGallery: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">City</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">City</label>
                   <select
                     value={submitProfile.city}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, city: e.target.value })}
                     disabled={!submitProfile.state}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded disabled:opacity-50"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961] disabled:opacity-50"
                   >
                     <option value="">Select City</option>
                     {submitCities.map((c) => (
@@ -767,8 +783,8 @@ export const TalentGallery: React.FC = () => {
                 </div>
               </div>
 
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold mb-2">Instagram</h3>
+              <div className="mb-6 bg-[#fbf3e4] rounded-3xl p-6">
+                <h3 className="text-sm font-semibold mb-3 text-gray-700 uppercase tracking-widest">Instagram</h3>
                 <div className="space-y-3">
                   {(submitProfile.instagram || []).map((ig, idx) => (
                     <div key={idx} className="grid md:grid-cols-2 gap-3">
@@ -776,12 +792,12 @@ export const TalentGallery: React.FC = () => {
                         value={ig.handle}
                         onChange={(e) => updateSubmitInstagramHandle(idx, 'handle', e.target.value)}
                         placeholder="Handle (without @)"
-                        className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                        className="w-full bg-white border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                       />
                       <select
                         value={ig.followers}
                         onChange={(e) => updateSubmitInstagramHandle(idx, 'followers', e.target.value)}
-                        className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                        className="w-full bg-white border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
                       >
                         <option value="under_5k">Under 5K</option>
                         <option value="5k_20k">5K–20K</option>
@@ -799,7 +815,7 @@ export const TalentGallery: React.FC = () => {
                         instagram: [...(submitProfile.instagram || []), { handle: '', followers: 'under_5k' }],
                       })
                     }
-                    className="px-4 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] text-xs"
+                    className="px-4 py-3 rounded-full bg-[#c9a961] text-white border-none font-semibold text-xs uppercase tracking-widest hover:bg-[#b8985a]"
                   >
                     Add Instagram handle
                   </button>
@@ -808,11 +824,11 @@ export const TalentGallery: React.FC = () => {
 
               <div className="grid md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Experience Level</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Experience Level</label>
                   <select
                     value={submitProfile.experience_level ?? 'lt_1'}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, experience_level: e.target.value as any })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
                   >
                     <option value="lt_1">Less than 1 year</option>
                     <option value="1_3">1–3 years</option>
@@ -821,18 +837,22 @@ export const TalentGallery: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Languages</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Languages</label>
                   <div className="flex gap-2 mb-2">
-                    <input
+                    <select
                       value={submitLanguageInput}
                       onChange={(e) => setSubmitLanguageInput(e.target.value)}
-                      className="flex-1 bg-zinc-950 border border-zinc-800 p-3 text-white rounded-lg"
-                      placeholder="Add language and press Add"
-                    />
+                      className="flex-1 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
+                    >
+                      <option value="">Select a language</option>
+                      {POPULAR_LANGUAGES.map((lang) => (
+                        <option key={lang} value={lang}>{lang}</option>
+                      ))}
+                    </select>
                     <button
                       type="button"
                       onClick={addSubmitLanguage}
-                      className="px-4 py-3 bg-[#dfcda5] text-black font-bold rounded-lg text-xs"
+                      className="px-4 py-3 bg-[#c9a961] text-white font-bold rounded-full text-xs uppercase tracking-widest hover:bg-[#b8985a]"
                     >
                       Add
                     </button>
@@ -841,7 +861,7 @@ export const TalentGallery: React.FC = () => {
                     {(submitProfile.languages || []).map((lang) => (
                       <span
                         key={lang}
-                        className="px-3 py-1 rounded-full bg-zinc-900 border border-[#dfcda5] text-xs text-white flex items-center gap-2"
+                        className="px-3 py-1 rounded-full bg-[#dfcda5] border border-[#c9a961] text-xs text-black flex items-center gap-2 font-semibold"
                       >
                         {lang}
                         <button
@@ -860,8 +880,8 @@ export const TalentGallery: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Key Skills</label>
-                  <p className="text-[11px] text-zinc-500 mb-2">Select all that apply</p>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Key Skills</label>
+                  <p className="text-[11px] text-gray-600 mb-2">Select all that apply</p>
                   <div className="flex flex-wrap gap-2 mb-2">
                     {SKILL_PRESETS.map((skill) => {
                       const active = (submitProfile.skills || []).includes(skill);
@@ -878,10 +898,10 @@ export const TalentGallery: React.FC = () => {
                                 : [...current, skill],
                             });
                           }}
-                          className={`px-3 py-1 rounded-full border text-xs font-medium transition-colors ${
+                          className={`px-3 py-1 rounded-full border-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
                             active
-                              ? 'bg-[#dfcda5] text-black border-[#dfcda5]'
-                              : 'bg-zinc-950 border-zinc-700 text-zinc-200 hover:border-[#dfcda5]'
+                              ? 'bg-[#c9a961] border-[#c9a961] text-white'
+                              : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700 hover:border-[#c9a961]'
                           }`}
                         >
                           {skill}
@@ -894,7 +914,7 @@ export const TalentGallery: React.FC = () => {
                       {submitProfile.skills.map((skill) => (
                         <span
                           key={skill}
-                          className="px-3 py-1 rounded-full bg-zinc-900 border border-[#dfcda5] text-xs text-white flex items-center gap-2"
+                          className="px-3 py-1 rounded-full bg-[#dfcda5] border border-[#c9a961] text-xs text-black flex items-center gap-2 font-semibold"
                         >
                           {skill}
                           <button
@@ -914,13 +934,13 @@ export const TalentGallery: React.FC = () => {
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Open to Travel</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Open to Travel</label>
                   <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => setSubmitProfile({ ...submitProfile, open_to_travel: true })}
-                      className={`px-4 py-2 rounded-xl border text-xs ${
-                        submitProfile.open_to_travel ? 'border-[#dfcda5] text-white' : 'border-white/10 text-zinc-300'
+                      className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
+                        submitProfile.open_to_travel ? 'bg-[#c9a961] border-[#c9a961] text-white' : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700 hover:border-[#c9a961]'
                       }`}
                     >
                       Yes
@@ -928,10 +948,10 @@ export const TalentGallery: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setSubmitProfile({ ...submitProfile, open_to_travel: false })}
-                      className={`px-4 py-2 rounded-xl border text-xs ${
+                      className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
                         submitProfile.open_to_travel === false
-                          ? 'border-[#dfcda5] text-white'
-                          : 'border-white/10 text-zinc-300'
+                          ? 'bg-[#c9a961] border-[#c9a961] text-white'
+                          : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700 hover:border-[#c9a961]'
                       }`}
                     >
                       No
@@ -939,7 +959,7 @@ export const TalentGallery: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">
                     Minimum Budget (Half Day)
                   </label>
                   <input
@@ -952,12 +972,12 @@ export const TalentGallery: React.FC = () => {
                         min_budget_half_day: e.target.value === '' ? null : Number(e.target.value),
                       })
                     }
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                     placeholder="e.g. 1500"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">
                     Minimum Budget (Full Day)
                   </label>
                   <input
@@ -970,7 +990,7 @@ export const TalentGallery: React.FC = () => {
                         min_budget_full_day: e.target.value === '' ? null : Number(e.target.value),
                       })
                     }
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                     placeholder="e.g. 2000"
                   />
                 </div>
@@ -978,57 +998,57 @@ export const TalentGallery: React.FC = () => {
 
               <div className="grid md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Height (feet / inches)</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Height (feet / inches)</label>
                   <div className="flex gap-2">
                     <input
                       type="number"
                       value={submitProfile.height_feet ?? ''}
                       onChange={(e) => setSubmitProfile({ ...submitProfile, height_feet: Number(e.target.value) || undefined })}
-                      className="w-1/2 bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                      className="w-1/2 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                       placeholder="ft"
                     />
                     <input
                       type="number"
                       value={submitProfile.height_inches ?? ''}
                       onChange={(e) => setSubmitProfile({ ...submitProfile, height_inches: Number(e.target.value) || undefined })}
-                      className="w-1/2 bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                      className="w-1/2 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                       placeholder="in"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Bust / Chest (inches)</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Bust / Chest (inches)</label>
                   <input
                     type="number"
                     value={submitProfile.bust_chest ?? ''}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, bust_chest: Number(e.target.value) || undefined })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Waist (inches)</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Waist (inches)</label>
                   <input
                     type="number"
                     value={submitProfile.waist ?? ''}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, waist: Number(e.target.value) || undefined })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Hips (inches)</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Hips (inches)</label>
                   <input
                     type="number"
                     value={submitProfile.hips ?? ''}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, hips: Number(e.target.value) || null })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Size</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Size</label>
                   <select
                     value={submitProfile.size ?? ''}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, size: e.target.value || null })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
                   >
                     <option value="">Select size</option>
                     {SIZE_OPTIONS.map((s) => (
@@ -1039,41 +1059,45 @@ export const TalentGallery: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Shoe Size</label>
-                  <input
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Shoe Size</label>
+                  <select
                     value={submitProfile.shoe_size ?? ''}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, shoe_size: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
-                    placeholder="e.g. UK-8 or US-9"
-                  />
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
+                  >
+                    <option value="">Select shoe size</option>
+                    {SHOE_SIZES.map((size) => (
+                      <option key={size} value={size}>{size}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <div className="grid md:grid-cols-3 gap-4 mb-6">
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Cover Photo URL</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Cover Photo URL</label>
                   <input
                     value={submitProfile.cover_photo_url ?? ''}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, cover_photo_url: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                     placeholder="Direct image URL or Google Drive link"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Portfolio Folder Link</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Portfolio Folder Link</label>
                   <input
                     value={submitProfile.portfolio_folder_link ?? ''}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, portfolio_folder_link: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                     placeholder="Google Drive folder link"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Intro Video URL (YouTube)</label>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Intro Video URL (YouTube)</label>
                   <input
                     value={submitProfile.intro_video_url ?? ''}
                     onChange={(e) => setSubmitProfile({ ...submitProfile, intro_video_url: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white rounded"
+                    className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
                     placeholder="YouTube link to intro / self-tape"
                   />
                 </div>
@@ -1082,7 +1106,7 @@ export const TalentGallery: React.FC = () => {
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setShowSubmitProfileModal(false)}
-                  className="px-6 py-3 rounded-2xl border border-zinc-700 text-white hover:bg-zinc-900"
+                  className="px-6 py-3 rounded-2xl border-2 border-[#dfcda5] bg-white text-gray-700 hover:bg-[#fbf3e4] font-semibold uppercase tracking-widest"
                 >
                   Cancel
                 </button>
@@ -1090,7 +1114,7 @@ export const TalentGallery: React.FC = () => {
                   type="button"
                   disabled={submittingProfile}
                   onClick={handleSaveSubmitProfile}
-                  className="px-6 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-bold uppercase tracking-widest border-2 border-[#dfcda5] disabled:opacity-60"
+                  className="px-6 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a] disabled:opacity-60"
                 >
                   {submittingProfile ? 'Submitting…' : 'Submit Profile'}
                 </button>

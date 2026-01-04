@@ -87,10 +87,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView }) => {
 
   const scrolledClasses =
     theme === 'light'
-      ? 'bg-[#fbf3e4]/90 backdrop-blur-md border-b border-[#dfcda5]/80 py-4'
-      : 'bg-zinc-950/90 backdrop-blur-md border-b border-white/10 py-4';
+      ? 'bg-[#fbf3e4]/90 backdrop-blur-md border-b border-[#dfcda5]/80 py-2'
+      : 'bg-zinc-950/90 backdrop-blur-md border-b border-white/10 py-2';
 
-  const topClasses = 'bg-transparent py-6';
+  const topClasses = 'bg-transparent py-3';
 
   const themeToggleClasses =
     theme === 'light'

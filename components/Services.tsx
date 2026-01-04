@@ -186,7 +186,7 @@ export const Services: React.FC = () => {
     <section id="services" ref={container} className="relative bg-black" style={{ height: `${services.length * 100 + 50}vh` }}>
         
         {/* Header - Changed from sticky to static relative to avoid overlap */}
-        <div className="pt-32 pb-16 text-center relative z-10">
+        <div className="pt-16 pb-12 text-center relative z-10">
             <motion.h2 
                 initial={{ opacity: 0, y: -20 }}
                 whileInView={{ opacity: 1, y: 0 }}

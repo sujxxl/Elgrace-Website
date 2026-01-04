@@ -1821,6 +1821,22 @@ const ModelDataEntry: React.FC = () => {
   const [lookupUserId, setLookupUserId] = useState('');
   const [profile, setProfile] = useState<ProfileData>({ ...emptyProfile });
   const [ageInput, setAgeInput] = useState<number | ''>('');
+  const POPULAR_LANGUAGES = [
+    'English', 'Hindi', 'Spanish', 'Mandarin Chinese', 'French', 'Arabic',
+    'Bengali', 'Russian', 'Portuguese', 'Urdu', 'Indonesian', 'German',
+    'Japanese', 'Swahili', 'Marathi', 'Telugu', 'Turkish', 'Tamil',
+    'Korean', 'Italian'
+  ];
+  
+  const SHOE_SIZES = [
+    'UK 3 (US 5)', 'UK 3.5 (US 5.5)', 'UK 4 (US 6)', 'UK 4.5 (US 6.5)',
+    'UK 5 (US 7)', 'UK 5.5 (US 7.5)', 'UK 6 (US 8)', 'UK 6.5 (US 8.5)',
+    'UK 7 (US 9)', 'UK 7.5 (US 9.5)', 'UK 8 (US 10)', 'UK 8.5 (US 10.5)',
+    'UK 9 (US 11)', 'UK 9.5 (US 11.5)', 'UK 10 (US 12)', 'UK 10.5 (US 12.5)',
+    'UK 11 (US 13)', 'UK 11.5 (US 13.5)', 'UK 12 (US 14)', 'UK 12.5 (US 14.5)',
+    'UK 13 (US 15)'
+  ];
+
   const [languageInput, setLanguageInput] = useState('');
   const SKILL_PRESETS = [
     'Ramp Walk',
@@ -1934,170 +1950,170 @@ const ModelDataEntry: React.FC = () => {
   };
 
   const addLanguage = () => {
-    if (!languageInput.trim()) return;
-    const next = [...(profile.languages || []), languageInput.trim()];
+    if (!languageInput || profile.languages?.includes(languageInput)) return;
+    const next = [...(profile.languages || []), languageInput];
     setProfile({ ...profile, languages: next });
     setLanguageInput('');
   };
 
   return (
-    <div className="mt-8 bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 admin-panel">
-      <h2 className="text-xl font-semibold mb-4">Model Data Entry (Employees Only)</h2>
-      <p className="text-sm text-zinc-400 mb-6">
-        Use this form to add or update model profiles in the database. This does not require the model to
-        have a login; all data is maintained by the Elgrace team.
-      </p>
+    <div className="min-h-screen bg-[#fbf3e4] p-8">
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-3xl font-['Syne'] font-bold mb-2 text-black">Model Data Entry</h2>
+        <p className="text-sm text-gray-700 mb-8">
+          Complete this form to add or update model profiles in the database.
+        </p>
 
-      <div className="flex flex-col md:flex-row md:items-end gap-3 mb-6">
-        <div className="flex-1">
-          <label className="block text-xs uppercase tracking-[0.16em] text-zinc-500 mb-1">Lookup by Model Code</label>
-          <input
-            value={lookupUserId}
-            onChange={(e) => setLookupUserId(e.target.value)}
-            placeholder="Enter existing model ID (e.g. M-1000001) to load or leave blank for next ID"
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white"
-          />
+        <div className="flex flex-col md:flex-row md:items-end gap-4 mb-8 bg-white p-6 rounded-3xl shadow-sm">
+          <div className="flex-1">
+            <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Lookup by Model Code</label>
+            <input
+              value={lookupUserId}
+              onChange={(e) => setLookupUserId(e.target.value)}
+              placeholder="Enter model ID (e.g. M-1000001) or leave blank for next"
+              className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-sm text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleLoad}
+            disabled={loading}
+            className="px-6 py-3 rounded-full text-xs uppercase tracking-widest font-bold text-white bg-[#c9a961] hover:bg-[#b8985a] disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Loading…' : 'Load / Start New'}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleLoad}
-          disabled={loading}
-          className="px-4 py-2 rounded-full text-xs uppercase tracking-[0.16em] border border-[#dfcda5] text-white bg-zinc-900 hover:bg-zinc-800 disabled:opacity-50 admin-primary-btn"
-        >
-          {loading ? 'Loading…' : 'Load / Start New'}
-        </button>
-      </div>
 
-      <div className="grid md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Model Code</label>
-          <input
-            value={profile.model_code ?? ''}
-            onChange={(e) => setProfile({ ...profile, model_code: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
-            placeholder="Model code (e.g. M-1000001)"
-          />
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Status</label>
-          <select
-            value={profile.status ?? 'UNDER_REVIEW'}
-            onChange={(e) => setProfile({ ...profile, status: e.target.value as ProfileStatus })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-          >
-            <option value="UNDER_REVIEW">Under Review</option>
-            <option value="ONLINE">Online</option>
-            <option value="OFFLINE">Offline</option>
-          </select>
-        </div>
-      </div>
+        <div className="bg-white rounded-3xl p-8 shadow-sm mb-6">
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Model Code</label>
+              <input
+                value={profile.model_code ?? ''}
+                onChange={(e) => setProfile({ ...profile, model_code: e.target.value })}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
+                placeholder="e.g. M-1000001"
+              />
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Status</label>
+              <select
+                value={profile.status ?? 'UNDER_REVIEW'}
+                onChange={(e) => setProfile({ ...profile, status: e.target.value as ProfileStatus })}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
+              >
+                <option value="UNDER_REVIEW">Under Review</option>
+                <option value="ONLINE">Online</option>
+                <option value="OFFLINE">Offline</option>
+              </select>
+            </div>
+          </div>
 
-      <div className="grid md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Full Name</label>
-          <input
-            value={profile.full_name}
-            onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-          />
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Email</label>
-          <input
-            type="email"
-            value={profile.email}
-            onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-          />
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Phone</label>
-          <input
-            value={profile.phone}
-            onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-          />
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Age (years)</label>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={ageInput === '' ? '' : ageInput}
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v === '') {
-                setAgeInput('');
-                return;
-              }
-              const num = Number(v);
-              if (!Number.isFinite(num) || num < 0) return;
-              setAgeInput(num);
-              // derive DOB as "today minus age years"
-              const today = new Date();
-              const dob = new Date(
-                today.getFullYear() - num,
-                today.getMonth(),
-                today.getDate()
-              );
-              const iso = dob.toISOString().split('T')[0];
-              setProfile({ ...profile, dob: iso });
-            }}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-          />
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Gender</label>
-          <select
-            value={profile.gender}
-            onChange={(e) => setProfile({ ...profile, gender: e.target.value as any })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-          >
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Country</label>
-          <select
-            value={profile.country}
-            onChange={(e) => handleCountryChange(e.target.value)}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-          >
-            <option value="">Select Country</option>
-            {countries.map((c) => (
-              <option key={c.isoCode} value={c.isoCode}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">State</label>
-          <select
-            value={profile.state}
-            onChange={(e) => handleStateChange(e.target.value)}
-            disabled={!profile.country}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white disabled:opacity-50"
-          >
-            <option value="">Select State</option>
-            {states.map((s) => (
-              <option key={s.isoCode} value={s.isoCode}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">City</label>
-          <select
-            value={profile.city}
-            onChange={(e) => setProfile({ ...profile, city: e.target.value })}
-            disabled={!profile.state}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white disabled:opacity-50"
-          >
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Full Name</label>
+              <input
+                value={profile.full_name}
+                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Email</label>
+              <input
+                type="email"
+                value={profile.email}
+                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Phone</label>
+              <input
+                value={profile.phone}
+                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Age (years)</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={ageInput === '' ? '' : ageInput}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === '') {
+                    setAgeInput('');
+                    return;
+                  }
+                  const num = Number(v);
+                  if (!Number.isFinite(num) || num < 0) return;
+                  setAgeInput(num);
+                  const today = new Date();
+                  const dob = new Date(
+                    today.getFullYear() - num,
+                    today.getMonth(),
+                    today.getDate()
+                  );
+                  const iso = dob.toISOString().split('T')[0];
+                  setProfile({ ...profile, dob: iso });
+                }}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
+              />
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Gender</label>
+              <select
+                value={profile.gender}
+                onChange={(e) => setProfile({ ...profile, gender: e.target.value as any })}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Country</label>
+              <select
+                value={profile.country}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
+              >
+                <option value="">Select Country</option>
+                {countries.map((c) => (
+                  <option key={c.isoCode} value={c.isoCode}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">State</label>
+              <select
+                value={profile.state}
+                onChange={(e) => handleStateChange(e.target.value)}
+                disabled={!profile.country}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black disabled:opacity-50 focus:outline-none focus:border-[#c9a961]"
+              >
+                <option value="">Select State</option>
+                {states.map((s) => (
+                  <option key={s.isoCode} value={s.isoCode}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">City</label>
+              <select
+                value={profile.city}
+                onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+                disabled={!profile.state}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black disabled:opacity-50 focus:outline-none focus:border-[#c9a961]"
+              >
             <option value="">Select City</option>
             {cities.map((c) => (
               <option key={c.name} value={c.name}>
@@ -2108,21 +2124,21 @@ const ModelDataEntry: React.FC = () => {
         </div>
       </div>
 
-      <div className="mb-6">
-        <h3 className="text-sm font-semibold mb-2">Instagram</h3>
+      <div className="bg-white rounded-3xl p-8 shadow-sm mb-6">
+        <h3 className="text-sm font-semibold mb-4 text-gray-700">Instagram</h3>
         <div className="space-y-3">
           {(profile.instagram || []).map((ig, idx) => (
-            <div key={idx} className="grid md:grid-cols-2 gap-3">
+            <div key={idx} className="grid md:grid-cols-2 gap-4">
               <input
                 value={ig.handle}
                 onChange={(e) => updateInstagramHandle(idx, 'handle', e.target.value)}
                 placeholder="Handle (without @)"
-                className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
               />
               <select
                 value={ig.followers}
                 onChange={(e) => updateInstagramHandle(idx, 'followers', e.target.value)}
-                className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
               >
                 <option value="under_5k">Under 5K</option>
                 <option value="5k_20k">5K–20K</option>
@@ -2140,70 +2156,76 @@ const ModelDataEntry: React.FC = () => {
                 instagram: [...(profile.instagram || []), { handle: '', followers: 'under_5k' }],
               })
             }
-            className="px-4 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] text-xs"
+            className="px-4 py-2 rounded-full border-2 border-[#dfcda5] text-gray-700 hover:bg-[#fbf3e4] text-xs font-semibold uppercase tracking-widest transition-colors"
           >
             Add Instagram handle
           </button>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Experience Level</label>
-          <select
-            value={profile.experience_level ?? 'lt_1'}
-            onChange={(e) => setProfile({ ...profile, experience_level: e.target.value as any })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-          >
-            <option value="lt_1">Less than 1 year</option>
-            <option value="1_3">1–3 years</option>
-            <option value="3_5">3–5 years</option>
-            <option value="gt_5">Over 5 years</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Languages</label>
-          <div className="flex gap-2 mb-2">
-            <input
-              value={languageInput}
-              onChange={(e) => setLanguageInput(e.target.value)}
-              className="flex-1 bg-zinc-950 border border-zinc-800 p-3 text-white rounded-lg"
-              placeholder="Add language and press Add"
-            />
-            <button
-              type="button"
-              onClick={addLanguage}
-              className="px-4 py-3 bg-[#dfcda5] text-black font-bold rounded-lg text-xs"
+      <div className="bg-white rounded-3xl p-8 shadow-sm mb-6">
+        <div className="grid md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Experience Level</label>
+            <select
+              value={profile.experience_level ?? 'lt_1'}
+              onChange={(e) => setProfile({ ...profile, experience_level: e.target.value as any })}
+              className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
             >
-              Add
-            </button>
+              <option value="lt_1">Less than 1 year</option>
+              <option value="1_3">1–3 years</option>
+              <option value="3_5">3–5 years</option>
+              <option value="gt_5">Over 5 years</option>
+            </select>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {(profile.languages || []).map((lang) => (
-              <span
-                key={lang}
-                className="px-3 py-1 rounded-full bg-zinc-900 border border-[#dfcda5] text-xs text-white flex items-center gap-2"
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Languages</label>
+            <div className="flex gap-2 mb-2">
+              <select
+                value={languageInput}
+                onChange={(e) => setLanguageInput(e.target.value)}
+                className="flex-1 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
               >
-                {lang}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setProfile({
-                      ...profile,
-                      languages: (profile.languages || []).filter((l) => l !== lang),
-                    })
-                  }
+                <option value="">Select a language</option>
+                {POPULAR_LANGUAGES.map((lang) => (
+                  <option key={lang} value={lang}>{lang}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={addLanguage}
+                className="px-6 py-3 bg-[#c9a961] hover:bg-[#b8985a] text-white font-bold rounded-full text-xs transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(profile.languages || []).map((lang) => (
+                <span
+                  key={lang}
+                  className="px-3 py-1 rounded-full bg-[#dfcda5] border border-[#c9a961] text-xs text-black flex items-center gap-2 font-semibold"
                 >
-                  ×
-                </button>
-              </span>
-            ))}
+                  {lang}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setProfile({
+                        ...profile,
+                        languages: (profile.languages || []).filter((l) => l !== lang),
+                      })
+                    }
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
           </div>
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Key Skills</label>
-          <p className="text-[11px] text-zinc-500 mb-2">Select all that apply</p>
-          <div className="flex flex-wrap gap-2 mb-2">
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Key Skills</label>
+          <p className="text-[11px] text-gray-600 mb-3">Select all that apply</p>
+          <div className="flex flex-wrap gap-2 mb-3">
             {SKILL_PRESETS.map((skill) => {
               const active = (profile.skills || []).includes(skill);
               return (
@@ -2219,10 +2241,10 @@ const ModelDataEntry: React.FC = () => {
                         : [...current, skill],
                     });
                   }}
-                  className={`px-3 py-1 rounded-full border text-xs font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
                     active
-                      ? 'bg-[#dfcda5] text-black border-[#dfcda5]'
-                      : 'bg-zinc-950 border-zinc-700 text-zinc-200 hover:border-[#dfcda5]'
+                      ? 'bg-[#c9a961] border-[#c9a961] text-white'
+                      : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700 hover:border-[#c9a961]'
                   }`}
                 >
                   {skill}
@@ -2231,11 +2253,11 @@ const ModelDataEntry: React.FC = () => {
             })}
           </div>
           {profile.skills && profile.skills.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-1">
+            <div className="flex flex-wrap gap-2">
               {profile.skills.map((skill) => (
                 <span
                   key={skill}
-                  className="px-3 py-1 rounded-full bg-zinc-900 border border-[#dfcda5] text-xs text-white flex items-center gap-2"
+                  className="px-3 py-1 rounded-full bg-[#dfcda5] border border-[#c9a961] text-xs text-black flex items-center gap-2 font-semibold"
                 >
                   {skill}
                   <button
@@ -2246,6 +2268,7 @@ const ModelDataEntry: React.FC = () => {
                         skills: (profile.skills || []).filter((s) => s !== skill),
                       })
                     }
+                    className="hover:text-white"
                   >
                     ×
                   </button>
@@ -2255,13 +2278,15 @@ const ModelDataEntry: React.FC = () => {
           )}
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Open to Travel</label>
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Open to Travel</label>
           <div className="flex gap-3">
             <button
               type="button"
               onClick={() => setProfile({ ...profile, open_to_travel: true })}
-              className={`px-4 py-2 rounded-xl border text-xs ${
-                profile.open_to_travel ? 'border-[#dfcda5] text-white' : 'border-white/10 text-zinc-300'
+              className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
+                profile.open_to_travel 
+                  ? 'bg-[#c9a961] border-[#c9a961] text-white' 
+                  : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700 hover:border-[#c9a961]'
               }`}
             >
               Yes
@@ -2269,10 +2294,10 @@ const ModelDataEntry: React.FC = () => {
             <button
               type="button"
               onClick={() => setProfile({ ...profile, open_to_travel: false })}
-              className={`px-4 py-2 rounded-xl border text-xs ${
+              className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
                 profile.open_to_travel === false
-                  ? 'border-[#dfcda5] text-white'
-                  : 'border-white/10 text-zinc-300'
+                  ? 'bg-[#c9a961] border-[#c9a961] text-white'
+                  : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700 hover:border-[#c9a961]'
               }`}
             >
               No
@@ -2280,7 +2305,7 @@ const ModelDataEntry: React.FC = () => {
           </div>
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">
             Overall Rating (Grade A* to F)
           </label>
           <div className="flex items-center gap-3">
@@ -2296,19 +2321,19 @@ const ModelDataEntry: React.FC = () => {
                   overall_rating: Number(e.target.value),
                 })
               }
-              className="flex-1 accent-[#dfcda5]"
+              className="flex-1 accent-[#c9a961]"
             />
-            <span className="w-12 text-sm text-white text-right font-medium">
+            <span className="w-12 text-sm text-black text-right font-bold">
               {valueToGrade(profile.overall_rating ?? 0)}
             </span>
           </div>
-          <div className="text-[10px] text-zinc-400 mt-1 flex justify-between">
+          <div className="text-[10px] text-gray-500 mt-1 flex justify-between">
             <span>F (0)</span>
             <span>A* (11)</span>
           </div>
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">
             Minimum Budget (Half Day)
           </label>
           <input
@@ -2321,12 +2346,12 @@ const ModelDataEntry: React.FC = () => {
                 min_budget_half_day: e.target.value === '' ? null : Number(e.target.value),
               })
             }
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
+            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
             placeholder="e.g. 1500"
           />
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">
             Minimum Budget (Full Day)
           </label>
           <input
@@ -2339,7 +2364,7 @@ const ModelDataEntry: React.FC = () => {
                 min_budget_full_day: e.target.value === '' ? null : Number(e.target.value),
               })
             }
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
+            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
             placeholder="e.g. 2000"
           />
         </div>
@@ -2347,57 +2372,57 @@ const ModelDataEntry: React.FC = () => {
 
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Height (feet / inches)</label>
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Height (feet / inches)</label>
           <div className="flex gap-2">
             <input
               type="number"
               value={profile.height_feet ?? ''}
               onChange={(e) => setProfile({ ...profile, height_feet: Number(e.target.value) || undefined })}
-              className="w-1/2 bg-zinc-950 border border-zinc-800 p-3 text-white"
+              className="w-1/2 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
               placeholder="ft"
             />
             <input
               type="number"
               value={profile.height_inches ?? ''}
               onChange={(e) => setProfile({ ...profile, height_inches: Number(e.target.value) || undefined })}
-              className="w-1/2 bg-zinc-950 border border-zinc-800 p-3 text-white"
+              className="w-1/2 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
               placeholder="in"
             />
           </div>
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Bust / Chest (inches)</label>
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Bust / Chest (inches)</label>
           <input
             type="number"
             value={profile.bust_chest ?? ''}
             onChange={(e) => setProfile({ ...profile, bust_chest: Number(e.target.value) || undefined })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
+            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
           />
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Waist (inches)</label>
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Waist (inches)</label>
           <input
             type="number"
             value={profile.waist ?? ''}
             onChange={(e) => setProfile({ ...profile, waist: Number(e.target.value) || undefined })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
+            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
           />
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Hips (inches)</label>
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Hips (inches)</label>
           <input
             type="number"
             value={profile.hips ?? ''}
             onChange={(e) => setProfile({ ...profile, hips: Number(e.target.value) || null })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
+            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
           />
         </div>
         <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Size</label>
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Size</label>
           <select
             value={profile.size ?? ''}
             onChange={(e) => setProfile({ ...profile, size: e.target.value || null })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
+            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
           >
             <option value="">Select size</option>
             {SIZE_OPTIONS.map((s) => (
@@ -2407,56 +2432,64 @@ const ModelDataEntry: React.FC = () => {
             ))}
           </select>
         </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Shoe Size</label>
-          <input
-            value={profile.shoe_size ?? ''}
-            onChange={(e) => setProfile({ ...profile, shoe_size: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-            placeholder="e.g. UK-8 or US-9"
-          />
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Shoe Size</label>
+              <select
+                value={profile.shoe_size ?? ''}
+                onChange={(e) => setProfile({ ...profile, shoe_size: e.target.value })}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
+              >
+                <option value="">Select shoe size</option>
+                {SHOE_SIZES.map((size) => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Cover Photo URL</label>
-          <input
-            value={profile.cover_photo_url ?? ''}
-            onChange={(e) => setProfile({ ...profile, cover_photo_url: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-            placeholder="Direct image URL or Google Drive link"
-          />
+        <div className="bg-white rounded-3xl p-8 shadow-sm mb-6">
+          <div className="grid md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Cover Photo URL</label>
+              <input
+                value={profile.cover_photo_url ?? ''}
+                onChange={(e) => setProfile({ ...profile, cover_photo_url: e.target.value })}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
+                placeholder="Direct image URL or Google Drive link"
+              />
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Portfolio Folder Link</label>
+              <input
+                value={profile.portfolio_folder_link ?? ''}
+                onChange={(e) => setProfile({ ...profile, portfolio_folder_link: e.target.value })}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
+                placeholder="Google Drive folder link"
+              />
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Intro Video URL (YouTube)</label>
+              <input
+                value={profile.intro_video_url ?? ''}
+                onChange={(e) => setProfile({ ...profile, intro_video_url: e.target.value })}
+                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
+                placeholder="YouTube link to intro / self-tape"
+              />
+            </div>
+          </div>
         </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Portfolio Folder Link</label>
-          <input
-            value={profile.portfolio_folder_link ?? ''}
-            onChange={(e) => setProfile({ ...profile, portfolio_folder_link: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-            placeholder="Google Drive folder link"
-          />
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">Intro Video URL (YouTube)</label>
-          <input
-            value={profile.intro_video_url ?? ''}
-            onChange={(e) => setProfile({ ...profile, intro_video_url: e.target.value })}
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white"
-            placeholder="YouTube link to intro / self-tape"
-          />
-        </div>
-      </div>
 
-      <div className="flex justify-end">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={handleSave}
-          className="px-6 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-bold uppercase tracking-widest border-2 border-[#dfcda5] disabled:opacity-60 admin-primary-btn"
-        >
-          {saving ? 'Saving…' : 'Save Model Profile'}
-        </button>
+        <div className="flex justify-end">
+          <button
+            type="button"
+            disabled={saving}
+            onClick={handleSave}
+            className="px-8 py-3 rounded-full bg-[#c9a961] hover:bg-[#b8985a] text-white font-bold uppercase tracking-widest disabled:opacity-60 transition-colors"
+          >
+            {saving ? 'Saving…' : 'Save Model Profile'}
+          </button>
+        </div>
       </div>
     </div>
   );

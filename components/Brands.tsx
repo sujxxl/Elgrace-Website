@@ -24,7 +24,7 @@ const brands = [
 
 export const Brands: React.FC = () => {
   return (
-    <section className="py-20 bg-zinc-950 border-t border-white/5 relative z-10">
+    <section className="py-12 bg-zinc-950 border-t border-white/5 relative z-10">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <motion.h3 

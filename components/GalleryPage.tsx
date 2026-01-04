@@ -52,7 +52,7 @@ export const GalleryPage: React.FC = () => {
   const prev = () => setActiveIndex((prev) => (prev - 1 + featuredShoots.length) % featuredShoots.length);
 
   return (
-    <section className="pt-24 pb-24 bg-zinc-950">
+    <section className="pt-16 pb-16 bg-zinc-950">
       <div className="container mx-auto px-6 space-y-16">
         {/* Header */}
         <motion.div

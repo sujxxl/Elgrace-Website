@@ -48,7 +48,7 @@ export const ElgraceTalentsPage: React.FC = () => {
   ];
 
   return (
-    <section className="min-h-screen bg-black pt-28 pb-20 px-6">
+    <section className="min-h-screen bg-black pt-16 pb-12 px-6">
       <div className="container mx-auto max-w-6xl">
         <div className="mb-10 flex items-center justify-between gap-4">
           <div>
