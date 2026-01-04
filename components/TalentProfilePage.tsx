@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, Ruler, Weight, ArrowLeft } from 'lucide-react';
 import { getProfileByUserId, ProfileData } from '../services/ProfileService';
@@ -30,11 +30,20 @@ const toYouTubeEmbedUrl = (url: string): string | null => {
 
 export const TalentProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Guard: if the slug is the onboarding path, redirect to onboarding instead of trying to load a profile
+    if (userId === 'onboarding') {
+      navigate('/talents/onboarding', { replace: true });
+      return;
+    }
+
     if (!userId) {
       setError('Missing talent id');
       setLoading(false);
@@ -56,7 +65,7 @@ export const TalentProfilePage: React.FC = () => {
         setLoading(false);
       }
     })();
-  }, [userId]);
+  }, [userId, navigate]);
 
   if (loading) {
     return (

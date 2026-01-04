@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ProfileData, InstagramHandle, getProfileByUserId, upsertProfile, uploadImage } from '../services/ProfileService';
+import { ProfileData, InstagramHandle, getProfileByUserId, upsertProfile, uploadImage, getNextModelUserId } from '../services/ProfileService';
 import { buildDriveImageUrls } from '../services/gdrive';
 import { compressImageFile } from '../services/image';
 import { CheckCircle2 } from 'lucide-react';
@@ -46,7 +46,8 @@ export const ProfileEdit: React.FC = () => {
     (async () => {
       try {
         const existing = await getProfileByUserId(user.id);
-        setProfile(existing ?? {
+        const nextCode = existing?.model_code ?? (await getNextModelUserId());
+        const baseProfile = {
           user_id: user.id,
           full_name: '',
           dob: '',
@@ -59,10 +60,14 @@ export const ProfileEdit: React.FC = () => {
           category: 'model',
           instagram: [{ handle: '', followers: 'under_5k' }],
           intro_video_url: '',
-        });
+          model_code: nextCode,
+        } as ProfileData;
+
+        setProfile(existing ? { ...baseProfile, ...existing, model_code: nextCode } : baseProfile);
       } catch (e) {
         console.error(e);
         // Ensure form still renders even if table/query fails
+        const nextCode = await getNextModelUserId();
         setProfile({
           user_id: user.id,
           full_name: '',
@@ -76,6 +81,7 @@ export const ProfileEdit: React.FC = () => {
           category: 'model',
           instagram: [{ handle: '', followers: 'under_5k' }],
           intro_video_url: '',
+          model_code: nextCode,
         });
       } finally {
         setLoading(false);
