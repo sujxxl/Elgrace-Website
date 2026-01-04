@@ -24,6 +24,7 @@ import { EventIconPage } from './components/EventIconPage';
 import { ElgraceTalentsPage } from './components/ElgraceTalentsPage';
 import { GalleryPage } from './components/GalleryPage';
 import { ViewKey } from './siteConfig';
+import { TalentOnboardingPage } from './components/TalentOnboardingPage';
 
 const viewToPath = (v: ViewKey) =>
   v === 'home' ? '/' : `/${v}`;
@@ -50,7 +51,11 @@ const AppRouterContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white selection:bg-white selection:text-black relative">
-      <Navbar onNavigate={onNavigate} currentView={currentView} />
+      <Navbar
+        onNavigate={onNavigate}
+        currentView={currentView}
+        forceLight={location.pathname.startsWith('/talents/onboarding')}
+      />
 
       <Routes>
         <Route
@@ -98,7 +103,7 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/talents"
           element={
-            <main className="pt-20 relative z-10">
+            <main className="pt-16 relative z-10">
               <TalentGallery />
               <ContactGrid />
             </main>
@@ -106,9 +111,14 @@ const AppRouterContent: React.FC = () => {
         />
 
         <Route
+          path="/talents/onboarding"
+          element={<TalentOnboardingPage />}
+        />
+
+        <Route
           path="/gallery"
           element={
-            <main className="pt-20 relative z-10">
+            <main className="pt-16 relative z-10">
               <GalleryPage />
               <ContactGrid />
             </main>
@@ -118,7 +128,7 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/talents/:userId"
           element={
-            <main className="pt-20 relative z-10">
+            <main className="pt-16 relative z-10">
               <TalentProfilePage />
             </main>
           }
@@ -127,7 +137,7 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/castings"
           element={
-            <main className="pt-20 relative z-10">
+            <main className="pt-16 relative z-10">
               <Castings />
             </main>
           }
@@ -136,7 +146,7 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/castings/:castingId"
           element={
-            <main className="pt-20 relative z-10">
+            <main className="pt-16 relative z-10">
               <CastingDetail />
             </main>
           }
@@ -146,7 +156,7 @@ const AppRouterContent: React.FC = () => {
           path="/auth"
           element={
             <ProtectedRoute requireAuth={false} redirectTo="/profile">
-              <main className="pt-20 relative z-10">
+              <main className="pt-16 relative z-10">
                 <AuthPage />
               </main>
             </ProtectedRoute>
@@ -156,7 +166,7 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/reset-password"
           element={
-            <main className="pt-20 relative z-10">
+            <main className="pt-16 relative z-10">
               <ResetPasswordPage />
             </main>
           }
@@ -166,7 +176,7 @@ const AppRouterContent: React.FC = () => {
           path="/profile"
           element={
             <ProtectedRoute requireAuth={true} requireRole="admin">
-              <main className="pt-20 relative z-10">
+              <main className="pt-16 relative z-10">
                 <AdminDashboard />
               </main>
             </ProtectedRoute>
@@ -177,7 +187,7 @@ const AppRouterContent: React.FC = () => {
           path="/admin"
           element={
             <ProtectedRoute requireAuth={true} requireRole="admin">
-              <main className="pt-20 relative z-10">
+              <main className="pt-16 relative z-10">
                 <AdminDashboard />
               </main>
             </ProtectedRoute>
@@ -188,7 +198,7 @@ const AppRouterContent: React.FC = () => {
           path="/brands/:userId"
           element={
             <ProtectedRoute requireAuth={true} requireRole="admin">
-              <main className="pt-20 relative z-10">
+              <main className="pt-16 relative z-10">
                 <BrandPage />
               </main>
             </ProtectedRoute>

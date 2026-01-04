@@ -114,6 +114,17 @@ export type CastingApplication = {
 export async function getNextModelUserId() {
   const prefix = 'M-';
   const base = 1000001;
+  // 1) Preferred: RPC with security definer so anon users can get the next serial
+  try {
+    const { data: rpcCode, error: rpcError } = await supabase.rpc('next_model_code');
+    if (!rpcError && rpcCode) return rpcCode as string;
+    if (rpcError) console.warn('RPC next_model_code failed, falling back to select', rpcError.message || rpcError);
+  } catch (err) {
+    console.warn('RPC next_model_code threw, falling back to select', err);
+  }
+
+  // 2) Fallback: max(model_code) select (works when RLS allows)
+  const fallbackUnique = `${prefix}${Math.floor(Date.now() / 1000)}`;
   const { data, error } = await supabase
     .from(PROFILE_TABLE)
     .select('model_code')
@@ -122,8 +133,8 @@ export async function getNextModelUserId() {
     .limit(1);
 
   if (error) {
-    console.error('Failed to fetch latest model user_id', error);
-    return `${prefix}${base}`;
+    console.warn('Could not fetch latest model_code; using fallback', error?.message || error);
+    return fallbackUnique;
   }
 
   const last = data && (data[0] as any)?.model_code as string | undefined;
@@ -138,7 +149,7 @@ export async function getNextModelUserId() {
     }
   }
 
-  return `${prefix}${base}`;
+  return fallbackUnique || `${prefix}${base}`;
 }
 
 export async function getProfileByUserId(userId: string) {
