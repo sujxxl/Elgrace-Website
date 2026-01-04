@@ -43,9 +43,19 @@ const castingStatusLabel: Record<CastingUiStatus, string> = {
   CLOSED: 'Closed',
 };
 
-// Height filter limits in inches (0'0" to 9'0")
-const HEIGHT_MIN_IN = 0; // 0 ft 0 in
+// Height filter limits in inches (4'0" to 9'0")
+const HEIGHT_MIN_IN = 48; // 4 ft 0 in
 const HEIGHT_MAX_IN = 108; // 9 ft 0 in
+
+// Letter grade mapping for talent ratings (0-12)
+const LETTER_GRADES = ['F', 'F*', 'E', 'E*', 'D', 'D*', 'C', 'C*', 'B', 'B*', 'A', 'A*'];
+const gradeToValue = (grade: string): number => {
+  const idx = LETTER_GRADES.indexOf(grade);
+  return idx !== -1 ? idx : 0;
+};
+const valueToGrade = (value: number): string => {
+  return LETTER_GRADES[Math.max(0, Math.min(11, value))] || 'F';
+};
 
 interface HeightRangeSliderProps {
   min: number;
@@ -666,19 +676,20 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Min Rating</label>
+                    <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Min Grade</label>
                     <span className="text-[11px] font-medium text-zinc-800 dark:text-zinc-100">
-                      {profileMinRating}
+                      {valueToGrade(profileMinRating)}
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] text-zinc-600 dark:text-zinc-400">
-                      <span>Minimum rating</span>
+                    <div className="flex items-center justify-between text-[11px] light dark:text-zinc-400">
+                      <span>F (0)</span>
+                      <span>A* (11)</span>
                     </div>
                     <input
                       type="range"
                       min={0}
-                      max={10}
+                      max={11}
                       step={1}
                       value={profileMinRating}
                       onChange={(e) => setProfileMinRating(Number(e.target.value))}
@@ -715,13 +726,13 @@ export const AdminDashboard: React.FC = () => {
                         setProfileMaxAge(maxV);
                       }}
                     />
-                    <div className="grid grid-cols-2 gap-3 text-[11px] text-[#8b5b34] dark:text-zinc-300">
+                    <div className="grid grid-cols-2 gap-3 text-[11px] text-[#3b2418] dark:text-zinc-300">
                       <div className="space-y-1">
                         <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
                           Min Age
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
                             <input
                               type="number"
                               min={0}
@@ -732,9 +743,9 @@ export const AdminDashboard: React.FC = () => {
                                 const clamped = Math.max(0, Math.min(raw, profileMaxAge));
                                 setProfileMinAge(clamped);
                               }}
-                              className="w-full bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
+                              className="w-full bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
                             />
-                            <span className="ml-2 text-[10px] text-[#8b5b34] dark:text-zinc-400">yrs</span>
+                            <span className="ml-2 text-[10px] text-[#3b2418] dark:text-zinc-400">yrs</span>
                           </div>
                         </div>
                       </div>
@@ -743,7 +754,7 @@ export const AdminDashboard: React.FC = () => {
                           Max Age
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
                             <input
                               type="number"
                               min={0}
@@ -754,9 +765,9 @@ export const AdminDashboard: React.FC = () => {
                                 const clamped = Math.min(100, Math.max(raw, profileMinAge));
                                 setProfileMaxAge(clamped);
                               }}
-                              className="w-full bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
+                              className="w-full bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
                             />
-                            <span className="ml-2 text-[10px] text-[#8b5b34] dark:text-zinc-400">yrs</span>
+                            <span className="ml-2 text-[10px] text-[#3b2418] dark:text-zinc-400">yrs</span>
                           </div>
                         </div>
                       </div>
@@ -799,16 +810,16 @@ export const AdminDashboard: React.FC = () => {
                       }}
                     />
                     {/* Inputs for min and max height in ft/in */}
-                    <div className="grid grid-cols-2 gap-3 text-[11px] text-[#8b5b34] dark:text-zinc-300">
+                    <div className="grid grid-cols-2 gap-3 text-[11px] text-[#3b2418] dark:text-zinc-300">
                       <div className="space-y-1">
                         <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
                           Min Height
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
                             <input
                               type="number"
-                              min={0}
+                              min={4}
                               max={9}
                               value={Math.floor(profileMinHeightIn / 12)}
                               onChange={(e) => {
@@ -817,11 +828,11 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.min(Math.max(ft * 12 + inches, HEIGHT_MIN_IN), profileMaxHeightIn);
                                 setProfileMinHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
+                              className="w-10 bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
                             />
-                            <span className="ml-1 text-[10px] text-[#8b5b34] dark:text-zinc-400">ft</span>
+                            <span className="ml-1 text-[10px] text-[#3b2418] dark:text-zinc-400">ft</span>
                           </div>
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
                             <input
                               type="number"
                               min={0}
@@ -833,9 +844,9 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.min(Math.max(ft * 12 + inch, HEIGHT_MIN_IN), profileMaxHeightIn);
                                 setProfileMinHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
+                              className="w-10 bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
                             />
-                            <span className="ml-1 text-[10px] text-[#8b5b34] dark:text-zinc-400">in</span>
+                            <span className="ml-1 text-[10px] text-[#3b2418] dark:text-zinc-400">in</span>
                           </div>
                         </div>
                       </div>
@@ -844,10 +855,10 @@ export const AdminDashboard: React.FC = () => {
                           Max Height
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
                             <input
                               type="number"
-                              min={0}
+                              min={4}
                               max={9}
                               value={Math.floor(profileMaxHeightIn / 12)}
                               onChange={(e) => {
@@ -856,11 +867,11 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.max(Math.min(ft * 12 + inches, HEIGHT_MAX_IN), profileMinHeightIn);
                                 setProfileMaxHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
+                              className="w-10 bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
                             />
-                            <span className="ml-1 text-[10px] text-[#8b5b34] dark:text-zinc-400">ft</span>
+                            <span className="ml-1 text-[10px] text-[#3b2418] dark:text-zinc-400">ft</span>
                           </div>
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#8b5b34] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
                             <input
                               type="number"
                               min={0}
@@ -872,9 +883,9 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.max(Math.min(ft * 12 + inch, HEIGHT_MAX_IN), profileMinHeightIn);
                                 setProfileMaxHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center text-[#8b5b34] dark:text-zinc-100"
+                              className="w-10 bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
                             />
-                            <span className="ml-1 text-[10px] text-[#8b5b34] dark:text-zinc-400">in</span>
+                            <span className="ml-1 text-[10px] text-[#3b2418] dark:text-zinc-400">in</span>
                           </div>
                         </div>
                       </div>
@@ -1162,7 +1173,20 @@ export const AdminDashboard: React.FC = () => {
                                       ) : null}
                                     </div>
 
-                                    <div className="mt-3 flex flex-wrap gap-2 text-[11px]" />
+                                    <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (p.id) {
+                                            navigate(`/talents/${p.id}`);
+                                          }
+                                        }}
+                                        className="px-3 py-1.5 rounded-full border border-[#d6c3a6] text-[#3b2418] bg-white/90 hover:bg-white transition dark:border-zinc-700 dark:text-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+                                      >
+                                        View Profile
+                                      </button>
+                                    </div>
                                   </motion.div>
                                 )}
                               </AnimatePresence>
@@ -1554,13 +1578,46 @@ export const AdminDashboard: React.FC = () => {
             {profilesUnderReview.map((p) => {
               const location = [p.city, p.state, p.country].filter(Boolean).join(', ');
               const ig = (p.instagram ?? []).map((i) => i.handle).join(', ');
+              const currentGrade = valueToGrade(p.overall_rating ?? 0);
               return (
                 <div
                   key={p.id ?? p.model_code ?? p.email}
                   className="flex items-start justify-between gap-3 px-3 py-2 rounded-lg bg-zinc-950/60 border border-zinc-800"
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium text-white truncate">{p.full_name}</div>
+                    <div className="flex gap-2 mt-1 mb-1">
+                      <button
+                        onClick={() => p.id && navigate(`/talents/${p.id}`)}
+                        className="px-2 py-0.5 rounded border border-blue-500/40 text-blue-200 text-[10px] hover:bg-blue-900/30 whitespace-nowrap"
+                      >
+                        View Profile
+                      </button>
+                      <div className="flex items-center gap-1 text-[10px]">
+                        <label className="text-zinc-400 whitespace-nowrap">Grade:</label>
+                        <input
+                          type="range"
+                          min={0}
+                          max={11}
+                          step={1}
+                          value={p.overall_rating ?? 0}
+                          onChange={(e) => {
+                            const ratingValue = Number(e.target.value);
+                            const updated = { ...p, overall_rating: ratingValue };
+                            setProfiles((prev) => prev.map((prof) => (prof.id === p.id ? updated : prof)));
+                            // Auto-save the rating
+                            if (p.id) {
+                              upsertProfile(updated).catch((err) => {
+                                console.error('Failed to save rating', err);
+                                showToast('Failed to save rating');
+                              });
+                            }
+                          }}
+                          className="w-20 accent-[#dfcda5] cursor-pointer"
+                        />
+                        <span className="w-7 text-zinc-300 font-medium text-[11px]">{currentGrade}</span>
+                      </div>
+                    </div>
                     <div className="text-[11px] text-zinc-400 truncate">
                       {location || 'Location TBA'}
                     </div>
@@ -1568,7 +1625,7 @@ export const AdminDashboard: React.FC = () => {
                       <div className="text-[11px] text-zinc-500 truncate">{ig}</div>
                     )}
                   </div>
-                  <div className="flex flex-col items-end gap-1">
+                  <div className="flex flex-col items-end gap-1 text-right">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-amber-900/40 text-amber-200 border border-amber-500/40">
                       Under Review
                     </span>
@@ -2223,13 +2280,13 @@ const ModelDataEntry: React.FC = () => {
         </div>
         <div>
           <label className="block text-xs uppercase tracking-widest text-zinc-500 mb-1">
-            Overall Rating (out of 10)
+            Overall Rating (Grade A* to F)
           </label>
           <div className="flex items-center gap-3">
             <input
               type="range"
               min={0}
-              max={10}
+              max={11}
               step={1}
               value={profile.overall_rating ?? 0}
               onChange={(e) =>
@@ -2240,9 +2297,13 @@ const ModelDataEntry: React.FC = () => {
               }
               className="flex-1 accent-[#dfcda5]"
             />
-            <span className="w-8 text-sm text-white text-right">
-              {profile.overall_rating ?? 0}
+            <span className="w-12 text-sm text-white text-right font-medium">
+              {valueToGrade(profile.overall_rating ?? 0)}
             </span>
+          </div>
+          <div className="text-[10px] text-zinc-400 mt-1 flex justify-between">
+            <span>F (0)</span>
+            <span>A* (11)</span>
           </div>
         </div>
         <div>

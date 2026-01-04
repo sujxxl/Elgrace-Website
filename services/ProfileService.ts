@@ -39,7 +39,7 @@ export type ProfileData = {
   cover_photo_url?: string;
   portfolio_folder_link?: string;
   // Admin review & commercial
-  overall_rating?: number | null; // 0-10
+  overall_rating?: number | null; // 0-11 (F=0 to A*=11)
   expected_budget?: string | null; // legacy free-form, e.g. "₹10k/day"
   // Structured commercial minimum budgets (new, additive)
   min_budget_half_day?: number | null;
