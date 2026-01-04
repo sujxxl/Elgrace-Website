@@ -147,18 +147,18 @@ export const TalentOnboardingPage: React.FC = () => {
   };
 
   return (
-    <main className="bg-[#fbf3e4] min-h-screen pt-16 pb-16">
-      <div className="max-w-5xl mx-auto px-4">
+    <main className="bg-[#fbf3e4] min-h-screen pt-14 pb-14 sm:pt-16 sm:pb-16">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="mb-8">
           <p className="text-xs uppercase tracking-[0.2em] text-gray-600 font-semibold">Talent Onboarding</p>
-          <h1 className="text-4xl md:text-5xl font-['Syne'] font-bold text-black mt-2">Submit Your Profile</h1>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-['Syne'] font-bold text-black mt-2">Submit Your Profile</h1>
           <p className="text-gray-700 mt-3 max-w-3xl">Share your details to join the Elgrace roster. We review every submission to maintain quality and client fit.</p>
           <div className="mt-3 text-sm text-gray-600">
             {loadingCode ? 'Generating your model code…' : submitProfile.model_code ? `Model Code: ${submitProfile.model_code}` : 'Model code unavailable'}
           </div>
         </div>
 
-        <div className="bg-white border border-[#dfcda5] rounded-3xl p-8 shadow-lg">
+        <div className="bg-white border border-[#dfcda5] rounded-3xl p-6 sm:p-8 shadow-lg">
           <div className="grid md:grid-cols-2 gap-4 mb-6">
             <div>
               <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Full Name</label>
@@ -185,7 +185,7 @@ export const TalentOnboardingPage: React.FC = () => {
                 value={submitProfile.phone}
                 onChange={(e) => setSubmitProfile({ ...submitProfile, phone: e.target.value })}
                 className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="WhatsApp preferred"
+                placeholder="WhatsApp Only"
               />
             </div>
             <div>
@@ -607,7 +607,7 @@ export const TalentOnboardingPage: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 navigate('/talents');
               }}
-              className="px-6 py-3 rounded-2xl border-2 border-[#dfcda5] bg-white text-gray-700 hover:bg-[#fbf3e4] font-semibold uppercase tracking-widest"
+              className="px-6 py-3 rounded-2xl border-2 border-[#dfcda5] bg-white text-gray-700 hover:bg-[#fbf3e4] font-semibold uppercase tracking-widest w-full sm:w-auto"
             >
               Back to Gallery
             </button>
@@ -615,7 +615,7 @@ export const TalentOnboardingPage: React.FC = () => {
               type="button"
               disabled={submittingProfile || loadingCode}
               onClick={handleSaveSubmitProfile}
-              className="px-6 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a] disabled:opacity-60"
+              className="px-6 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a] disabled:opacity-60 w-full sm:w-auto"
             >
               {submittingProfile ? 'Submitting…' : 'Submit Profile'}
             </button>
