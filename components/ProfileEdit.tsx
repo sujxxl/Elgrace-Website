@@ -7,6 +7,13 @@ import { compressImageFile } from '../services/image';
 import { CheckCircle2 } from 'lucide-react';
 import { Country, State, City } from 'country-state-city';
 
+const POPULAR_LANGUAGES = [
+  'English', 'Hindi', 'Spanish', 'Mandarin Chinese', 'French', 'Arabic',
+  'Bengali', 'Russian', 'Portuguese', 'Urdu', 'Indonesian', 'German',
+  'Japanese', 'Swahili', 'Marathi', 'Telugu', 'Turkish', 'Tamil',
+  'Korean', 'Italian'
+];
+
 function useQuery() {
   const { search } = useLocation();
   return useMemo(() => new URLSearchParams(search), [search]);
