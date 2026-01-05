@@ -5,15 +5,17 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
 export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuccess }) => {
-  const { login, loginWithMagicLink, requestPasswordReset, updatePassword } = useAuth();
+  const { login, loginWithMagicLink, requestPasswordReset, updatePassword, signup } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [role, setRole] = useState<'model' | 'client'>('model');
   const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<'login' | 'reset-request' | 'reset-update'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset-request' | 'reset-update'>('login');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -33,7 +35,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
     if (res.success) {
       showToast('👋 Welcome back!');
       onLoginSuccess?.();
-      navigate('/profile');
+      navigate('/talents/onboarding');
     } else {
       setMsg(res.message ?? 'Login failed');
     }
@@ -79,11 +81,28 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
     }
   };
 
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMsg(null);
+    setLoading(true);
+    const res = await signup(email, password, displayName || undefined, role);
+    setLoading(false);
+    if (res.success) {
+      showToast('✅ Account created. Please log in.');
+      setMode('login');
+      setPassword('');
+    } else {
+      setMsg(res.message ?? 'Signup failed');
+    }
+  };
+
   const formMode = mode === 'reset-request'
       ? handleResetRequest
       : mode === 'reset-update'
         ? handlePasswordUpdate
-        : handleLogin;
+        : mode === 'signup'
+          ? handleSignup
+          : handleLogin;
 
   return (
     <section className="min-h-screen flex items-center justify-center py-20">
@@ -122,14 +141,18 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                 ? 'Reset password'
                 : mode === 'reset-update'
                   ? 'Set a new password'
-                  : 'Employee login'}
+                  : mode === 'signup'
+                    ? 'Create account'
+                    : 'Sign in'}
             </h2>
             <p className="text-zinc-400 mb-6">
               {mode === 'reset-request'
                 ? 'Enter your work email to get a reset link.'
                 : mode === 'reset-update'
-                  ? 'Set a new password for your staff account.'
-                  : 'Log in with your staff credentials — or request a magic link.'}
+                  ? 'Set a new password for your account.'
+                  : mode === 'signup'
+                    ? 'Create a model or client account to manage your profile and castings.'
+                    : 'Log in to manage your profile and castings — or request a magic link.'}
             </p>
 
             <form onSubmit={formMode} className="space-y-4">
@@ -150,7 +173,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                 </label>
               )}
 
-              {(mode === 'login') && (
+              {(mode === 'login' || mode === 'signup') && (
                 <label className="block">
                   <div className="flex items-center gap-3 mb-2 text-zinc-400">
                     <Lock className="w-4 h-4" />
@@ -164,6 +187,44 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                     placeholder="••••••••"
                   />
                 </label>
+              )}
+
+              {mode === 'signup' && (
+                <>
+                  <label className="block">
+                    <div className="flex items-center gap-3 mb-2 text-zinc-400">
+                      <span className="text-sm">Full name</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={displayName}
+                      onChange={e => setDisplayName(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 px-4 py-3 rounded-xl backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-zinc-300/60 text-white placeholder:text-zinc-400"
+                      placeholder="Your name"
+                    />
+                  </label>
+                  <label className="block">
+                    <div className="flex items-center gap-3 mb-2 text-zinc-400">
+                      <span className="text-sm">Account type</span>
+                    </div>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setRole('model')}
+                        className={`flex-1 px-4 py-2 rounded-xl border text-sm font-medium ${role === 'model' ? 'border-[#dfcda5] text-white bg-white/10' : 'border-white/10 text-zinc-300'}`}
+                      >
+                        Model
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRole('client')}
+                        className={`flex-1 px-4 py-2 rounded-xl border text-sm font-medium ${role === 'client' ? 'border-[#dfcda5] text-white bg-white/10' : 'border-white/10 text-zinc-300'}`}
+                      >
+                        Client / Brand
+                      </button>
+                    </div>
+                  </label>
+                </>
               )}
 
               {mode === 'login' && (
@@ -233,7 +294,9 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                     ? 'Send reset link'
                     : mode === 'reset-update'
                       ? 'Update password'
-                      : 'Log in'}
+                      : mode === 'signup'
+                        ? 'Create account'
+                        : 'Log in'}
               </button>
             </form>
 
@@ -257,29 +320,54 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
             )}
 
             {/* Footer */}
-            <div className="mt-6 text-center text-sm text-zinc-400">
-              {mode === 'login' ? (
+            <div className="mt-6 text-center text-sm text-zinc-400 space-y-1">
+              {mode === 'login' && (
                 <>
-                  Forgot your password?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setMode('reset-request')}
-                    className="text-[#dfcda5] hover:underline"
-                  >
-                    Reset here
-                  </button>
+                  <div>
+                    Forgot your password?{' '}
+                    <button
+                      type="button"
+                      onClick={() => setMode('reset-request')}
+                      className="text-[#dfcda5] hover:underline"
+                    >
+                      Reset here
+                    </button>
+                  </div>
+                  <div>
+                    New here?{' '}
+                    <button
+                      type="button"
+                      onClick={() => { setMode('signup'); setMsg(null); }}
+                      className="text-[#dfcda5] hover:underline"
+                    >
+                      Create an account
+                    </button>
+                  </div>
                 </>
-              ) : (
-                <>
-                  Remembered your password?{' '}
+              )}
+              {mode === 'signup' && (
+                <div>
+                  Already have an account?{' '}
                   <button
                     type="button"
-                    onClick={() => setMode('login')}
+                    onClick={() => { setMode('login'); setMsg(null); }}
                     className="text-[#dfcda5] hover:underline"
                   >
                     Back to login
                   </button>
-                </>
+                </div>
+              )}
+              {(mode === 'reset-request' || mode === 'reset-update') && (
+                <div>
+                  Remembered your password?{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setMode('login'); setMsg(null); }}
+                    className="text-[#dfcda5] hover:underline"
+                  >
+                    Back to login
+                  </button>
+                </div>
               )}
             </div>
           </div>

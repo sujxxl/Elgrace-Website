@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Edit, Plus, MapPin, DollarSign, Calendar } from 'lucide-react';
-import { BrandProfile, Casting, BookingRequest, CastingApplication, CastingApplicationStatus, listCastingApplicationsForModel, listCastingApplicationsForBrand, updateCastingApplicationStatus, listBookingRequestsForModel, listBookingRequestsForClient, updateBookingStatus, getBrandProfileByUserId, upsertBrandProfile, createCasting, listCastings, getProfileByUserId, ProfileData, updateProfileStatus, deleteCasting } from '../services/ProfileService';
+import { BrandProfile, Casting, BookingRequest, CastingApplication, listBookingRequestsForModel, listBookingRequestsForClient, updateBookingStatus, getBrandProfileByUserId, upsertBrandProfile, createCasting, listCastings, listCastingApplicationsForBrand, getProfileByUserId, ProfileData, updateProfileStatus, deleteCasting } from '../services/ProfileService';
 import { buildDriveImageUrls } from '../services/gdrive';
 
 // This dashboard strictly inherits existing theme: black/white base, neutral glass,
@@ -12,11 +12,20 @@ import { buildDriveImageUrls } from '../services/gdrive';
 
 type TabKey = 'dashboard' | 'profile' | 'castings' | 'bookings' | 'settings';
 
+const EmptyCastingsNotice: React.FC = () => (
+  <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+    <h3 className="text-xl font-['Syne'] font-bold mb-2">Castings</h3>
+    <p className="text-zinc-400 text-sm">
+      The casting application system is currently disabled. You can still keep your profile up to date so the Elgrace
+      team can match you to opportunities directly.
+    </p>
+  </div>
+);
+
 export const ProfileDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
-  const isModel = user?.role === 'model';
-  const isClient = user?.role === 'client';
 
   if (!user) {
     return (
@@ -29,251 +38,107 @@ export const ProfileDashboard: React.FC = () => {
     );
   }
 
+  const isModel = user.role === 'model';
+  const isClient = user.role === 'client';
+  const displayName = user.name || user.email || 'Your account';
+
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: 'dashboard', label: 'Overview' },
+    { key: 'profile', label: isModel ? 'Profile' : 'Brand Profile' },
+    { key: 'castings', label: 'Castings' },
+    { key: 'bookings', label: 'Bookings' },
+    { key: 'settings', label: 'Settings' },
+  ];
+
   return (
-    <section className="container mx-auto px-6">
+    <section className="container mx-auto px-6 py-6">
       <div className="grid grid-cols-1 md:grid-cols-[260px,1fr] gap-6">
         {/* Sidebar */}
-        <aside className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+        <aside className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm flex flex-col gap-6">
           {/* User Info */}
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-bold">
-              {user.name?.charAt(0)?.toUpperCase() || 'U'}
+              {displayName.charAt(0).toUpperCase()}
             </div>
             <div>
-              <div className="text-white font-semibold">{user.name}</div>
-              <div className="text-xs uppercase tracking-widest text-zinc-500">
-                {isModel ? 'MODEL' : 'CLIENT / BRAND'}
+              <div className="text-sm font-semibold text-white">{displayName}</div>
+              <div className="text-[11px] uppercase tracking-widest text-zinc-500">
+                {isModel ? 'Model' : isClient ? 'Client / Brand' : 'User'}
               </div>
+              <div className="text-xs text-zinc-500">{user.email}</div>
             </div>
           </div>
 
-          {/* Nav */}
-          <nav className="space-y-2">
-            {(isModel) && (
-              <>
-                {renderSideLink('dashboard', 'Dashboard', activeTab, setActiveTab)}
-                {renderSideLink('profile', 'Your Profile', activeTab, setActiveTab)}
-                {renderSideLink('castings', 'Casting Applied', activeTab, setActiveTab)}
-                {renderSideLink('bookings', 'Booking Requests', activeTab, setActiveTab)}
-                {renderSideLink('settings', 'Settings', activeTab, setActiveTab)}
-              </>
-            )}
-            {(isClient) && (
-              <>
-                {renderSideLink('dashboard', 'Dashboard', activeTab, setActiveTab)}
-                {renderSideLink('profile', 'Brand Profile', activeTab, setActiveTab)}
-                {renderSideLink('castings', 'Castings', activeTab, setActiveTab)}
-                {renderSideLink('bookings', 'Bookings', activeTab, setActiveTab)}
-                {renderSideLink('settings', 'Settings', activeTab, setActiveTab)}
-              </>
-            )}
+          {/* Tabs */}
+          <nav className="space-y-2 pt-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`w-full flex items-center justify-between px-4 py-2 rounded-xl border text-xs uppercase tracking-widest ${
+                  activeTab === tab.key
+                    ? 'border-[#dfcda5] bg-white/10 text-white'
+                    : 'border-white/10 bg-transparent text-zinc-300 hover:border-[#dfcda5]'
+                }`}
+              >
+                <span>{tab.label}</span>
+                {activeTab === tab.key && <CheckCircle2 className="w-4 h-4 text-white/70" />}
+              </button>
+            ))}
           </nav>
+
+          {isModel && (
+            <button
+              type="button"
+              onClick={() => navigate('/profile/edit')}
+              className="mt-4 px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white text-xs uppercase tracking-widest"
+            >
+              Edit Full Profile
+            </button>
+          )}
         </aside>
 
-        {/* Content */}
+        {/* Main content */}
         <div className="space-y-6">
-          {activeTab === 'dashboard' && (
-            isModel ? (
-              <ModelDashboard />
-            ) : (
-              <ClientDashboard
-                onEditBrand={() => setActiveTab('profile')}
-                onAddCasting={() => setActiveTab('castings')}
-              />
-            )
+          {isModel && (
+            <>
+              {activeTab === 'dashboard' && (
+                <>
+                  <ModelProfileView />
+                  <ModelBookings />
+                </>
+              )}
+              {activeTab === 'profile' && <ModelProfileView />}
+              {activeTab === 'castings' && <EmptyCastingsNotice />}
+              {activeTab === 'bookings' && <ModelBookings />}
+              {activeTab === 'settings' && <SettingsPanel user={{ email: user.email }} />}
+            </>
           )}
-          {activeTab === 'profile' && (isModel ? <ModelProfileView /> : <ClientBrandProfile />)}
-          {activeTab === 'castings' && (isModel ? <ModelCastingsApplied /> : <ClientCastingsList />)}
-          {activeTab === 'bookings' && (isModel ? <ModelBookings /> : <ClientBookings />)}
-          {activeTab === 'settings' && (<SettingsPanel user={user} />)}
+
+          {isClient && (
+            <>
+              {activeTab === 'dashboard' && (
+                <ClientDashboard
+                  onEditBrand={() => setActiveTab('profile')}
+                  onAddCasting={() => setActiveTab('castings')}
+                />
+              )}
+              {activeTab === 'profile' && <ClientBrandProfile />}
+              {activeTab === 'castings' && <ClientCastingsList />}
+              {activeTab === 'bookings' && <ClientBookings />}
+              {activeTab === 'settings' && <SettingsPanel user={{ email: user.email }} />}
+            </>
+          )}
+
+          {!isModel && !isClient && (
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm text-zinc-300">
+              Your account does not have a model or client role yet.
+            </div>
+          )}
         </div>
       </div>
     </section>
-  );
-};
-
-function renderSideLink(key: TabKey, label: string, active: TabKey, setActive: (k: TabKey) => void) {
-  const isActive = key === active;
-  return (
-    <button
-      onClick={() => setActive(key)}
-      className={`w-full text-left px-4 py-3 rounded-xl border transition-colors uppercase tracking-widest text-xs font-bold
-        ${isActive ? 'bg-white/10 border-[#dfcda5] text-white' : 'bg-white/5 border-white/10 text-zinc-300 hover:border-[#dfcda5]'}
-      `}
-    >
-      {label}
-    </button>
-  );
-}
-
-/* MODEL DASHBOARD */
-const ModelDashboard: React.FC = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const { showToast } = useToast();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [confirming, setConfirming] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      try {
-        const data = await getProfileByUserId(user.id);
-        setProfile(data);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [user]);
-
-  const completion = {
-    personal:
-      !!profile?.full_name &&
-      !!profile?.dob &&
-      !!profile?.gender &&
-      !!profile?.phone &&
-      !!profile?.country &&
-      !!profile?.state &&
-      !!profile?.city &&
-      (profile?.instagram?.length ?? 0) > 0 &&
-      !!profile?.instagram?.[0]?.handle,
-    professional:
-      !!profile?.experience_level &&
-      profile?.open_to_travel !== undefined &&
-      profile?.ramp_walk_experience !== undefined &&
-      (profile?.ramp_walk_experience ? !!profile?.ramp_walk_description : true) &&
-      (profile?.languages?.length ?? 0) > 0,
-    measurements:
-      !!profile?.height_feet &&
-      !!profile?.height_inches &&
-      !!profile?.bust_chest &&
-      !!profile?.waist &&
-      !!profile?.shoe_size,
-    media: !!profile?.cover_photo_url,
-  } as const;
-
-  const stepsOrder: Array<'personal' | 'professional' | 'measurements' | 'media'> = [
-    'personal',
-    'professional',
-    'measurements',
-    'media',
-  ];
-
-  const firstIncompleteId = stepsOrder.find((k) => !completion[k]) ?? 'media';
-  const completedCount = stepsOrder.filter((k) => completion[k]).length;
-  const totalSteps = stepsOrder.length;
-  const canConfirmProfile = completedCount === totalSteps;
-
-  const getSectionForId = (id: 'personal' | 'professional' | 'measurements' | 'media') => {
-    switch (id) {
-      case 'personal':
-        return 'personal-info' as const;
-      case 'professional':
-        return 'professional-info' as const;
-      case 'measurements':
-        return 'measurements' as const;
-      case 'media':
-      default:
-        return 'photos-media' as const;
-    }
-  };
-
-  const handleGoToSection = (section: 'personal-info' | 'professional-info' | 'measurements' | 'photos-media') => {
-    navigate(`/profile/edit?section=${section}`);
-  };
-
-  const nextSection = getSectionForId(firstIncompleteId);
-  const editHref = `/profile/edit?section=${nextSection}`;
-  const displayName = profile?.full_name || user?.name || 'Your Name';
-  const displayLocation = [profile?.city, profile?.state, profile?.country]
-    .filter(Boolean)
-    .join(', ');
-  const displayInstagram = profile?.instagram?.[0]?.handle || '@instagram_handle';
-
-  const statusText =
-    completedCount === totalSteps
-      ? 'Status: Profile Complete'
-      : `Status: ${completedCount}/${totalSteps} sections complete`;
-
-  const handleConfirmProfile = async () => {
-    if (!profile?.user_id || !canConfirmProfile || confirming) return;
-    try {
-      setConfirming(true);
-      const updated = await updateProfileStatus(profile.user_id, 'UNDER_REVIEW');
-      setProfile(updated);
-      showToast('Profile submitted for admin review');
-    } catch (err) {
-      console.error('Failed to submit profile for review', err);
-      showToast('Failed to submit profile for review');
-    } finally {
-      setConfirming(false);
-    }
-  };
-
-  return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
-      <h3 className="text-2xl font-['Syne'] font-bold mb-4">Profile Overview</h3>
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-white/10 border border-white/20" />
-            <div>
-              <div className="font-semibold">{displayName}</div>
-              <div className="text-xs text-zinc-500 uppercase tracking-widest">Category: Model</div>
-              <div className="text-xs text-zinc-500">{displayLocation || 'Location'} • {displayInstagram}</div>
-            </div>
-          </div>
-          <div className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10 text-zinc-300">
-            {loading
-              ? 'Checking profile status…'
-              : profile?.status === 'ONLINE'
-              ? 'Status: Profile Approved & Online'
-              : statusText}
-          </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <a
-              href={editHref}
-              className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white"
-            >
-              Edit Profile
-            </a>
-            {profile?.status !== 'ONLINE' && (
-              <button
-                type="button"
-                disabled={!canConfirmProfile || confirming}
-                onClick={handleConfirmProfile}
-                className={`px-4 py-2 rounded-xl border text-xs font-semibold tracking-widest uppercase transition-colors ${
-                  canConfirmProfile
-                    ? 'border-emerald-400 text-emerald-200 hover:bg-emerald-900/30'
-                    : 'border-white/10 text-zinc-500 cursor-not-allowed'
-                }`}
-              >
-                {profile?.status === 'UNDER_REVIEW'
-                  ? 'Awaiting Admin Review'
-                  : confirming
-                  ? 'Submitting…'
-                  : 'Confirm Profile'}
-              </button>
-            )}
-            <button
-              className="px-4 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5]"
-              type="button"
-            >
-              Contact Admin
-            </button>
-          </div>
-        </div>
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
-          <h4 className="text-sm uppercase tracking-widest text-zinc-500 mb-2">Complete Your Profile</h4>
-          <ProfileStepper
-            completion={completion}
-            current={firstIncompleteId}
-            onGoTo={handleGoToSection}
-          />
-        </div>
-      </div>
-    </div>
   );
 };
 
@@ -513,102 +378,6 @@ const ModelProfileView: React.FC = () => {
           <div><span className="text-zinc-500 text-xs uppercase">Shoe Size</span><div className="font-medium">{profile.shoe_size || '—'}</div></div>
         </div>
       </div>
-    </div>
-  );
-};
-
-/* MODEL CASTINGS APPLIED */
-const ModelCastingsApplied: React.FC = () => {
-  const { user } = useAuth();
-  const { showToast } = useToast();
-  const [applications, setApplications] = useState<CastingApplication[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      try {
-        const data = await listCastingApplicationsForModel(user.id);
-        setApplications(data);
-      } catch (err) {
-        console.error('Failed to load casting applications for model', err);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [user]);
-
-  const handleCancelApplication = async (app: CastingApplication) => {
-    if (!app.id) return;
-    try {
-      const updated = await updateCastingApplicationStatus(app.id, 'cancelled' as CastingApplicationStatus);
-      setApplications((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-      showToast('Application cancelled.', 'success');
-    } catch (err) {
-      console.error('Failed to cancel application', err);
-      showToast('Could not cancel application.', 'error');
-    }
-  };
-
-  return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
-      <h4 className="text-lg font-['Syne'] font-bold mb-4">Castings Applied</h4>
-      {loading ? (
-        <div className="text-zinc-400 text-sm">Loading your casting applications...</div>
-      ) : applications.length === 0 ? (
-        <div className="text-zinc-400">You haven't applied to any castings yet.</div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-zinc-500 text-xs uppercase tracking-widest">
-                {['Casting Title','Status','Budget','Location','Applied On','Shoot Date','Deadline','Actions'].map(h => (
-                  <th key={h} className="py-2 pr-6">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="text-zinc-300">
-              {applications.map((app) => {
-                const c = app.casting as any as Casting | undefined;
-                const budget = c
-                  ? (() => {
-                      const min = c.budget_min ?? undefined;
-                      const max = c.budget_max ?? undefined;
-                      if (!min && !max) return 'TBA';
-                      if (min && max) return `₹${Number(min).toLocaleString()} - ₹${Number(max).toLocaleString()}`;
-                      if (min) return `From ₹${Number(min).toLocaleString()}`;
-                      return `Up to ₹${Number(max!).toLocaleString()}`;
-                    })()
-                  : 'TBA';
-                const effectiveStatus = (app.status ?? 'applied') as CastingApplicationStatus;
-                const canCancel = !['cancelled', 'booked', 'rejected'].includes(effectiveStatus);
-                return (
-                  <tr key={app.id} className="border-t border-zinc-800">
-                    <td className="py-2 pr-6 text-sm text-white">{c?.title ?? 'Casting'}</td>
-                    <td className="py-2 pr-6 text-sm capitalize">{app.status ?? 'applied'}</td>
-                    <td className="py-2 pr-6 text-sm">{budget}</td>
-                    <td className="py-2 pr-6 text-sm">{c?.location ?? '—'}</td>
-                    <td className="py-2 pr-6 text-sm">{app.created_at ? new Date(app.created_at).toLocaleDateString() : '—'}</td>
-                    <td className="py-2 pr-6 text-sm">{c?.shoot_date ? new Date(c.shoot_date).toLocaleDateString() : '—'}</td>
-                    <td className="py-2 pr-6 text-sm">{c?.application_deadline ? new Date(c.application_deadline).toLocaleDateString() : '—'}</td>
-                    <td className="py-2 pr-6 text-sm">
-                      {canCancel && app.id && (
-                        <button
-                          type="button"
-                          onClick={() => handleCancelApplication(app)}
-                          className="px-3 py-1 rounded-xl border border-red-400 text-red-200 text-[11px] uppercase tracking-widest hover:bg-red-900/20"
-                        >
-                          Cancel
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 };
@@ -1339,7 +1108,7 @@ const SettingsPanel: React.FC<{ user: { email: string | null; } }> = ({ user }) 
   };
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm space-y-6">
+    <div className="rounded-2xl p-6 space-y-6">
       <div>
         <h4 className="text-lg font-['Syne'] font-bold mb-2">Email Management</h4>
         <p className="text-zinc-400 text-sm mb-3">To update your registered email, please contact support.</p>

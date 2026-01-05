@@ -43,6 +43,7 @@ const pathToView = (p: string): ViewKey => {
 const AppRouterContent: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
 
   const currentView = pathToView(location.pathname);
   const onNavigate = (view: ViewKey) => {
@@ -54,7 +55,7 @@ const AppRouterContent: React.FC = () => {
       <Navbar
         onNavigate={onNavigate}
         currentView={currentView}
-        forceLight={location.pathname.startsWith('/talents/onboarding')}
+        forceLight={location.pathname.startsWith('/profile') && user?.role !== 'admin'}
       />
 
       <Routes>
@@ -110,9 +111,16 @@ const AppRouterContent: React.FC = () => {
           }
         />
 
+        {/* Authenticated onboarding form (shown after login) */}
         <Route
           path="/talents/onboarding"
-          element={<TalentOnboardingPage />}
+          element={
+            <ProtectedRoute requireAuth={true}>
+              <main className="pt-16 relative z-10">
+                <TalentOnboardingPage />
+              </main>
+            </ProtectedRoute>
+          }
         />
 
         <Route
@@ -175,9 +183,9 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/profile"
           element={
-            <ProtectedRoute requireAuth={true} requireRole="admin">
+            <ProtectedRoute requireAuth={true}>
               <main className="pt-16 relative z-10">
-                <AdminDashboard />
+                {user?.role === 'admin' ? <AdminDashboard /> : <ProfileDashboard />}
               </main>
             </ProtectedRoute>
           }

@@ -183,7 +183,7 @@ export async function createPublicProfile(payload: ProfileData) {
   // For anon/public inserts we don't rely on RETURNING data because
   // RLS SELECT policies may block reading UNDER_REVIEW rows. The
   // caller already has the payload and generated model_code.
-  return (data?.[0] ?? null) as ProfileData | null;
+  return (data && (data as any[])[0] ? ((data as any[])[0] as ProfileData) : null);
 }
 
 // Admin upsert: used from the admin dashboard where the admin JWT has full access.

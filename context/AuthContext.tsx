@@ -50,7 +50,7 @@ const signup = async (
   role?: 'model' | 'client'
 ) => {
   try {
-    // 1️⃣ Create auth user with role in JWT metadata
+    // Create auth user with role in JWT metadata
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -71,21 +71,8 @@ const signup = async (
       return { success: false, message: 'User not returned from signup' };
     }
 
-    // 2️⃣ Create / upsert profile (role stored in auth metadata, not here)
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .upsert(
-        {
-          id: user.id,
-          display_name: displayName ?? null,
-        },
-        { onConflict: 'id' }
-      );
-
-    if (profileError) {
-      return { success: false, message: `Profile save failed: ${profileError.message}` };
-    }
-
+    // No additional table writes here: model/client details are captured
+    // later via model_profiles / brand_profiles flows.
     return { success: true };
   } catch (err: any) {
     return { success: false, message: err?.message ?? 'Signup failed' };
