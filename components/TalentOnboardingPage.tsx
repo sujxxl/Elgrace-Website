@@ -24,7 +24,6 @@ const SHOE_SIZES = [
 const SKILL_PRESETS = [
   'Ramp Walk',
   'Acting',
-  'Print / Catalog',
   'TV / Film',
   'Digital Creator / UGC',
 ];
@@ -114,35 +113,76 @@ export const TalentOnboardingPage: React.FC = () => {
   };
 
   const handleSaveSubmitProfile = async () => {
+    const missing: string[] = [];
     const code = submitProfile.model_code?.toString().trim();
-    if (!code) {
-      showToast('Model code is required');
+    const email = submitProfile.email.trim();
+    const phone = submitProfile.phone.trim();
+
+    if (!code) missing.push('Model code');
+    if (!submitProfile.full_name.trim()) missing.push('Full name');
+    if (!email || !email.includes('@')) missing.push('Valid email');
+    if (!phone || phone.length < 7) missing.push('Valid phone');
+    if (!submitProfile.dob) missing.push('Age');
+    if (!submitProfile.gender) missing.push('Gender');
+    if (!submitProfile.country) missing.push('Country');
+    if (!submitProfile.state) missing.push('State');
+    if (!submitProfile.city) missing.push('City');
+    if (!submitProfile.experience_level) missing.push('Experience level');
+    if (!submitProfile.languages || submitProfile.languages.length === 0) missing.push('Languages');
+    if (!submitProfile.skills || submitProfile.skills.length === 0) missing.push('Skills');
+    if (submitProfile.open_to_travel === undefined) missing.push('Open to travel');
+
+    const minHalf = submitProfile.min_budget_half_day;
+    const minFull = submitProfile.min_budget_full_day;
+    if (minHalf === undefined || minHalf === null || minHalf <= 0) missing.push('Minimum budget (half day)');
+    if (minFull === undefined || minFull === null || minFull <= 0) missing.push('Minimum budget (full day)');
+
+    const hFt = submitProfile.height_feet;
+    const hIn = submitProfile.height_inches;
+    if (!Number.isFinite(hFt) || (hFt ?? 0) <= 0) missing.push('Height (feet)');
+    if (!Number.isFinite(hIn) || (hIn ?? 0) < 0) missing.push('Height (inches)');
+    if (!Number.isFinite(submitProfile.bust_chest) || (submitProfile.bust_chest ?? 0) <= 0) missing.push('Bust / Chest');
+    if (!Number.isFinite(submitProfile.waist) || (submitProfile.waist ?? 0) <= 0) missing.push('Waist');
+    if (!Number.isFinite(submitProfile.hips) || (submitProfile.hips ?? 0) <= 0) missing.push('Hips');
+    if (!submitProfile.size) missing.push('Size');
+    if (!submitProfile.shoe_size) missing.push('Shoe size');
+
+    if (!submitProfile.cover_photo_url?.trim()) missing.push('Cover photo URL');
+    if (!submitProfile.portfolio_folder_link?.trim()) missing.push('Portfolio folder link');
+    if (!submitProfile.intro_video_url?.trim()) missing.push('Intro video URL');
+
+    const igList = submitProfile.instagram || [];
+    if (igList.length === 0 || igList.some((i) => !i.handle.trim())) missing.push('Instagram handles');
+
+    if (missing.length > 0) {
+      showToast(`Please fill: ${missing.join(', ')}`);
       return;
     }
-    if (!submitProfile.full_name.trim()) {
-      showToast('Full name is required');
-      return;
-    }
-    if (!submitProfile.email.trim()) {
-      showToast('Email is required');
-      return;
-    }
+
     setSubmittingProfile(true);
-    try {
-      const payload: ProfileData = {
-        ...submitProfile,
-        email: submitProfile.email.trim(),
-        category: 'model',
-      };
-      await upsertProfile(payload);
-      showToast('Profile submitted successfully!', 'success');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      navigate('/talents');
-    } catch (err: any) {
-      console.error('Failed to save profile', err);
-      showToast(err?.message ?? 'Failed to submit profile');
-    } finally {
-      setSubmittingProfile(false);
+      let success = false;
+      try {
+        const payload: ProfileData = {
+          ...submitProfile,
+          email: submitProfile.email.trim(),
+          category: 'model',
+        };
+        await upsertProfile(payload);
+        success = true;
+        showToast('Profile submitted successfully!', 'success');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        navigate('/talents');
+      } catch (err: any) {
+        console.error('Failed to save profile', err);
+        showToast(err?.message ?? 'Failed to submit profile');
+        // Do not clear or reset fields when submission fails
+      } finally {
+        if (!success) {
+          // keep all field values intact on error
+          setSubmittingProfile(false);
+        } else {
+          setSubmittingProfile(false);
+        }
     }
   };
 
