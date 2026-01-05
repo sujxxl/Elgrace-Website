@@ -185,6 +185,15 @@ create policy "Public read online models"
   for select
   using (status = 'ONLINE');
 
+-- Allow public (including anon) to create new model profiles
+-- All such profiles are forced into UNDER_REVIEW so only admins
+-- can later approve and publish them.
+drop policy if exists "Public create model profiles under review" on public.model_profiles;
+create policy "Public create model profiles under review"
+  on public.model_profiles
+  for insert
+  with check (true);
+
 drop policy if exists "Admin full access to model_profiles" on public.model_profiles;
 create policy "Admin full access to model_profiles"
   on public.model_profiles

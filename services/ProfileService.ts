@@ -173,6 +173,20 @@ export async function getProfileByModelCode(modelCode: string) {
   return data as ProfileData | null;
 }
 
+// Public create: used by the talent onboarding form.
+// Uses a plain INSERT so only the INSERT RLS policy is required.
+export async function createPublicProfile(payload: ProfileData) {
+  const { data, error } = await supabase
+    .from(PROFILE_TABLE)
+    .insert(payload);
+  if (error) throw error;
+  // For anon/public inserts we don't rely on RETURNING data because
+  // RLS SELECT policies may block reading UNDER_REVIEW rows. The
+  // caller already has the payload and generated model_code.
+  return (data?.[0] ?? null) as ProfileData | null;
+}
+
+// Admin upsert: used from the admin dashboard where the admin JWT has full access.
 export async function upsertProfile(payload: ProfileData) {
   const { data, error } = await supabase
     .from(PROFILE_TABLE)

@@ -1086,64 +1086,51 @@ export const AdminDashboard: React.FC = () => {
                                         {profileStatusLabel[status]}
                                       </span>
                                       </div>
+                                      {/* Thin divider between header and stats */}
+                                      <div className="border-t border-[#e0cdb0]/70 dark:border-white/10 my-2" />
 
-                                      <div className="grid grid-cols-2 gap-3 mt-1">
-                                      <div>
-                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
-                                        Age
+                                      {/* Compact stats without heavy labels */}
+                                      <div className="space-y-1.5 text-[11px] text-zinc-900 dark:text-zinc-100">
+                                        <div className="flex items-center justify-between gap-3">
+                                          <span>{p.age != null ? `${p.age} yrs` : 'Age N/A'}</span>
+                                          <span className="inline-flex items-center gap-1">
+                                            <Ruler className="w-3 h-3 text-zinc-500 dark:text-zinc-400" />
+                                            <span>{p.heightLabel}</span>
+                                          </span>
                                         </div>
-                                        <div>{p.age != null ? `${p.age} yrs` : 'N/A'}</div>
-                                      </div>
-                                      <div>
-                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] flex items-center gap-1">
-                                        <Ruler className="w-3 h-3" /> Height
+                                        <div className="flex items-center justify-between gap-3">
+                                          <span>
+                                            {(p as any).overall_rating != null
+                                              ? `Rating ${(p as any).overall_rating}/10`
+                                              : 'Rating N/A'}
+                                          </span>
+                                          <span className="inline-flex items-center gap-1 text-right">
+                                            <Weight className="w-3 h-3 text-zinc-500 dark:text-zinc-400" />
+                                            <span className="truncate max-w-[10rem]">{budgetText}</span>
+                                          </span>
                                         </div>
-                                        <div>{p.heightLabel}</div>
-                                      </div>
-                                      <div>
-                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
-                                        Rating
-                                        </div>
-                                        <div>
-                                        {(p as any).overall_rating != null
-                                          ? `${(p as any).overall_rating}/10`
-                                          : 'N/A'}
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] flex items-center gap-1">
-                                        <Weight className="w-3 h-3" /> Budget
-                                        </div>
-                                        <div>{budgetText}</div>
-                                      </div>
-                                      <div>
-                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
-                                        Open to Travel
-                                        </div>
-                                        <div>
-                                        {p.open_to_travel == null
-                                          ? 'Any'
-                                          : p.open_to_travel
-                                          ? 'Yes'
-                                          : 'No'}
+                                        <div className="flex items-center justify-between gap-3">
+                                          <span>
+                                            {p.open_to_travel == null
+                                              ? 'Travel: Any'
+                                              : p.open_to_travel
+                                              ? 'Travel: Yes'
+                                              : 'Travel: No'}
+                                          </span>
+                                          <span className="truncate max-w-[10rem]">
+                                            {p.experience_level ? `Exp: ${p.experience_level}` : 'Exp: N/A'}
+                                          </span>
                                         </div>
                                       </div>
-                                      <div>
-                                        <div className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px]">
-                                        Experience
-                                        </div>
-                                        <div>{p.experience_level || 'N/A'}</div>
-                                      </div>
-                                      </div>
+
+                                      {/* Divider before chips */}
+                                      <div className="border-t border-[#e0cdb0]/70 dark:border-white/10 my-2" />
 
                                       {(p.languages && p.languages.length > 0) ||
                                       (p.skills && p.skills.length > 0) ? (
                                       <div className="mt-2 space-y-2 text-[11px]">
                                         {p.languages && p.languages.length > 0 && (
                                         <div className="flex flex-wrap gap-1">
-                                          <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] mr-1">
-                                          Languages:
-                                          </span>
                                           {p.languages.slice(0, 10).map((lang) => (
                                           <span
                                             key={lang}
@@ -1156,9 +1143,6 @@ export const AdminDashboard: React.FC = () => {
                                         )}
                                         {p.skills && p.skills.length > 0 && (
                                         <div className="flex flex-wrap gap-1">
-                                          <span className="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest text-[10px] mr-1">
-                                          Skills:
-                                          </span>
                                           {p.skills.slice(0, 10).map((skill) => (
                                           <span
                                             key={skill}
@@ -1173,7 +1157,10 @@ export const AdminDashboard: React.FC = () => {
                                       ) : null}
                                     </div>
 
-                                    <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
+                                    {/* Divider before actions */}
+                                    <div className="border-t border-[#e0cdb0]/70 dark:border-white/10 my-3" />
+
+                                    <div className="flex flex-wrap gap-2 text-[11px]">
                                       <button
                                         type="button"
                                         onClick={(e) => {

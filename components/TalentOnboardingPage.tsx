@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Country, State, City } from 'country-state-city';
-import { ProfileData, getNextModelUserId, upsertProfile } from '../services/ProfileService';
+import { ProfileData, getNextModelUserId, createPublicProfile } from '../services/ProfileService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+
+const STEP_NAMES = ['Basic Info', 'Work & Skills', 'Measurements & Rates', 'Media & Submit'];
 
 const POPULAR_LANGUAGES = [
   'English', 'Hindi', 'Spanish', 'Mandarin Chinese', 'French', 'Arabic',
@@ -34,631 +36,350 @@ export const TalentOnboardingPage: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
+
+  const [currentStep, setCurrentStep] = useState(1);
   const [submittingProfile, setSubmittingProfile] = useState(false);
-  const [loadingCode, setLoadingCode] = useState(false);
-  const [submitProfile, setSubmitProfile] = useState<ProfileData>({
-    full_name: '',
-    dob: '',
-    gender: 'female',
+
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: user?.email || '',
     phone: '',
-    email: '',
-    country: '',
+    age: '' as number | '',
+    dob: '',
+    gender: 'female' as 'male' | 'female' | 'other',
+    country: 'IN',
     state: '',
     city: '',
-    category: 'model',
+    openToTravel: '' as boolean | '',
+    experienceLevel: '',
+    skills: [] as string[],
+    languages: [] as string[],
     instagram: [{ handle: '', followers: 'under_5k' }],
-    status: 'UNDER_REVIEW',
-    model_code: null,
+    languageInput: '',
+    height_feet: '' as number | '',
+    height_inches: '' as number | '',
+    bust_chest: '' as number | '',
+    waist: '' as number | '',
+    hips: '' as number | '',
+    size: '',
+    shoe_size: '',
+    min_budget_half_day: '' as number | '',
+    min_budget_full_day: '' as number | '',
+    cover_photo_url: '',
+    portfolio_folder_link: '',
     intro_video_url: '',
   });
-  const [submitAgeInput, setSubmitAgeInput] = useState<number | ''>('');
-  const [submitLanguageInput, setSubmitLanguageInput] = useState('');
 
-  const submitCountries = Country.getAllCountries();
-  const submitStates = submitProfile.country ? State.getStatesOfCountry(submitProfile.country) : [];
-  const submitCities = submitProfile.state ? City.getCitiesOfState(submitProfile.country, submitProfile.state) : [];
+  // Get country/state/city lists (memoized to avoid heavy recomputation)
+  const countries = useMemo(() => Country.getAllCountries(), []);
+  const states = useMemo(
+    () => (formData.country ? State.getStatesOfCountry(formData.country) : []),
+    [formData.country]
+  );
+  const cities = useMemo(
+    () => (formData.state ? City.getCitiesOfState(formData.country, formData.state) : []),
+    [formData.country, formData.state]
+  );
 
-  useEffect(() => {
-    const init = async () => {
-      setLoadingCode(true);
-      try {
-        const nextId = await getNextModelUserId();
-        setSubmitProfile({
-          full_name: '',
-          dob: '',
-          gender: 'female',
-          phone: '',
-          email: user?.email || '',
-          country: '',
-          state: '',
-          city: '',
-          category: 'model',
-          instagram: [{ handle: '', followers: 'under_5k' }],
-          status: 'UNDER_REVIEW',
-          model_code: nextId,
-          intro_video_url: '',
-        });
-        setSubmitAgeInput('');
-        setSubmitLanguageInput('');
-      } catch (err) {
-        console.error('Failed to generate model code', err);
-        showToast('Failed to load onboarding form');
-      } finally {
-        setLoadingCode(false);
-      }
-    };
-    init();
-  }, [showToast, user?.email]);
+  // (Draft restoration and auto-save removed as requested)
 
-  const handleCountryChange = (isoCode: string) => {
-    setSubmitProfile({ ...submitProfile, country: isoCode, state: '', city: '' });
+  // Validation per step
+  const validateStep = (step: number): string[] => {
+    const errors: string[] = [];
+    if (step === 1) {
+      if (!formData.fullName.trim()) errors.push('Full name is required');
+      if (!formData.email.trim() || !formData.email.includes('@')) errors.push('Valid email is required');
+      if (!formData.phone.trim() || formData.phone.length < 7) errors.push('Valid phone is required');
+      if (!formData.age || formData.age <= 0) errors.push('Valid age is required');
+      if (!formData.dob) errors.push('Age is required');
+      if (!formData.gender) errors.push('Gender is required');
+      if (!formData.country) errors.push('Country is required');
+      if (!formData.state) errors.push('State is required');
+      if (!formData.city) errors.push('City is required');
+      if (formData.openToTravel === '') errors.push('Open to travel is required');
+    } else if (step === 2) {
+      if (!formData.experienceLevel) errors.push('Experience level is required');
+      if (formData.languages.length === 0) errors.push('At least one language is required');
+      if (formData.instagram.length === 0 || formData.instagram.some((i) => !i.handle.trim())) errors.push('Instagram handle is required');
+    } else if (step === 3) {
+      if (!Number.isFinite(formData.height_feet) || (formData.height_feet ?? 0) <= 0) errors.push('Valid height (feet) is required');
+      if (!Number.isFinite(formData.height_inches) || (formData.height_inches ?? 0) < 0) errors.push('Valid height (inches) is required');
+      if (!Number.isFinite(formData.bust_chest) || (formData.bust_chest ?? 0) <= 0) errors.push('Valid bust/chest is required');
+      if (!Number.isFinite(formData.waist) || (formData.waist ?? 0) <= 0) errors.push('Valid waist is required');
+      if (!Number.isFinite(formData.hips) || (formData.hips ?? 0) <= 0) errors.push('Valid hips is required');
+      if (!formData.size) errors.push('Size is required');
+      if (!formData.shoe_size) errors.push('Shoe size is required');
+      if ((formData.min_budget_half_day ?? 0) <= 0) errors.push('Valid minimum budget (half day) is required');
+      if ((formData.min_budget_full_day ?? 0) <= 0) errors.push('Valid minimum budget (full day) is required');
+    } else if (step === 4) {
+      if (!formData.cover_photo_url?.trim()) errors.push('Cover photo URL is required');
+      if (!formData.portfolio_folder_link?.trim()) errors.push('Portfolio folder link is required');
+      if (!formData.intro_video_url?.trim()) errors.push('Intro video URL is required');
+    }
+    return errors;
   };
 
-  const handleStateChange = (isoCode: string) => {
-    setSubmitProfile({ ...submitProfile, state: isoCode, city: '' });
+  const handleNext = () => {
+    const errors = validateStep(currentStep);
+    if (errors.length > 0) {
+      showToast(errors[0]);
+      return;
+    }
+    if (currentStep < 4) {
+      setCurrentStep(currentStep + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
-  const updateSubmitInstagramHandle = (idx: number, key: 'handle' | 'followers', value: string) => {
-    const next = [...(submitProfile.instagram || [])];
-    const item = { ...(next[idx] || { handle: '', followers: 'under_5k' }), [key]: value };
-    next[idx] = item;
-    setSubmitProfile({ ...submitProfile, instagram: next });
+  const handlePrev = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
-  const addSubmitLanguage = () => {
-    if (!submitLanguageInput || submitProfile.languages?.includes(submitLanguageInput)) return;
-    const next = [...(submitProfile.languages || []), submitLanguageInput];
-    setSubmitProfile({ ...submitProfile, languages: next });
-    setSubmitLanguageInput('');
-  };
-
-  const handleSaveSubmitProfile = async () => {
-    const missing: string[] = [];
-    const code = submitProfile.model_code?.toString().trim();
-    const email = submitProfile.email.trim();
-    const phone = submitProfile.phone.trim();
-
-    if (!code) missing.push('Model code');
-    if (!submitProfile.full_name.trim()) missing.push('Full name');
-    if (!email || !email.includes('@')) missing.push('Valid email');
-    if (!phone || phone.length < 7) missing.push('Valid phone');
-    if (!submitProfile.dob) missing.push('Age');
-    if (!submitProfile.gender) missing.push('Gender');
-    if (!submitProfile.country) missing.push('Country');
-    if (!submitProfile.state) missing.push('State');
-    if (!submitProfile.city) missing.push('City');
-    if (!submitProfile.experience_level) missing.push('Experience level');
-    if (!submitProfile.languages || submitProfile.languages.length === 0) missing.push('Languages');
-    if (!submitProfile.skills || submitProfile.skills.length === 0) missing.push('Skills');
-    if (submitProfile.open_to_travel === undefined) missing.push('Open to travel');
-
-    const minHalf = submitProfile.min_budget_half_day;
-    const minFull = submitProfile.min_budget_full_day;
-    if (minHalf === undefined || minHalf === null || minHalf <= 0) missing.push('Minimum budget (half day)');
-    if (minFull === undefined || minFull === null || minFull <= 0) missing.push('Minimum budget (full day)');
-
-    const hFt = submitProfile.height_feet;
-    const hIn = submitProfile.height_inches;
-    if (!Number.isFinite(hFt) || (hFt ?? 0) <= 0) missing.push('Height (feet)');
-    if (!Number.isFinite(hIn) || (hIn ?? 0) < 0) missing.push('Height (inches)');
-    if (!Number.isFinite(submitProfile.bust_chest) || (submitProfile.bust_chest ?? 0) <= 0) missing.push('Bust / Chest');
-    if (!Number.isFinite(submitProfile.waist) || (submitProfile.waist ?? 0) <= 0) missing.push('Waist');
-    if (!Number.isFinite(submitProfile.hips) || (submitProfile.hips ?? 0) <= 0) missing.push('Hips');
-    if (!submitProfile.size) missing.push('Size');
-    if (!submitProfile.shoe_size) missing.push('Shoe size');
-
-    if (!submitProfile.cover_photo_url?.trim()) missing.push('Cover photo URL');
-    if (!submitProfile.portfolio_folder_link?.trim()) missing.push('Portfolio folder link');
-    if (!submitProfile.intro_video_url?.trim()) missing.push('Intro video URL');
-
-    const igList = submitProfile.instagram || [];
-    if (igList.length === 0 || igList.some((i) => !i.handle.trim())) missing.push('Instagram handles');
-
-    if (missing.length > 0) {
-      showToast(`Please fill: ${missing.join(', ')}`);
+  const handleSubmit = async () => {
+    const errors = validateStep(4);
+    if (errors.length > 0) {
+      showToast(errors[0]);
       return;
     }
 
     setSubmittingProfile(true);
-      let success = false;
-      try {
-        const payload: ProfileData = {
-          ...submitProfile,
-          email: submitProfile.email.trim(),
-          category: 'model',
-        };
-        await upsertProfile(payload);
-        success = true;
-        showToast('Profile submitted successfully!', 'success');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        navigate('/talents');
-      } catch (err: any) {
-        console.error('Failed to save profile', err);
-        showToast(err?.message ?? 'Failed to submit profile');
-        // Do not clear or reset fields when submission fails
-      } finally {
-        if (!success) {
-          // keep all field values intact on error
-          setSubmittingProfile(false);
-        } else {
-          setSubmittingProfile(false);
-        }
+    try {
+      const nextCode = await getNextModelUserId();
+      if (!nextCode) {
+        showToast('Failed to generate model code');
+        setSubmittingProfile(false);
+        return;
+      }
+
+      const payload: ProfileData = {
+        full_name: formData.fullName,
+        dob: formData.dob,
+        gender: formData.gender,
+        phone: formData.phone,
+        email: formData.email,
+        country: formData.country,
+        state: formData.state,
+        city: formData.city,
+        category: 'model',
+        instagram: formData.instagram,
+        experience_level: formData.experienceLevel as any,
+        languages: formData.languages,
+        skills: formData.skills,
+        open_to_travel: formData.openToTravel === true,
+        height_feet: formData.height_feet ? Number(formData.height_feet) : undefined,
+        height_inches: formData.height_inches ? Number(formData.height_inches) : undefined,
+        bust_chest: formData.bust_chest ? Number(formData.bust_chest) : undefined,
+        waist: formData.waist ? Number(formData.waist) : undefined,
+        hips: formData.hips ? Number(formData.hips) : undefined,
+        size: formData.size,
+        shoe_size: formData.shoe_size,
+        min_budget_half_day: formData.min_budget_half_day ? Number(formData.min_budget_half_day) : undefined,
+        min_budget_full_day: formData.min_budget_full_day ? Number(formData.min_budget_full_day) : undefined,
+        cover_photo_url: formData.cover_photo_url,
+        portfolio_folder_link: formData.portfolio_folder_link,
+        intro_video_url: formData.intro_video_url,
+        status: 'UNDER_REVIEW',
+        model_code: nextCode,
+      };
+
+      await createPublicProfile(payload);
+      showToast(`Profile submitted successfully! Your model ID: ${nextCode}`, 'success');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      navigate('/talents');
+    } catch (err: any) {
+      console.error('Failed to save profile', err);
+      showToast('Submission failed. Your data is safe — please try again.');
+    } finally {
+      setSubmittingProfile(false);
     }
   };
 
+  const progress = (currentStep / 4) * 100;
+
   return (
-    <main className="bg-[#fbf3e4] min-h-screen pt-14 pb-14 sm:pt-16 sm:pb-16">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="mb-8">
-          <p className="text-xs uppercase tracking-[0.2em] text-gray-600 font-semibold">Talent Onboarding</p>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-['Syne'] font-bold text-black mt-2">Submit Your Profile</h1>
-          <p className="text-gray-700 mt-3 max-w-3xl">Share your details to join the Elgrace roster. We review every submission to maintain quality and client fit.</p>
-          <div className="mt-3 text-sm text-gray-600">
-            {loadingCode ? 'Generating your model code…' : submitProfile.model_code ? `Model Code: ${submitProfile.model_code}` : 'Model code unavailable'}
+    <main className="bg-[#fbf3e4] min-h-screen pt-24 pb-16 sm:pt-28 sm:pb-20">
+      {/* Progress Bar (non-fixed, above content) */}
+      <div className="bg-[#fbf3e4]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-4">
+          <div className="w-full h-1 bg-[#dfcda5] rounded-full overflow-hidden mb-3">
+            <div className="h-full bg-[#c9a961] transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
+          <p className="text-xs uppercase tracking-widest text-gray-600 font-semibold">
+            Step {currentStep} of 4 – {STEP_NAMES[currentStep - 1]}
+          </p>
         </div>
+      </div>
 
+      <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="bg-white border border-[#dfcda5] rounded-3xl p-6 sm:p-8 shadow-lg">
-          <div className="grid md:grid-cols-2 gap-4 mb-6">
+          {/* STEP 1: Basic Info */}
+          {currentStep === 1 && (
             <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Full Name</label>
-              <input
-                value={submitProfile.full_name}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, full_name: e.target.value })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="Your full name"
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Email</label>
-              <input
-                type="email"
-                value={submitProfile.email}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, email: e.target.value })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="name@email.com"
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Phone</label>
-              <input
-                value={submitProfile.phone}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, phone: e.target.value })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="WhatsApp Only"
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Age (years)</label>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={submitAgeInput === '' ? '' : submitAgeInput}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v === '') {
-                    setSubmitAgeInput('');
-                    return;
-                  }
-                  const num = Number(v);
-                  if (!Number.isFinite(num) || num < 0) return;
-                  setSubmitAgeInput(num);
-                  const today = new Date();
-                  const dob = new Date(today.getFullYear() - num, today.getMonth(), today.getDate());
-                  const iso = dob.toISOString().split('T')[0];
-                  setSubmitProfile({ ...submitProfile, dob: iso });
-                }}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="e.g. 24"
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Gender</label>
-              <select
-                value={submitProfile.gender}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, gender: e.target.value as any })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
-              >
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Country</label>
-              <select
-                value={submitProfile.country}
-                onChange={(e) => handleCountryChange(e.target.value)}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
-              >
-                <option value="">Select Country</option>
-                {submitCountries.map((c) => (
-                  <option key={c.isoCode} value={c.isoCode}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">State</label>
-              <select
-                value={submitProfile.state}
-                onChange={(e) => handleStateChange(e.target.value)}
-                disabled={!submitProfile.country}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961] disabled:opacity-50"
-              >
-                <option value="">Select State</option>
-                {submitStates.map((s) => (
-                  <option key={s.isoCode} value={s.isoCode}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">City</label>
-              <select
-                value={submitProfile.city}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, city: e.target.value })}
-                disabled={!submitProfile.state}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961] disabled:opacity-50"
-              >
-                <option value="">Select City</option>
-                {submitCities.map((c) => (
-                  <option key={c.name} value={c.name}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="mb-6 bg-[#fbf3e4] rounded-3xl p-6">
-            <h3 className="text-sm font-semibold mb-3 text-gray-700 uppercase tracking-widest">Instagram</h3>
-            <div className="space-y-3">
-              {(submitProfile.instagram || []).map((ig, idx) => (
-                <div key={idx} className="grid md:grid-cols-2 gap-3">
-                  <input
-                    value={ig.handle}
-                    onChange={(e) => updateSubmitInstagramHandle(idx, 'handle', e.target.value)}
-                    placeholder="Handle (without @)"
-                    className="w-full bg-white border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                  />
-                  <select
-                    value={ig.followers}
-                    onChange={(e) => updateSubmitInstagramHandle(idx, 'followers', e.target.value)}
-                    className="w-full bg-white border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
-                  >
-                    <option value="under_5k">Under 5K</option>
-                    <option value="5k_20k">5K–20K</option>
-                    <option value="20k_50k">20K–50K</option>
-                    <option value="50k_100k">50K–100K</option>
-                    <option value="100k_plus">100K+</option>
-                  </select>
-                  {idx > 0 && (
-                    <div className="md:col-span-2 flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSubmitProfile({
-                            ...submitProfile,
-                            instagram: (submitProfile.instagram || []).filter((_, i) => i !== idx),
-                          })
-                        }
-                        className="px-3 py-2 rounded-full border-2 border-[#dfcda5] bg-white text-gray-700 hover:bg-[#fbf3e4] font-semibold text-xs uppercase tracking-widest"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() =>
-                  setSubmitProfile({
-                    ...submitProfile,
-                    instagram: [...(submitProfile.instagram || []), { handle: '', followers: 'under_5k' }],
-                  })
-                }
-                className="px-4 py-3 rounded-full bg-[#c9a961] text-white border-none font-semibold text-xs uppercase tracking-widest hover:bg-[#b8985a]"
-              >
-                Add Instagram handle
-              </button>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Experience Level</label>
-              <select
-                value={submitProfile.experience_level ?? 'lt_1'}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, experience_level: e.target.value as any })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
-              >
-                <option value="lt_1">Less than 1 year</option>
-                <option value="1_3">1–3 years</option>
-                <option value="3_5">3–5 years</option>
-                <option value="gt_5">Over 5 years</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Languages</label>
-              <div className="flex gap-2 mb-2">
-                <select
-                  value={submitLanguageInput}
-                  onChange={(e) => setSubmitLanguageInput(e.target.value)}
-                  className="flex-1 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
-                >
-                  <option value="">Select a language</option>
-                  {POPULAR_LANGUAGES.map((lang) => (
-                    <option key={lang} value={lang}>{lang}</option>
-                  ))}
+              <h2 className="text-2xl font-bold text-black mb-6">Basic Information</h2>
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <input type="text" value={formData.fullName} onChange={(e) => setFormData({ ...formData, fullName: e.target.value })} placeholder="Full Name *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="Email *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                <input type="tel" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="Phone (WhatsApp) *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                <input type="number" min={0} max={100} value={formData.age === '' ? '' : formData.age} onChange={(e) => { const v = e.target.value; if (v === '') { setFormData({ ...formData, age: '' }); return; } const num = Number(v); if (!Number.isFinite(num) || num < 0) return; setFormData({ ...formData, age: num }); const today = new Date(); const dob = new Date(today.getFullYear() - num, today.getMonth(), today.getDate()); setFormData((prev) => ({ ...prev, dob: dob.toISOString().split('T')[0] })); }} placeholder="Age *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                <select value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value as any })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black">
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                  <option value="other">Other</option>
                 </select>
-                <button
-                  type="button"
-                  onClick={addSubmitLanguage}
-                  className="px-4 py-3 bg-[#c9a961] text-white font-bold rounded-full text-xs uppercase tracking-widest hover:bg-[#b8985a]"
-                >
-                  Add
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(submitProfile.languages || []).map((lang) => (
-                  <span
-                    key={lang}
-                    className="px-3 py-1 rounded-full bg-[#dfcda5] border border-[#c9a961] text-xs text-black flex items-center gap-2 font-semibold"
-                  >
-                    {lang}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSubmitProfile({
-                          ...submitProfile,
-                          languages: (submitProfile.languages || []).filter((l) => l !== lang),
-                        })
-                      }
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
+                <select value={formData.country} onChange={(e) => setFormData({ ...formData, country: e.target.value, state: '', city: '' })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black">
+                  <option value="">Country *</option>
+                  {countries.map((c) => (<option key={c.isoCode} value={c.isoCode}>{c.name}</option>))}
+                </select>
+                <select value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value, city: '' })} disabled={!formData.country} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black disabled:opacity-50">
+                  <option value="">State *</option>
+                  {states.map((s) => (<option key={s.isoCode} value={s.isoCode}>{s.name}</option>))}
+                </select>
+                <select value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} disabled={!formData.state} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black disabled:opacity-50">
+                  <option value="">City *</option>
+                  {cities.map((c) => (<option key={c.name} value={c.name}>{c.name}</option>))}
+                </select>
+                <div className="md:col-span-2">
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Open to Travel *</label>
+                  <div className="flex gap-3">
+                    <button type="button" onClick={() => setFormData({ ...formData, openToTravel: true })} className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest ${formData.openToTravel === true ? 'bg-[#c9a961] border-[#c9a961] text-white' : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700'}`}>Yes</button>
+                    <button type="button" onClick={() => setFormData({ ...formData, openToTravel: false })} className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest ${formData.openToTravel === false ? 'bg-[#c9a961] border-[#c9a961] text-white' : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700'}`}>No</button>
+                  </div>
+                </div>
               </div>
             </div>
+          )}
+
+          {/* STEP 2: Work & Skills */}
+          {currentStep === 2 && (
             <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Key Skills</label>
-              <p className="text-[11px] text-gray-600 mb-2">Select all that apply</p>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {SKILL_PRESETS.map((skill) => {
-                  const active = (submitProfile.skills || []).includes(skill);
-                  return (
-                    <button
-                      key={skill}
-                      type="button"
-                      onClick={() => {
-                        const current = submitProfile.skills || [];
-                        setSubmitProfile({
-                          ...submitProfile,
-                          skills: active ? current.filter((s) => s !== skill) : [...current, skill],
-                        });
-                      }}
-                      className={`px-3 py-1 rounded-full border-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
-                        active
-                          ? 'bg-[#c9a961] border-[#c9a961] text-white'
-                          : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700 hover:border-[#c9a961]'
-                      }`}
-                    >
-                      {skill}
-                    </button>
-                  );
-                })}
+              <h2 className="text-2xl font-bold text-black mb-6">Work & Skills</h2>
+              <div className="mb-6">
+                <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Experience Level *</label>
+                <select value={formData.experienceLevel} onChange={(e) => setFormData({ ...formData, experienceLevel: e.target.value })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black">
+                  <option value="">Select</option>
+                  <option value="lt_1">Less than 1 year</option>
+                  <option value="1_3">1–3 years</option>
+                  <option value="3_5">3–5 years</option>
+                  <option value="gt_5">Over 5 years</option>
+                </select>
               </div>
-              {submitProfile.skills && submitProfile.skills.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {submitProfile.skills.map((skill) => (
-                    <span
-                      key={skill}
-                      className="px-3 py-1 rounded-full bg-[#dfcda5] border border-[#c9a961] text-xs text-black flex items-center gap-2 font-semibold"
-                    >
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSubmitProfile({
-                            ...submitProfile,
-                            skills: (submitProfile.skills || []).filter((s) => s !== skill),
-                          })
-                        }
-                      >
-                        ×
+
+              <div className="mb-6">
+                <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Key Skills *</label>
+                <div className="flex flex-wrap gap-2">
+                  {SKILL_PRESETS.map((skill) => {
+                    const active = formData.skills.includes(skill);
+                    return (
+                      <button key={skill} type="button" onClick={() => setFormData({ ...formData, skills: active ? formData.skills.filter((s) => s !== skill) : [...formData.skills, skill] })} className={`px-3 py-1 rounded-full border-2 text-xs font-semibold uppercase tracking-widest ${active ? 'bg-[#c9a961] border-[#c9a961] text-white' : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700'}`}>
+                        {skill}
                       </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Languages *</label>
+                <div className="flex gap-2 mb-2">
+                  <select value={formData.languageInput} onChange={(e) => setFormData({ ...formData, languageInput: e.target.value })} className="flex-1 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black">
+                    <option value="">Select</option>
+                    {POPULAR_LANGUAGES.map((lang) => (<option key={lang} value={lang}>{lang}</option>))}
+                  </select>
+                  <button type="button" onClick={() => { if (formData.languageInput && !formData.languages.includes(formData.languageInput)) { setFormData({ ...formData, languages: [...formData.languages, formData.languageInput], languageInput: '' }); } }} className="px-4 py-3 bg-[#c9a961] text-white font-bold rounded-full text-xs uppercase tracking-widest">Add</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.languages.map((lang) => (
+                    <span key={lang} className="px-3 py-1 rounded-full bg-[#dfcda5] border border-[#c9a961] text-xs text-black flex items-center gap-2 font-semibold">
+                      {lang}
+                      <button type="button" onClick={() => setFormData({ ...formData, languages: formData.languages.filter((l) => l !== lang) })}>×</button>
                     </span>
                   ))}
                 </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Open to Travel</label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setSubmitProfile({ ...submitProfile, open_to_travel: true })}
-                  className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
-                    submitProfile.open_to_travel ? 'bg-[#c9a961] border-[#c9a961] text-white' : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700 hover:border-[#c9a961]'
-                  }`}
-                >
-                  Yes
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSubmitProfile({ ...submitProfile, open_to_travel: false })}
-                  className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest transition-colors ${
-                    submitProfile.open_to_travel === false
-                      ? 'bg-[#c9a961] border-[#c9a961] text-white'
-                      : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700 hover:border-[#c9a961]'
-                  }`}
-                >
-                  No
-                </button>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-xs uppercase tracking-widest text-gray-700 mb-3 font-semibold">Instagram Handles *</label>
+                <div className="space-y-3">
+                  {formData.instagram.map((ig, idx) => (
+                    <div key={idx} className="grid md:grid-cols-2 gap-3">
+                      <input value={ig.handle} onChange={(e) => { const next = [...formData.instagram]; next[idx] = { ...ig, handle: e.target.value }; setFormData({ ...formData, instagram: next }); }} placeholder="Handle (without @)" className="w-full bg-white border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                      <select value={ig.followers} onChange={(e) => { const next = [...formData.instagram]; next[idx] = { ...ig, followers: e.target.value }; setFormData({ ...formData, instagram: next }); }} className="w-full bg-white border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black">
+                        <option value="under_5k">Under 5K</option>
+                        <option value="5k_20k">5K–20K</option>
+                        <option value="20k_50k">20K–50K</option>
+                        <option value="50k_100k">50K–100K</option>
+                        <option value="100k_plus">100K+</option>
+                      </select>
+                      {idx > 0 && (
+                        <div className="md:col-span-2"><button type="button" onClick={() => setFormData({ ...formData, instagram: formData.instagram.filter((_, i) => i !== idx) })} className="px-3 py-2 rounded-full border-2 border-[#dfcda5] bg-white text-gray-700 font-semibold text-xs uppercase tracking-widest">Remove</button></div>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" onClick={() => setFormData({ ...formData, instagram: [...formData.instagram, { handle: '', followers: 'under_5k' }] })} className="px-4 py-3 rounded-full bg-[#c9a961] text-white border-none font-semibold text-xs uppercase tracking-widest">Add Handle</button>
+                </div>
               </div>
             </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">
-                Minimum Budget (Half Day)
-              </label>
-              <input
-                type="number"
-                min={1500}
-                value={submitProfile.min_budget_half_day ?? ''}
-                onChange={(e) =>
-                  setSubmitProfile({
-                    ...submitProfile,
-                    min_budget_half_day: e.target.value === '' ? null : Number(e.target.value),
-                  })
-                }
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="e.g. 1500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">
-                Minimum Budget (Full Day)
-              </label>
-              <input
-                type="number"
-                min={2000}
-                value={submitProfile.min_budget_full_day ?? ''}
-                onChange={(e) =>
-                  setSubmitProfile({
-                    ...submitProfile,
-                    min_budget_full_day: e.target.value === '' ? null : Number(e.target.value),
-                  })
-                }
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="e.g. 2000"
-              />
-            </div>
-          </div>
+          )}
 
-          <div className="grid md:grid-cols-2 gap-4 mb-6">
+          {/* STEP 3: Measurements & Rates */}
+          {currentStep === 3 && (
             <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Height (feet / inches)</label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={submitProfile.height_feet ?? ''}
-                  onChange={(e) => setSubmitProfile({ ...submitProfile, height_feet: Number(e.target.value) || undefined })}
-                  className="w-1/2 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                  placeholder="ft"
-                />
-                <input
-                  type="number"
-                  value={submitProfile.height_inches ?? ''}
-                  onChange={(e) => setSubmitProfile({ ...submitProfile, height_inches: Number(e.target.value) || undefined })}
-                  className="w-1/2 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                  placeholder="in"
-                />
+              <h2 className="text-2xl font-bold text-black mb-6">Measurements & Rates</h2>
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Height (ft/in) *</label>
+                  <div className="flex gap-2">
+                    <input type="number" value={formData.height_feet === '' ? '' : formData.height_feet} onChange={(e) => setFormData({ ...formData, height_feet: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="ft" className="w-1/2 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                    <input type="number" value={formData.height_inches === '' ? '' : formData.height_inches} onChange={(e) => setFormData({ ...formData, height_inches: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="in" className="w-1/2 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                  </div>
+                </div>
+                <input type="number" value={formData.bust_chest === '' ? '' : formData.bust_chest} onChange={(e) => setFormData({ ...formData, bust_chest: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="Bust / Chest *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                <input type="number" value={formData.waist === '' ? '' : formData.waist} onChange={(e) => setFormData({ ...formData, waist: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="Waist *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                <input type="number" value={formData.hips === '' ? '' : formData.hips} onChange={(e) => setFormData({ ...formData, hips: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="Hips *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                <select value={formData.size} onChange={(e) => setFormData({ ...formData, size: e.target.value })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black">
+                  <option value="">Size *</option>
+                  {SIZE_OPTIONS.map((s) => (<option key={s} value={s}>{s}</option>))}
+                </select>
+                <select value={formData.shoe_size} onChange={(e) => setFormData({ ...formData, shoe_size: e.target.value })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black">
+                  <option value="">Shoe Size *</option>
+                  {SHOE_SIZES.map((size) => (<option key={size} value={size}>{size}</option>))}
+                </select>
+                <input type="number" min={1500} value={formData.min_budget_half_day === '' ? '' : formData.min_budget_half_day} onChange={(e) => setFormData({ ...formData, min_budget_half_day: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="Budget (Half Day) ₹ *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                <input type="number" min={2000} value={formData.min_budget_full_day === '' ? '' : formData.min_budget_full_day} onChange={(e) => setFormData({ ...formData, min_budget_full_day: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="Budget (Full Day) ₹ *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
               </div>
             </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Bust / Chest (inches)</label>
-              <input
-                type="number"
-                value={submitProfile.bust_chest ?? ''}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, bust_chest: Number(e.target.value) || undefined })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Waist (inches)</label>
-              <input
-                type="number"
-                value={submitProfile.waist ?? ''}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, waist: Number(e.target.value) || undefined })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Hips (inches)</label>
-              <input
-                type="number"
-                value={submitProfile.hips ?? ''}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, hips: Number(e.target.value) || null })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Size</label>
-              <select
-                value={submitProfile.size ?? ''}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, size: e.target.value || null })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
-              >
-                <option value="">Select size</option>
-                {SIZE_OPTIONS.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Shoe Size</label>
-              <select
-                value={submitProfile.shoe_size ?? ''}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, shoe_size: e.target.value })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]"
-              >
-                <option value="">Select shoe size</option>
-                {SHOE_SIZES.map((size) => (
-                  <option key={size} value={size}>{size}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+          )}
 
-          <div className="grid md:grid-cols-3 gap-4 mb-6">
+          {/* STEP 4: Media & Submit */}
+          {currentStep === 4 && (
             <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Cover Photo URL</label>
-              <input
-                value={submitProfile.cover_photo_url ?? ''}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, cover_photo_url: e.target.value })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="Direct image URL or Google Drive link"
-              />
+              <h2 className="text-2xl font-bold text-black mb-6">Media & Submit</h2>
+              <div className="grid md:grid-cols-1 gap-4 mb-6">
+                <input value={formData.cover_photo_url} onChange={(e) => setFormData({ ...formData, cover_photo_url: e.target.value })} placeholder="Cover Photo URL *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                <input value={formData.portfolio_folder_link} onChange={(e) => setFormData({ ...formData, portfolio_folder_link: e.target.value })} placeholder="Portfolio Folder (Google Drive) *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+                <input value={formData.intro_video_url} onChange={(e) => setFormData({ ...formData, intro_video_url: e.target.value })} placeholder="Intro Video (YouTube) *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+              </div>
+              <p className="text-sm text-gray-600 mb-6">Review your information before submitting. All fields are mandatory.</p>
             </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Portfolio Folder Link</label>
-              <input
-                value={submitProfile.portfolio_folder_link ?? ''}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, portfolio_folder_link: e.target.value })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="Google Drive folder link"
-              />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Intro Video URL (YouTube)</label>
-              <input
-                value={submitProfile.intro_video_url ?? ''}
-                onChange={(e) => setSubmitProfile({ ...submitProfile, intro_video_url: e.target.value })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="YouTube link to intro / self-tape"
-              />
-            </div>
-          </div>
+          )}
 
-          <div className="flex flex-wrap justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                navigate('/talents');
-              }}
-              className="px-6 py-3 rounded-2xl border-2 border-[#dfcda5] bg-white text-gray-700 hover:bg-[#fbf3e4] font-semibold uppercase tracking-widest w-full sm:w-auto"
-            >
-              Back to Gallery
+          {/* Navigation */}
+          <div className="flex flex-wrap justify-between gap-3 mt-8">
+            <button type="button" onClick={handlePrev} disabled={currentStep === 1} className="px-6 py-3 rounded-2xl border-2 border-[#dfcda5] bg-white text-gray-700 hover:bg-[#fbf3e4] font-semibold uppercase tracking-widest disabled:opacity-50 w-full sm:w-auto">
+              Previous
             </button>
-            <button
-              type="button"
-              disabled={submittingProfile || loadingCode}
-              onClick={handleSaveSubmitProfile}
-              className="px-6 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a] disabled:opacity-60 w-full sm:w-auto"
-            >
-              {submittingProfile ? 'Submitting…' : 'Submit Profile'}
-            </button>
+            {currentStep < 4 ? (
+              <button type="button" onClick={handleNext} className="px-6 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a] w-full sm:w-auto">
+                Next Step
+              </button>
+            ) : (
+              <button type="button" disabled={submittingProfile} onClick={handleSubmit} className="px-6 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a] disabled:opacity-60 w-full sm:w-auto">
+                {submittingProfile ? 'Submitting…' : 'Submit Profile'}
+              </button>
+            )}
           </div>
         </div>
       </div>
