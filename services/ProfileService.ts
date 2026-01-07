@@ -173,6 +173,45 @@ export async function getProfileByModelCode(modelCode: string) {
   return data as ProfileData | null;
 }
 
+// Ensure a stub model profile exists for a given user. Used at login.
+export async function ensureModelProfileForUser(userId: string, email: string | null) {
+  try {
+    const existing = await getProfileByUserId(userId);
+    if (existing) return existing;
+
+    const stub: ProfileData = {
+      id: userId,
+      user_id: userId,
+      full_name: '',
+      dob: '',
+      gender: 'other',
+      phone: '',
+      email: email ?? '',
+      country: '',
+      state: '',
+      city: '',
+      category: 'model',
+      instagram: [],
+    };
+
+    const { data, error } = await supabase
+      .from(PROFILE_TABLE)
+      .insert(stub)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.warn('ensureModelProfileForUser insert failed', error.message || error);
+      return null;
+    }
+
+    return data as ProfileData;
+  } catch (err: any) {
+    console.warn('ensureModelProfileForUser failed', err?.message ?? err);
+    return null;
+  }
+}
+
 // Public create: used by the talent onboarding form.
 // Uses a plain INSERT so only the INSERT RLS policy is required.
 export async function createPublicProfile(payload: ProfileData) {
@@ -207,6 +246,39 @@ export async function getBrandProfileByUserId(userId: string) {
     .maybeSingle();
   if (error) throw error;
   return data as BrandProfile | null;
+}
+
+// Ensure a stub brand profile exists for a given client user. Used at login.
+export async function ensureBrandProfileForUser(userId: string, email: string | null) {
+  try {
+    const existing = await getBrandProfileByUserId(userId);
+    if (existing) return existing;
+
+    const stub: BrandProfile = {
+      user_id: userId,
+      brand_name: '',
+      contact_email: email ?? null,
+      website_url: null,
+      instagram_handle: null,
+      brand_description: null,
+    };
+
+    const { data, error } = await supabase
+      .from(BRAND_PROFILE_TABLE)
+      .insert(stub)
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.warn('ensureBrandProfileForUser insert failed', error.message || error);
+      return null;
+    }
+
+    return data as BrandProfile;
+  } catch (err: any) {
+    console.warn('ensureBrandProfileForUser failed', err?.message ?? err);
+    return null;
+  }
 }
 
 export async function upsertBrandProfile(payload: BrandProfile) {

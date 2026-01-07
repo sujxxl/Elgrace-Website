@@ -258,8 +258,13 @@ const ModelProfileView: React.FC = () => {
   if (!profile) {
     return (
       <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
-        <div className="text-zinc-400">No profile found yet.</div>
-        <a href="/profile/edit" className="inline-block mt-3 px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white">Create Profile</a>
+        <div className="text-zinc-400">Your model profile is not completed yet.</div>
+        <a
+          href="/talents/onboarding"
+          className="inline-block mt-3 px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white text-xs uppercase tracking-widest"
+        >
+          Complete Profile
+        </a>
       </div>
     );
   }

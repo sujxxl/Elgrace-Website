@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Country, State, City } from 'country-state-city';
-import { ProfileData, getNextModelUserId, createPublicProfile } from '../services/ProfileService';
+import { ProfileData, getNextModelUserId, createPublicProfile, upsertProfile } from '../services/ProfileService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -119,12 +119,56 @@ export const TalentOnboardingPage: React.FC = () => {
     return errors;
   };
 
-  const handleNext = () => {
+  const persistStep = async (step: number) => {
+    if (!user) return;
+    try {
+      const base: ProfileData = {
+        full_name: formData.fullName,
+        dob: formData.dob,
+        gender: formData.gender,
+        phone: formData.phone,
+        email: formData.email,
+        country: formData.country,
+        state: formData.state,
+        city: formData.city,
+        category: 'model',
+        instagram: formData.instagram,
+        experience_level: formData.experienceLevel as any,
+        languages: formData.languages,
+        skills: formData.skills,
+        open_to_travel: formData.openToTravel === true,
+        height_feet: formData.height_feet ? Number(formData.height_feet) : undefined,
+        height_inches: formData.height_inches ? Number(formData.height_inches) : undefined,
+        bust_chest: formData.bust_chest ? Number(formData.bust_chest) : undefined,
+        waist: formData.waist ? Number(formData.waist) : undefined,
+        hips: formData.hips ? Number(formData.hips) : undefined,
+        size: formData.size,
+        shoe_size: formData.shoe_size,
+        min_budget_half_day: formData.min_budget_half_day ? Number(formData.min_budget_half_day) : undefined,
+        min_budget_full_day: formData.min_budget_full_day ? Number(formData.min_budget_full_day) : undefined,
+        cover_photo_url: formData.cover_photo_url,
+        portfolio_folder_link: formData.portfolio_folder_link,
+        intro_video_url: formData.intro_video_url,
+        status: undefined,
+        model_code: undefined,
+        user_id: user.id,
+        id: user.id,
+      };
+
+      // For mid-steps we do a best-effort upsert; errors are non-blocking.
+      await upsertProfile(base);
+    } catch (err) {
+      console.warn('Failed to auto-save onboarding step', err);
+    }
+  };
+
+  const handleNext = async () => {
     const errors = validateStep(currentStep);
     if (errors.length > 0) {
       showToast(errors[0]);
       return;
     }
+    await persistStep(currentStep);
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });

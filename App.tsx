@@ -25,6 +25,7 @@ import { ElgraceTalentsPage } from './components/ElgraceTalentsPage';
 import { GalleryPage } from './components/GalleryPage';
 import { ViewKey } from './siteConfig';
 import { TalentOnboardingPage } from './components/TalentOnboardingPage';
+import { ensureModelProfileForUser, ensureBrandProfileForUser, getProfileByUserId } from './services/ProfileService';
 
 const viewToPath = (v: ViewKey) =>
   v === 'home' ? '/' : `/${v}`;
@@ -44,20 +45,61 @@ const AppRouterContent: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const [profileIncomplete, setProfileIncomplete] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      if (!user) {
+        setProfileIncomplete(false);
+        return;
+      }
+
+      try {
+        if (user.role === 'model') {
+          const profile = await ensureModelProfileForUser(user.id, user.email);
+          if (cancelled) return;
+          // Treat missing profile or missing status as incomplete
+          setProfileIncomplete(!profile || !profile.status);
+        } else if (user.role === 'client') {
+          await ensureBrandProfileForUser(user.id, user.email);
+          if (cancelled) return;
+          setProfileIncomplete(false);
+        } else {
+          setProfileIncomplete(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.warn('ensure profile at login failed', err);
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, location.pathname]);
 
   const currentView = pathToView(location.pathname);
   const onNavigate = (view: ViewKey) => {
     navigate(viewToPath(view));
   };
 
+  const showProfileHint = user && user.role === 'model' && profileIncomplete;
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white selection:bg-white selection:text-black relative">
       <Navbar
         onNavigate={onNavigate}
         currentView={currentView}
+        showProfileHint={!!showProfileHint}
         forceLight={location.pathname.startsWith('/profile') && user?.role !== 'admin'}
       />
 
+      <div className="pt-16">
       <Routes>
         <Route
           path="/"
@@ -104,7 +146,7 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/talents"
           element={
-            <main className="pt-16 relative z-10">
+            <main className="relative z-10">
               <TalentGallery />
               <ContactGrid />
             </main>
@@ -116,7 +158,7 @@ const AppRouterContent: React.FC = () => {
           path="/talents/onboarding"
           element={
             <ProtectedRoute requireAuth={true}>
-              <main className="pt-16 relative z-10">
+              <main className="relative z-10">
                 <TalentOnboardingPage />
               </main>
             </ProtectedRoute>
@@ -126,7 +168,7 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/gallery"
           element={
-            <main className="pt-16 relative z-10">
+            <main className="relative z-10">
               <GalleryPage />
               <ContactGrid />
             </main>
@@ -136,7 +178,7 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/talents/:userId"
           element={
-            <main className="pt-16 relative z-10">
+            <main className="relative z-10">
               <TalentProfilePage />
             </main>
           }
@@ -145,7 +187,7 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/castings"
           element={
-            <main className="pt-16 relative z-10">
+            <main className="relative z-10">
               <Castings />
             </main>
           }
@@ -154,7 +196,7 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/castings/:castingId"
           element={
-            <main className="pt-16 relative z-10">
+            <main className="relative z-10">
               <CastingDetail />
             </main>
           }
@@ -164,7 +206,7 @@ const AppRouterContent: React.FC = () => {
           path="/auth"
           element={
             <ProtectedRoute requireAuth={false} redirectTo="/profile">
-              <main className="pt-16 relative z-10">
+              <main className="relative z-10">
                 <AuthPage />
               </main>
             </ProtectedRoute>
@@ -174,7 +216,7 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/reset-password"
           element={
-            <main className="pt-16 relative z-10">
+            <main className="relative z-10">
               <ResetPasswordPage />
             </main>
           }
@@ -184,7 +226,7 @@ const AppRouterContent: React.FC = () => {
           path="/profile"
           element={
             <ProtectedRoute requireAuth={true}>
-              <main className="pt-16 relative z-10">
+              <main className="relative z-10">
                 {user?.role === 'admin' ? <AdminDashboard /> : <ProfileDashboard />}
               </main>
             </ProtectedRoute>
@@ -195,7 +237,7 @@ const AppRouterContent: React.FC = () => {
           path="/admin"
           element={
             <ProtectedRoute requireAuth={true} requireRole="admin">
-              <main className="pt-16 relative z-10">
+              <main className="relative z-10">
                 <AdminDashboard />
               </main>
             </ProtectedRoute>
@@ -206,13 +248,14 @@ const AppRouterContent: React.FC = () => {
           path="/brands/:userId"
           element={
             <ProtectedRoute requireAuth={true} requireRole="admin">
-              <main className="pt-16 relative z-10">
+              <main className="relative z-10">
                 <BrandPage />
               </main>
             </ProtectedRoute>
           }
         />
       </Routes>
+      </div>
 
       <Footer />
     </div>

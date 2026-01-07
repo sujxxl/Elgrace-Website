@@ -8,9 +8,10 @@ interface NavbarProps {
   onNavigate: (view: ViewKey) => void;
   currentView: ViewKey;
   forceLight?: boolean;
+  showProfileHint?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView, forceLight = false }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView, forceLight = false, showProfileHint = false }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
@@ -178,7 +179,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView, forceLi
             )}
 
             {user && user.role !== 'admin' && (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 relative">
+                {showProfileHint && (
+                  <div className="hidden md:flex flex-col items-end absolute -top-10 right-0 pointer-events-none">
+                    <div className="bg-[#dfcda5] text-[10px] leading-tight text-black font-semibold uppercase tracking-widest rounded-full px-3 py-1 shadow-lg">
+                      Complete your profile
+                    </div>
+                    <div className="w-2 h-2 bg-[#dfcda5] rotate-45 mt-[-3px] mr-8" />
+                  </div>
+                )}
                 <span className="text-xs uppercase tracking-wider text-zinc-400">
                   Hi, {user.name || user.email}
                 </span>
@@ -263,6 +272,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView, forceLi
             {user && user.role !== 'admin' && (
               <div className="flex flex-col items-center gap-4 w-full mt-8">
                 <p className="text-zinc-500 uppercase tracking-widest text-sm">Hi, {user.name || user.email}</p>
+                {showProfileHint && (
+                  <p className="text-xs text-[#dfcda5] uppercase tracking-widest">
+                    Complete your profile from the dashboard
+                  </p>
+                )}
                 <button
                   onClick={() => {
                     onNavigate('profile');
