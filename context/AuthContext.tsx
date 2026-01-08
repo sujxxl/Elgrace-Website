@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { supabase } from '../services/supabaseClient';
-import type { User as SupaUser } from '@supabase/supabase-js';
+import type { Session, User as SupaUser } from '@supabase/supabase-js';
 
 type UserRole = 'guest' | 'model' | 'client' | 'admin';
 
@@ -15,6 +15,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  session: Session | null;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   loginWithMagicLink: (email: string) => Promise<{ success: boolean; message?: string }>;
   signup: (
@@ -83,18 +84,21 @@ const signup = async (
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted) return;
+      setSession(data.session ?? null);
       setUser(data.session?.user ? mapUser(data.session.user) : null);
       setLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ? mapUser(session.user) : null);
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s ?? null);
+      setUser(s?.user ? mapUser(s.user) : null);
     });
 
     return () => {
@@ -182,6 +186,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         user,
         loading,
+        session,
         login,
         loginWithMagicLink,
         signup,

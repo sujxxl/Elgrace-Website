@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Country, State, City } from 'country-state-city';
-import { ProfileData, getNextModelUserId, createPublicProfile, upsertProfile } from '../services/ProfileService';
+import { ProfileData, getNextModelUserId, createPublicProfile, upsertProfile, getProfileByUserId } from '../services/ProfileService';
 import { useAuth } from '../context/AuthContext';
+import { useMediaUpload } from '../hooks/useMediaUpload';
 import { useToast } from '../context/ToastContext';
 
 const STEP_NAMES = ['Basic Info', 'Work & Skills', 'Measurements & Rates', 'Media & Submit'];
@@ -33,12 +34,14 @@ const SKILL_PRESETS = [
 const SIZE_OPTIONS = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 export const TalentOnboardingPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [submittingProfile, setSubmittingProfile] = useState(false);
+  const progress = (currentStep / 4) * 100;
+  const token = session?.access_token || '';
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -47,6 +50,7 @@ export const TalentOnboardingPage: React.FC = () => {
     age: '' as number | '',
     dob: '',
     gender: 'female' as 'male' | 'female' | 'other',
+    nationality: '',
     country: 'IN',
     state: '',
     city: '',
@@ -81,7 +85,58 @@ export const TalentOnboardingPage: React.FC = () => {
     [formData.country, formData.state]
   );
 
-  // (Draft restoration and auto-save removed as requested)
+  // (Draft restoration and auto-save removed earlier; media step uses live upload)
+
+  // MEDIA STEP state and hooks
+  const isModel = user?.role === 'model';
+  const modelId = user?.id || '';
+
+  const profileUpload = useMediaUpload({
+    modelId,
+    mediaRole: 'profile',
+    mediaType: 'image',
+    multiple: false,
+    maxFiles: 1,
+    maxSizeMB: 5,
+    acceptMimes: ['image/jpeg', 'image/png', 'image/webp', 'image/*'],
+  });
+
+  const portfolioUpload = useMediaUpload({
+    modelId,
+    mediaRole: 'portfolio',
+    mediaType: 'image',
+    multiple: true,
+    maxFiles: 6,
+    maxSizeMB: 5,
+    acceptMimes: ['image/jpeg', 'image/png', 'image/webp', 'image/*'],
+  });
+
+  const introVideoUpload = useMediaUpload({
+    modelId,
+    mediaRole: 'intro_video',
+    mediaType: 'video',
+    multiple: false,
+    maxFiles: 1,
+    maxSizeMB: 20,
+    acceptMimes: ['video/mp4', 'video/webm', 'video/*'],
+  });
+
+  // Check if profile already exists - redirect to edit if it does
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const existing = await getProfileByUserId(user.id);
+        if (existing) {
+          // Profile exists, redirect to edit page
+          navigate('/profile/edit');
+        }
+      } catch (err) {
+        // Profile doesn't exist, continue with onboarding
+        console.log('No existing profile, continuing onboarding');
+      }
+    })();
+  }, [user, navigate]);
 
   // Validation per step
   const validateStep = (step: number): string[] => {
@@ -93,6 +148,7 @@ export const TalentOnboardingPage: React.FC = () => {
       if (!formData.age || formData.age <= 0) errors.push('Valid age is required');
       if (!formData.dob) errors.push('Age is required');
       if (!formData.gender) errors.push('Gender is required');
+      if (!formData.nationality?.trim()) errors.push('Nationality is required');
       if (!formData.country) errors.push('Country is required');
       if (!formData.state) errors.push('State is required');
       if (!formData.city) errors.push('City is required');
@@ -112,63 +168,18 @@ export const TalentOnboardingPage: React.FC = () => {
       if ((formData.min_budget_half_day ?? 0) <= 0) errors.push('Valid minimum budget (half day) is required');
       if ((formData.min_budget_full_day ?? 0) <= 0) errors.push('Valid minimum budget (full day) is required');
     } else if (step === 4) {
-      if (!formData.cover_photo_url?.trim()) errors.push('Cover photo URL is required');
-      if (!formData.portfolio_folder_link?.trim()) errors.push('Portfolio folder link is required');
-      if (!formData.intro_video_url?.trim()) errors.push('Intro video URL is required');
+      // Media validation is handled by upload widgets and submit gating
     }
     return errors;
   };
 
-  const persistStep = async (step: number) => {
-    if (!user) return;
-    try {
-      const base: ProfileData = {
-        full_name: formData.fullName,
-        dob: formData.dob,
-        gender: formData.gender,
-        phone: formData.phone,
-        email: formData.email,
-        country: formData.country,
-        state: formData.state,
-        city: formData.city,
-        category: 'model',
-        instagram: formData.instagram,
-        experience_level: formData.experienceLevel as any,
-        languages: formData.languages,
-        skills: formData.skills,
-        open_to_travel: formData.openToTravel === true,
-        height_feet: formData.height_feet ? Number(formData.height_feet) : undefined,
-        height_inches: formData.height_inches ? Number(formData.height_inches) : undefined,
-        bust_chest: formData.bust_chest ? Number(formData.bust_chest) : undefined,
-        waist: formData.waist ? Number(formData.waist) : undefined,
-        hips: formData.hips ? Number(formData.hips) : undefined,
-        size: formData.size,
-        shoe_size: formData.shoe_size,
-        min_budget_half_day: formData.min_budget_half_day ? Number(formData.min_budget_half_day) : undefined,
-        min_budget_full_day: formData.min_budget_full_day ? Number(formData.min_budget_full_day) : undefined,
-        cover_photo_url: formData.cover_photo_url,
-        portfolio_folder_link: formData.portfolio_folder_link,
-        intro_video_url: formData.intro_video_url,
-        status: undefined,
-        model_code: undefined,
-        user_id: user.id,
-        id: user.id,
-      };
-
-      // For mid-steps we do a best-effort upsert; errors are non-blocking.
-      await upsertProfile(base);
-    } catch (err) {
-      console.warn('Failed to auto-save onboarding step', err);
-    }
-  };
-
-  const handleNext = async () => {
+  const handleNext = () => {
     const errors = validateStep(currentStep);
     if (errors.length > 0) {
       showToast(errors[0]);
       return;
     }
-    await persistStep(currentStep);
+    // No DB persist on Next - only cache locally
     if (currentStep < 4) {
       setCurrentStep(currentStep + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -188,9 +199,18 @@ export const TalentOnboardingPage: React.FC = () => {
       showToast(errors[0]);
       return;
     }
+    if (!isModel) {
+      showToast('Only model accounts can submit onboarding');
+      return;
+    }
+    if (!user) {
+      showToast('User not found. Please log in again.');
+      return;
+    }
 
     setSubmittingProfile(true);
     try {
+      // Step 1: Generate model_code
       const nextCode = await getNextModelUserId();
       if (!nextCode) {
         showToast('Failed to generate model code');
@@ -198,15 +218,19 @@ export const TalentOnboardingPage: React.FC = () => {
         return;
       }
 
+      // Step 2: Create profile with user_id and id matching auth.uid()
       const payload: ProfileData = {
+        id: user.id,
+        user_id: user.id,
         full_name: formData.fullName,
-        dob: formData.dob,
+        dob: formData.dob || null,
         gender: formData.gender,
-        phone: formData.phone,
+        phone: formData.phone || null,
         email: formData.email,
-        country: formData.country,
-        state: formData.state,
-        city: formData.city,
+        nationality: formData.nationality,
+        country: formData.country || null,
+        state: formData.state || null,
+        city: formData.city || null,
         category: 'model',
         instagram: formData.instagram,
         experience_level: formData.experienceLevel as any,
@@ -230,6 +254,11 @@ export const TalentOnboardingPage: React.FC = () => {
       };
 
       await createPublicProfile(payload);
+
+      // Step 3: Now that profile exists, upload media files
+      // TODO: Implement media upload to VPS and model_media record creation here
+      // This will be done in the next phase when backend endpoints are ready
+
       showToast(`Profile submitted successfully! Your model ID: ${nextCode}`, 'success');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       navigate('/talents');
@@ -240,8 +269,6 @@ export const TalentOnboardingPage: React.FC = () => {
       setSubmittingProfile(false);
     }
   };
-
-  const progress = (currentStep / 4) * 100;
 
   return (
     <main className="bg-[#fbf3e4] min-h-screen pt-24 pb-16 sm:pt-28 sm:pb-20">
@@ -273,6 +300,7 @@ export const TalentOnboardingPage: React.FC = () => {
                   <option value="male">Male</option>
                   <option value="other">Other</option>
                 </select>
+                <input type="text" value={formData.nationality} onChange={(e) => setFormData({ ...formData, nationality: e.target.value })} placeholder="Nationality *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
                 <select value={formData.country} onChange={(e) => setFormData({ ...formData, country: e.target.value, state: '', city: '' })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black">
                   <option value="">Country *</option>
                   {countries.map((c) => (<option key={c.isoCode} value={c.isoCode}>{c.name}</option>))}
@@ -401,12 +429,204 @@ export const TalentOnboardingPage: React.FC = () => {
           {currentStep === 4 && (
             <div>
               <h2 className="text-2xl font-bold text-black mb-6">Media & Submit</h2>
-              <div className="grid md:grid-cols-1 gap-4 mb-6">
-                <input value={formData.cover_photo_url} onChange={(e) => setFormData({ ...formData, cover_photo_url: e.target.value })} placeholder="Cover Photo URL *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
-                <input value={formData.portfolio_folder_link} onChange={(e) => setFormData({ ...formData, portfolio_folder_link: e.target.value })} placeholder="Portfolio Folder (Google Drive) *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
-                <input value={formData.intro_video_url} onChange={(e) => setFormData({ ...formData, intro_video_url: e.target.value })} placeholder="Intro Video (YouTube) *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
-              </div>
-              <p className="text-sm text-gray-600 mb-6">Review your information before submitting. All fields are mandatory.</p>
+              {!isModel && (
+                <div className="p-4 mb-4 rounded-xl bg-red-50 text-red-700 border border-red-200">
+                  Only model accounts can upload onboarding media.
+                </div>
+              )}
+
+              {/* Profile photo */}
+              <section className="mb-8">
+                <h3 className="text-lg font-semibold text-black mb-2">Profile Photo (required)</h3>
+                <div className="flex items-center gap-4 mb-3">
+                  {profileUpload.items.length < 1 ? (
+                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                      Upload Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={!isModel}
+                        onChange={async (e) => {
+                          const files = e.target.files; if (!files) return;
+                          profileUpload.addFiles(files);
+                          if (token && files.length > 0) {
+                            try { await profileUpload.uploadAll(token); } catch {}
+                          }
+                          e.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                      Replace Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={!isModel}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          profileUpload.replaceAt(0, file);
+                          if (token) {
+                            try { await profileUpload.uploadAll(token); } catch {}
+                          }
+                          e.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                  <span className="text-xs text-gray-600">Max 5MB. JPG/PNG/WEBP.</span>
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  {profileUpload.items.map((it, idx) => (
+                    <div key={idx} className="w-32 relative">
+                      {it.previewUrl && (
+                        <img src={it.previewUrl} alt="preview" className="w-32 h-32 object-cover rounded-lg border" />
+                      )}
+                      <button 
+                        type="button" 
+                        onClick={async () => {
+                          if (!token) return;
+                          try { await profileUpload.deleteAt(idx, token); } catch {}
+                        }} 
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold text-sm"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                      <div className="text-xs mt-1">
+                        {it.status === 'uploading' && <div className="h-1 bg-gray-200 rounded"><div className="h-1 bg-[#c9a961] rounded" style={{ width: `${it.progress}%` }} /></div>}
+                        {it.status === 'error' && <span className="text-red-600">{it.error}</span>}
+                        {it.status === 'done' && <span className="text-green-700">Saved</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Portfolio images */}
+              <section className="mb-8">
+                <h3 className="text-lg font-semibold text-black mb-2">Portfolio (up to 6 images)</h3>
+                <div className="flex items-center gap-4 mb-3">
+                  <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                    {portfolioUpload.items.length > 0 ? 'Add More Images' : 'Upload Portfolio'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      disabled={!isModel || portfolioUpload.canAddMore <= 0}
+                      onChange={async (e) => {
+                        const files = e.target.files; if (!files) return;
+                        portfolioUpload.addFiles(files);
+                        if (token && files.length > 0) {
+                          try { await portfolioUpload.uploadAll(token); } catch {}
+                        }
+                        e.currentTarget.value = '';
+                      }}
+                    />
+                  </label>
+                  <span className="text-xs text-gray-600">Max 5MB each. JPG/PNG/WEBP.</span>
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  {portfolioUpload.items.map((it, idx) => (
+                    <div key={idx} className="w-28 relative">
+                      {it.previewUrl && (<img src={it.previewUrl} alt="preview" className="w-28 h-28 object-cover rounded-lg border" />)}
+                      <button 
+                        type="button" 
+                        onClick={async () => {
+                          if (!token) return;
+                          try { await portfolioUpload.deleteAt(idx, token); } catch {}
+                        }} 
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold text-sm"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                      <div className="text-xs mt-1">
+                        {it.status === 'uploading' && <div className="h-1 bg-gray-200 rounded"><div className="h-1 bg-[#c9a961] rounded" style={{ width: `${it.progress}%` }} /></div>}
+                        {it.status === 'error' && <span className="text-red-600">{it.error}</span>}
+                        {it.status === 'done' && <span className="text-green-700">Saved</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Intro video */}
+              <section className="mb-2">
+                <h3 className="text-lg font-semibold text-black mb-2">Intro Video (optional)</h3>
+                <div className="flex items-center gap-4 mb-3">
+                  {introVideoUpload.items.length < 1 ? (
+                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                      Upload Video
+                      <input
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        disabled={!isModel}
+                        onChange={async (e) => {
+                          const files = e.target.files; if (!files) return;
+                          introVideoUpload.addFiles(files);
+                          if (token && files.length > 0) {
+                            try { await introVideoUpload.uploadAll(token); } catch {}
+                          }
+                          e.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                      Replace Video
+                      <input
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        disabled={!isModel}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          introVideoUpload.replaceAt(0, file);
+                          if (token) {
+                            try { await introVideoUpload.uploadAll(token); } catch {}
+                          }
+                          e.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                  <span className="text-xs text-gray-600">Max 20MB. MP4/WEBM.</span>
+                </div>
+                <div className="flex flex-wrap gap-4">
+                  {introVideoUpload.items.map((it, idx) => (
+                    <div key={idx} className="w-48 relative">
+                      {it.previewUrl && (
+                        <video src={it.previewUrl} controls className="w-48 h-32 object-cover rounded-lg border" />
+                      )}
+                      <button 
+                        type="button" 
+                        onClick={async () => {
+                          if (!token) return;
+                          try { await introVideoUpload.deleteAt(idx, token); } catch {}
+                        }} 
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold text-sm"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                      <div className="text-xs mt-1">
+                        {it.status === 'uploading' && <div className="h-1 bg-gray-200 rounded"><div className="h-1 bg-[#c9a961] rounded" style={{ width: `${it.progress}%` }} /></div>}
+                        {it.status === 'error' && <span className="text-red-600">{it.error}</span>}
+                        {it.status === 'done' && <span className="text-green-700">Saved</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <p className="text-sm text-gray-600 mb-6">Upload your media. Profile photo is required to submit.</p>
             </div>
           )}
 
@@ -420,7 +640,7 @@ export const TalentOnboardingPage: React.FC = () => {
                 Next Step
               </button>
             ) : (
-              <button type="button" disabled={submittingProfile} onClick={handleSubmit} className="px-6 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a] disabled:opacity-60 w-full sm:w-auto">
+              <button type="button" disabled={submittingProfile || !isModel} onClick={handleSubmit} className="px-6 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a] disabled:opacity-60 w-full sm:w-auto">
                 {submittingProfile ? 'Submitting…' : 'Submit Profile'}
               </button>
             )}

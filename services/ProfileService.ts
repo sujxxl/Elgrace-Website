@@ -9,13 +9,14 @@ export type ProfileData = {
   id?: string;
   user_id?: string;
   full_name: string;
-  dob: string; // ISO date
+  dob: string | null;
   gender: 'male' | 'female' | 'other';
-  phone: string;
+  phone: string | null;
   email: string; // from auth
-  country: string;
-  state: string;
-  city: string;
+  nationality: string;
+  country: string | null;
+  state: string | null;
+  city: string | null;
   category: 'model' | 'client';
   instagram: InstagramHandle[];
   // Professional
@@ -35,11 +36,8 @@ export type ProfileData = {
   shoe_size?: string; // e.g., 'UK-8' or 'US-9'
   // Clothing size (e.g., XS, S, M). Preferred over legacy weight.
   size?: string | null;
-  // Media
-  cover_photo_url?: string;
+  // Media (legacy fields removed; media is sourced from model_media)
   portfolio_folder_link?: string;
-  // Media (intro video)
-  intro_video_url?: string | null;
   // Admin review & commercial
   overall_rating?: number | null; // 0-11 (F=0 to A*=11)
   expected_budget?: string | null; // legacy free-form, e.g. "₹10k/day"
@@ -183,13 +181,14 @@ export async function ensureModelProfileForUser(userId: string, email: string | 
       id: userId,
       user_id: userId,
       full_name: '',
-      dob: '',
+      dob: null as any,
       gender: 'other',
-      phone: '',
+      phone: null as any,
       email: email ?? '',
+      nationality: '',
       country: '',
-      state: '',
-      city: '',
+      state: null as any,
+      city: null as any,
       category: 'model',
       instagram: [],
     };

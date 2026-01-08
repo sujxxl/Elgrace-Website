@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { ProfileData, InstagramHandle, getProfileByUserId, upsertProfile, uploadImage, getNextModelUserId } from '../services/ProfileService';
 import { buildDriveImageUrls } from '../services/gdrive';
 import { compressImageFile } from '../services/image';
+import { deriveMedia, fetchMediaRecords, MediaItem } from '../services/mediaService';
+import { deleteMedia } from '../services/mediaApi';
 import { CheckCircle2 } from 'lucide-react';
 import { Country, State, City } from 'country-state-city';
 
@@ -28,10 +30,16 @@ const steps: { key: StepKey; label: string }[] = [
 ];
 
 export const ProfileEdit: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const navigate = useNavigate();
   const query = useQuery();
   const requestedSection = (query.get('section') as StepKey) || 'personal-info';
+
+  // DEBUG: Log session on component load
+  useEffect(() => {
+    console.log('SESSION FROM REACT:', session);
+    console.log('ACCESS TOKEN FROM REACT:', session?.access_token);
+  }, [session]);
 
   const [active, setActive] = useState<StepKey>(requestedSection);
   const [loading, setLoading] = useState(true);
@@ -59,7 +67,6 @@ export const ProfileEdit: React.FC = () => {
           city: '',
           category: 'model',
           instagram: [{ handle: '', followers: 'under_5k' }],
-          intro_video_url: '',
           model_code: nextCode,
         } as ProfileData;
 
@@ -80,7 +87,6 @@ export const ProfileEdit: React.FC = () => {
           city: '',
           category: 'model',
           instagram: [{ handle: '', followers: 'under_5k' }],
-          intro_video_url: '',
           model_code: nextCode,
         });
       } finally {
@@ -108,6 +114,17 @@ export const ProfileEdit: React.FC = () => {
     );
   }
 
+  if (loading) {
+    return (
+      <section className="container mx-auto px-6 py-12">
+        <div className="max-w-4xl mx-auto bg-white border border-gray-200 rounded-2xl p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#c9a961] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your profile...</p>
+        </div>
+      </section>
+    );
+  }
+
   const onSave = async (part: StepKey, patch: Partial<ProfileData>) => {
     if (!profile) return;
     setSaving(part);
@@ -130,11 +147,11 @@ export const ProfileEdit: React.FC = () => {
     personal: !!profile?.full_name && !!profile?.dob && !!profile?.gender && !!profile?.phone && !!profile?.country && !!profile?.state && !!profile?.city && (profile?.instagram?.length ?? 0) > 0 && !!profile?.instagram?.[0]?.handle,
     professional: !!profile?.experience_level && profile?.open_to_travel !== undefined && profile?.ramp_walk_experience !== undefined && (profile?.ramp_walk_experience ? !!profile?.ramp_walk_description : true) && (profile?.languages?.length ?? 0) > 0,
     measurements: !!profile?.height_feet && !!profile?.height_inches && !!profile?.bust_chest && !!profile?.waist && !!profile?.shoe_size,
-    media: !!profile?.cover_photo_url,
+    media: true,
   };
 
   return (
-    <section className="container mx-auto px-6">
+    <section className="container mx-auto px-6 py-12">
       {/* Step Indicator */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
         <div className="grid md:grid-cols-4 gap-3">
@@ -162,7 +179,7 @@ export const ProfileEdit: React.FC = () => {
         <div id="measurements"><MeasurementsForm profile={profile} onSave={(patch) => onSave('measurements', patch)} saving={saving === 'measurements'} /></div>
       )}
       {active === 'photos-media' && profile && (
-        <div id="photos-media"><MediaForm profile={profile} onSave={(patch) => onSave('photos-media', patch)} saving={saving === 'photos-media'} /></div>
+        <div id="photos-media"><MediaForm profile={profile} /></div>
       )}
 
       {/* Success Toast */}
@@ -316,6 +333,10 @@ const PersonalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (p
           </select>
         </div>
         <div>
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Nationality</label>
+          <input value={form.nationality || ''} onChange={(e) => setForm({ ...form, nationality: e.target.value })} placeholder="e.g., Indian, American" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]" />
+        </div>
+        <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Category</label>
           <input value={form.category} readOnly className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
         </div>
@@ -348,6 +369,7 @@ const PersonalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (p
           dob: form.dob,
           gender: form.gender,
           phone: form.phone,
+          nationality: form.nationality,
           country: form.country,
           state: form.state,
           city: form.city,
@@ -527,6 +549,30 @@ const MeasurementsForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
           </select>
         </div>
       </div>
+      <div className="grid md:grid-cols-2 gap-4 mt-6">
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Min Budget (Half Day) ₹</label>
+          <input
+            type="number"
+            min={0}
+            value={form.min_budget_half_day ?? ''}
+            onChange={(e) => setForm({ ...form, min_budget_half_day: e.target.value ? Number(e.target.value) : undefined })}
+            placeholder="e.g., 5000"
+            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
+          />
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Min Budget (Full Day) ₹</label>
+          <input
+            type="number"
+            min={0}
+            value={form.min_budget_full_day ?? ''}
+            onChange={(e) => setForm({ ...form, min_budget_full_day: e.target.value ? Number(e.target.value) : undefined })}
+            placeholder="e.g., 10000"
+            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
+          />
+        </div>
+      </div>
       <div className="pt-4">
         <button disabled={saving} onClick={() => onSave({
           height_feet: form.height_feet,
@@ -536,37 +582,291 @@ const MeasurementsForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
           hips: form.hips ?? null,
           size: form.size ?? null,
           shoe_size: form.shoe_size,
-        })} className="px-4 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a]">Save Measurements</button>
+          min_budget_half_day: form.min_budget_half_day,
+          min_budget_full_day: form.min_budget_full_day,
+        })} className="px-4 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a]">Save Measurements & Rates</button>
       </div>
     </div>
   );
 };
 
 /* STEP 4: MEDIA */
-const MediaForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (patch: Partial<ProfileData>) => void; }> = ({ profile, onSave, saving }) => {
-  const { user } = useAuth();
+const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
+  const { user, session } = useAuth();
   const [form, setForm] = useState<ProfileData>(profile);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
+  const [mediaRecords, setMediaRecords] = useState<MediaItem[]>([]);
 
   useEffect(() => setForm(profile), [profile]);
 
-  const coverCandidates = buildDriveImageUrls(form.cover_photo_url || '');
+  const UPLOAD_API_URL = import.meta.env.VITE_UPLOAD_API_URL || 'http://72.61.233.139:8093';
+
+  // Fetch existing media from model_media table
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const records = await fetchMediaRecords(user.id, session?.access_token);
+      setMediaRecords(records);
+    })();
+  }, [user, session?.access_token]);
+
+  // Helper to refresh media after upload
+  const refreshMedia = async () => {
+    if (!user?.id) return;
+    const records = await fetchMediaRecords(user.id, session?.access_token);
+    setMediaRecords(records);
+  };
+
+  const { profileImage, introVideo, portfolio } = useMemo(() => deriveMedia(mediaRecords), [mediaRecords]);
+
+  const requireToken = (): string | null => {
+    if (!session?.access_token) {
+      alert('Please log in before making changes');
+      return null;
+    }
+    return session.access_token;
+  };
+
+  const handleRemoveCover = async () => {
+    if (!profileImage) return;
+    const token = requireToken();
+    if (!token) return;
+    if (!window.confirm('Remove your cover photo?')) return;
+
+    try {
+      setUploadingCover(true);
+      await deleteMedia(profileImage.id, token);
+      setMediaRecords((prev) => prev.filter((m) => m.id !== profileImage.id));
+      alert('✅ Cover photo removed');
+    } catch (err: any) {
+      alert(`❌ Remove failed: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setUploadingCover(false);
+    }
+  };
 
   const handleCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+    
+    // Check file size (5MB limit)
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_SIZE) {
+      alert(`❌ File too large! Maximum size is 5MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      e.target.value = '';
+      return;
+    }
+    
+    if (!session?.access_token) {
+      alert('Please log in before uploading');
+      return;
+    }
     try {
       setUploadingCover(true);
-      // Compress to well under 1MB and convert to JPEG/compatible format
+      // Compress image
       const compressed = await compressImageFile(file, { maxBytes: 900 * 1024 });
-      const path = `profiles/${user.id}/cover_${Date.now()}.jpg`;
-      const url = await uploadImage(compressed, path);
-      setForm(prev => ({ ...prev, cover_photo_url: url }));
-      alert('Cover image uploaded successfully');
+      
+      // Try to upload to VPS
+      const formData = new FormData();
+      formData.append('media_role', 'profile');
+      formData.append('model_id', user.id);
+      formData.append('file', compressed, `cover_${Date.now()}.jpg`);
+      
+      try {
+        console.log('Uploading to:', `${UPLOAD_API_URL}/upload`);
+        const uploadResponse = await fetch(`${UPLOAD_API_URL}/upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: formData,
+        });
+        
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          throw new Error(`Server error (${uploadResponse.status}): ${errorText}`);
+        }
+        const { media_url } = await uploadResponse.json();
+
+        // Refresh media from model_media table
+        await refreshMedia();
+        
+        alert('✅ Cover photo uploaded to VPS!');
+      } catch (vpsError: any) {
+        const errorMsg = vpsError?.message || 'Unknown error';
+        console.error('VPS upload failed:', errorMsg);
+        alert(`❌ Upload failed: ${errorMsg}`);
+      }
     } catch (err: any) {
-      alert(`Cover upload failed: ${err?.message ?? err}`);
+      console.error('Error:', err);
+      alert(`Error: ${err?.message ?? 'Process failed'}`);
     } finally {
       setUploadingCover(false);
+      e.target.value = '';
+    }
+  };
+
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+
+  const handleRemoveVideo = async () => {
+    if (!introVideo) return;
+    const token = requireToken();
+    if (!token) return;
+    if (!window.confirm('Remove your intro video?')) return;
+
+    try {
+      setUploadingVideo(true);
+      await deleteMedia(introVideo.id, token);
+      setMediaRecords((prev) => prev.filter((m) => m.id !== introVideo.id));
+      alert('✅ Intro video removed');
+    } catch (err: any) {
+      alert(`❌ Remove failed: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
+  const handleRemovePortfolioItem = async (id: string) => {
+    const token = requireToken();
+    if (!token) return;
+    if (!window.confirm('Remove this portfolio image?')) return;
+
+    try {
+      setUploadingPortfolio(true);
+      await deleteMedia(id, token);
+      setMediaRecords((prev) => prev.filter((m) => m.id !== id));
+    } catch (err: any) {
+      alert(`❌ Remove failed: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setUploadingPortfolio(false);
+    }
+  };
+
+  const handleVideoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('video/')) {
+      alert('Please select a video file');
+      return;
+    }
+    
+    // Check file size (20MB limit)
+    const MAX_SIZE = 20 * 1024 * 1024; // 20MB
+    if (file.size > MAX_SIZE) {
+      alert(`❌ Video too large! Maximum size is 20MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      e.target.value = '';
+      return;
+    }
+    
+    if (!session?.access_token) {
+      alert('Please log in before uploading');
+      return;
+    }
+    try {
+      setUploadingVideo(true);
+      const formData = new FormData();
+      const ext = file.name.split('.').pop() || 'mp4';
+      formData.append('media_role', 'intro_video');
+      formData.append('model_id', user.id);
+      formData.append('file', file, `intro_${Date.now()}.${ext}`);
+      
+      console.log('Uploading video to:', `${UPLOAD_API_URL}/upload`);
+      const uploadResponse = await fetch(`${UPLOAD_API_URL}/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: formData,
+      });
+      
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        throw new Error(`Server error (${uploadResponse.status}): ${errorText}`);
+      }
+      const { media_url } = await uploadResponse.json();
+
+      // Refresh media from model_media table
+      await refreshMedia();
+      
+      alert('✅ Intro video uploaded!');
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Unknown error';
+      console.error('Video upload error:', errorMsg);
+      alert(`Upload failed: ${errorMsg}`);
+    } finally {
+      setUploadingVideo(false);
+      e.target.value = '';
+    }
+  };
+
+  const handlePortfolioFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0 || !user) return;
+    
+    // Check file sizes (5MB limit per image)
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    const files = Array.from(fileList) as File[];
+    const oversizedFiles = files.filter((f) => f.size > MAX_SIZE);
+    if (oversizedFiles.length > 0) {
+      alert(`❌ ${oversizedFiles.length} file(s) exceed 5MB limit. Please select smaller images.`);
+      e.target.value = '';
+      return;
+    }
+    
+    if (!session?.access_token) {
+      alert('Please log in before uploading');
+      return;
+    }
+    try {
+      setUploadingPortfolio(true);
+      const uploaded: string[] = [];
+      
+      for (let i = 0; i < fileList.length; i++) {
+        const file = fileList[i];
+        if (!file) continue;
+        const compressed = await compressImageFile(file, { maxBytes: 900 * 1024 });
+        const formData = new FormData();
+        formData.append('media_role', 'portfolio');
+        formData.append('model_id', user.id);
+        formData.append('file', compressed, `portfolio_${Date.now()}_${i}.jpg`);
+        
+        try {
+          console.log('Uploading portfolio image to:', `${UPLOAD_API_URL}/upload`);
+          const uploadResponse = await fetch(`${UPLOAD_API_URL}/upload`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: formData,
+          });
+          
+          if (uploadResponse.ok) {
+            const { media_url } = await uploadResponse.json();
+            uploaded.push(media_url);
+          } else {
+            const errorText = await uploadResponse.text();
+            console.error(`Upload failed for image ${i}:`, uploadResponse.status, errorText);
+          }
+        } catch (err: any) {
+          console.error(`Error uploading image ${i}:`, err?.message);
+        }
+      }
+      
+      if (uploaded.length > 0) {
+        // Refresh media from model_media table
+        await refreshMedia();
+        
+        alert(`✅ ${uploaded.length} images uploaded!`);
+      } else {
+        alert('❌ Upload failed. Check browser console for details.');
+      }
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Unknown error';
+      console.error('Portfolio error:', errorMsg);
+      alert(`Upload failed: ${errorMsg}`);
+    } finally {
+      setUploadingPortfolio(false);
       e.target.value = '';
     }
   };
@@ -574,117 +874,163 @@ const MediaForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (patc
   return (
     <div className="bg-white border border-gray-200 rounded-3xl p-8">
       <h4 className="text-lg font-['Syne'] font-bold mb-4 text-black">Photos / Media</h4>
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-2 gap-6">
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Cover Photo</label>
-          <input
-            type="url"
-            value={form.cover_photo_url || ''}
-            onChange={(e) => setForm({ ...form, cover_photo_url: e.target.value })}
-            placeholder="Paste an image URL (optional)"
-            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-          />
-          <p className="text-xs text-gray-600 mt-1">Either upload an image or paste a direct/public image URL.</p>
-          <div className="mt-3 flex items-center gap-3">
-            <label className="px-3 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold">
-              {uploadingCover ? 'Uploading…' : 'Upload Cover Image'}
+          {!profileImage && (
+            <div className="mt-3">
+              <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                {uploadingCover ? 'Uploading to VPS…' : 'Upload Cover Photo'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleCoverFileChange}
+                  disabled={uploadingCover}
+                />
+              </label>
+              <p className="text-xs text-gray-600 mt-2">Max 5MB. We compress to under 1MB.</p>
+            </div>
+          )}
+          {profileImage && (
+            <div className="mt-3">
+              <div className="text-xs text-gray-700 mb-1 font-semibold">Current Cover:</div>
+              <img
+                src={profileImage.media_url}
+                alt="Cover"
+                className="w-48 aspect-[3/4] object-cover rounded-md border border-gray-300"
+              />
+              <div className="mt-3 flex flex-wrap gap-2">
+                <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                  {uploadingCover ? 'Uploading…' : 'Replace Cover'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleCoverFileChange}
+                    disabled={uploadingCover}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={handleRemoveCover}
+                  disabled={uploadingCover}
+                  className="px-4 py-3 rounded-full border-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs uppercase tracking-widest font-semibold"
+                >
+                  Remove
+                </button>
+              </div>
+              <a
+                href={profileImage.media_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-block text-[#c9a961] hover:underline text-xs font-semibold"
+              >
+                Open full size →
+              </a>
+            </div>
+          )}
+        </div>
+        <div>
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Portfolio Images</label>
+          <div className="mt-3">
+            <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+              {uploadingPortfolio ? 'Uploading to VPS…' : (portfolio.length > 0 ? 'Add More Images' : 'Upload Portfolio (Multiple)')}
               <input
                 type="file"
                 accept="image/*"
+                multiple
                 className="hidden"
-                onChange={handleCoverFileChange}
-                disabled={uploadingCover}
+                onChange={handlePortfolioFilesChange}
+                disabled={uploadingPortfolio}
               />
             </label>
-            <span className="text-xs text-gray-600">We compress to under 1MB and convert for web.</span>
+            <p className="text-xs text-gray-600 mt-2">Upload multiple portfolio images. Select up to 10 images at once.</p>
           </div>
-          {coverCandidates.length > 0 && (
-            <div className="mt-3">
-              <div className="text-xs text-gray-700 mb-1 font-semibold">Live preview:</div>
-              <img
-                src={coverCandidates[0]}
-                alt="Cover preview"
-                className="w-full aspect-[3/4] object-cover rounded-md border border-gray-300"
-                onError={(e) => {
-                  const el = e.currentTarget as HTMLImageElement & { _try?: number };
-                  el._try = (el._try || 0) + 1;
-                  if (el._try < coverCandidates.length) {
-                    el.src = coverCandidates[el._try];
-                  }
-                }}
-              />
+          {portfolio.length > 0 && (
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {portfolio.map((item) => (
+                <div key={item.id} className="relative">
+                  <img
+                    src={item.media_url}
+                    alt="Portfolio"
+                    className="w-full aspect-square object-cover rounded border border-gray-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePortfolioItem(item.id)}
+                    disabled={uploadingPortfolio}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold text-sm"
+                    title="Remove"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
             </div>
           )}
-          {form.cover_photo_url && (
-            <a
-              href={form.cover_photo_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-block text-[#c9a961] hover:underline text-xs font-semibold"
-            >
-              Open original on Drive →
-            </a>
-          )}
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Portfolio Folder Link (Google Drive)</label>
-          <input
-            type="url"
-            value={form.portfolio_folder_link || ''}
-            onChange={(e) => setForm({ ...form, portfolio_folder_link: e.target.value })}
-            placeholder="https://drive.google.com/drive/folders/..."
-            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-          />
-          <p className="text-xs text-gray-600 mt-1">
-            Paste your Google Drive folder link with all portfolio images. Set sharing to "Anyone with the link can view".
-          </p>
           {form.portfolio_folder_link && (
-            <a
-              href={form.portfolio_folder_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-block text-[#c9a961] hover:underline text-sm font-semibold"
-            >
-              Open portfolio folder →
-            </a>
-          )}
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Intro Video URL (YouTube)</label>
-          <input
-            type="url"
-            value={form.intro_video_url || ''}
-            onChange={(e) => setForm({ ...form, intro_video_url: e.target.value })}
-            placeholder="YouTube link to intro / self-tape"
-            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-          />
-          <p className="text-xs text-gray-600 mt-1">
-            Use a public or unlisted YouTube link. We embed it on your profile.
-          </p>
-          {form.intro_video_url && (
-            <a
-              href={form.intro_video_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-block text-[#c9a961] hover:underline text-sm font-semibold"
-            >
-              Preview intro video →
-            </a>
+            <div className="mt-3">
+              <p className="text-xs text-gray-600 mb-1">Legacy Drive Link:</p>
+              <a
+                href={form.portfolio_folder_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block text-[#c9a961] hover:underline text-xs font-semibold"
+              >
+                {form.portfolio_folder_link.substring(0, 50)}...
+              </a>
+            </div>
           )}
         </div>
       </div>
-      <div className="pt-4 flex gap-3">
-        <button
-          disabled={saving}
-          onClick={() => onSave({
-            cover_photo_url: form.cover_photo_url,
-            portfolio_folder_link: form.portfolio_folder_link,
-            intro_video_url: form.intro_video_url,
-          })}
-          className="px-4 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a]"
-        >
-          Save Media
-        </button>
+      <div className="mt-6">
+        <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Intro Video</label>
+        {!introVideo && (
+          <div className="mt-3">
+            <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+              {uploadingVideo ? 'Uploading…' : 'Upload Video'}
+              <input
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={handleVideoFileChange}
+                disabled={uploadingVideo}
+              />
+            </label>
+            <p className="text-xs text-gray-600 mt-2">Max 20MB. MP4/WebM/MOV, etc.</p>
+          </div>
+        )}
+        {introVideo && (
+          <div className="mt-4">
+            <div className="text-xs text-gray-700 mb-2 font-semibold">Current Video:</div>
+            <video
+              src={introVideo.media_url}
+              controls
+              className="w-full rounded-lg border border-gray-300 bg-black"
+            />
+            <div className="mt-3 flex flex-wrap gap-2">
+              <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                {uploadingVideo ? 'Uploading…' : 'Replace Video'}
+                <input
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={handleVideoFileChange}
+                  disabled={uploadingVideo}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={handleRemoveVideo}
+                disabled={uploadingVideo}
+                className="px-4 py-3 rounded-full border-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs uppercase tracking-widest font-semibold"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

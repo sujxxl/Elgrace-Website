@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Edit, Plus, MapPin, DollarSign, Calendar } from 'lucide-react';
 import { BrandProfile, Casting, BookingRequest, CastingApplication, listBookingRequestsForModel, listBookingRequestsForClient, updateBookingStatus, getBrandProfileByUserId, upsertBrandProfile, createCasting, listCastings, listCastingApplicationsForBrand, getProfileByUserId, ProfileData, updateProfileStatus, deleteCasting } from '../services/ProfileService';
 import { buildDriveImageUrls } from '../services/gdrive';
+import { deriveMedia, fetchMediaRecords, MediaItem } from '../services/mediaService';
 
 // This dashboard strictly inherits existing theme: black/white base, neutral glass,
 // existing buttons, spacing, borders, typography. Accent via outlines (#dfcda5) only.
@@ -13,7 +14,7 @@ import { buildDriveImageUrls } from '../services/gdrive';
 type TabKey = 'dashboard' | 'profile' | 'castings' | 'bookings' | 'settings';
 
 const EmptyCastingsNotice: React.FC = () => (
-  <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+  <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
     <h3 className="text-xl font-['Syne'] font-bold mb-2">Castings</h3>
     <p className="text-zinc-400 text-sm">
       The casting application system is currently disabled. You can still keep your profile up to date so the Elgrace
@@ -30,7 +31,7 @@ export const ProfileDashboard: React.FC = () => {
   if (!user) {
     return (
       <section className="container mx-auto px-6">
-        <div className="max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800 rounded-2xl p-8 backdrop-blur-sm text-center">
+        <div className="max-w-4xl mx-auto bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-8 backdrop-blur-sm text-center">
           <h3 className="text-2xl font-['Syne'] font-bold mb-2">Login Required</h3>
           <p className="text-zinc-400">Please log in to access your profile dashboard.</p>
         </div>
@@ -54,10 +55,10 @@ export const ProfileDashboard: React.FC = () => {
     <section className="container mx-auto px-6 py-6">
       <div className="grid grid-cols-1 md:grid-cols-[260px,1fr] gap-6">
         {/* Sidebar */}
-        <aside className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm flex flex-col gap-6">
+        <aside className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm flex flex-col gap-6">
           {/* User Info */}
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-bold">
+            <div className="w-12 h-12 rounded-full bg-[#f5e6d3]/10 border border-white/20 flex items-center justify-center text-white font-bold">
               {displayName.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -78,7 +79,7 @@ export const ProfileDashboard: React.FC = () => {
                 onClick={() => setActiveTab(tab.key)}
                 className={`w-full flex items-center justify-between px-4 py-2 rounded-xl border text-xs uppercase tracking-widest ${
                   activeTab === tab.key
-                    ? 'border-[#dfcda5] bg-white/10 text-white'
+                    ? 'border-[#dfcda5] bg-[#f5e6d3]/10 text-white'
                     : 'border-white/10 bg-transparent text-zinc-300 hover:border-[#dfcda5]'
                 }`}
               >
@@ -132,7 +133,7 @@ export const ProfileDashboard: React.FC = () => {
           )}
 
           {!isModel && !isClient && (
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm text-zinc-300">
+            <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm text-zinc-300">
               Your account does not have a model or client role yet.
             </div>
           )}
@@ -183,7 +184,7 @@ const ProfileStepper: React.FC<{
             type="button"
             onClick={() => onGoTo(s.section)}
             className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm text-left
-              ${isCurrent ? 'border-[#dfcda5] bg-white/10 text-white' : 'border-white/10 bg-white/5 text-zinc-300 hover:border-[#dfcda5]'}
+              ${isCurrent ? 'border-[#dfcda5] bg-[#f5e6d3]/10 text-white' : 'border-white/10 bg-[#f5e6d3]/5 text-zinc-300 hover:border-[#dfcda5]'}
             `}
           >
             <span>{s.label}</span>
@@ -213,9 +214,13 @@ const ProfileStepper: React.FC<{
 
 /* MODEL PROFILE VIEW */
 const ModelProfileView: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mediaRecords, setMediaRecords] = useState<MediaItem[]>([]);
+
+  const derivedMedia = useMemo(() => deriveMedia(mediaRecords), [mediaRecords]);
 
   useEffect(() => {
     if (!user) return;
@@ -223,17 +228,15 @@ const ModelProfileView: React.FC = () => {
       try {
         const data = await getProfileByUserId(user.id);
         setProfile(data);
+        
+        // Fetch media from model_media table (VPS backend)
+        const records = await fetchMediaRecords(user.id, session?.access_token);
+        setMediaRecords(records);
       } finally {
         setLoading(false);
       }
     })();
-  }, [user]);
-
-  const coverCandidates = useMemo(
-    () => buildDriveImageUrls(profile?.cover_photo_url || ''),
-    [profile?.cover_photo_url]
-  );
-  const portfolioFolder = profile?.portfolio_folder_link?.trim() || '';
+  }, [user, session?.access_token]);
 
   const computeAge = (dob?: string | null) => {
     if (!dob) return null;
@@ -251,13 +254,13 @@ const ModelProfileView: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm text-zinc-400">Loading your profile...</div>
+      <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm text-zinc-400">Loading your profile...</div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+      <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
         <div className="text-zinc-400">Your model profile is not completed yet.</div>
         <a
           href="/talents/onboarding"
@@ -271,60 +274,109 @@ const ModelProfileView: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Profile Header with Image */}
+      <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
+        <div className="flex items-center gap-6">
+          <div className="flex-shrink-0">
+            {derivedMedia.profileImage ? (
+              <img
+                src={derivedMedia.profileImage.media_url}
+                alt={profile.full_name}
+                className="w-32 h-40 object-cover rounded-lg border border-white/10"
+                onError={(e) => {
+                  console.error('Failed to load profile image:', e.currentTarget.src);
+                }}
+              />
+            ) : (
+              <div className="w-32 h-40 rounded-lg border border-white/10 bg-[#f5e6d3]/5 flex items-center justify-center text-zinc-500 text-sm">
+                No photo
+              </div>
+            )}
+          </div>
+          <div className="flex-1">
+            <h3 className="text-3xl font-['Syne'] font-bold text-white mb-2">{profile.full_name}</h3>
+            <div className="space-y-1 text-zinc-300 text-sm">
+              {age && <div>Age: <span className="font-medium">{age}</span></div>}
+              {profile.nationality && <div>Nationality: <span className="font-medium">{profile.nationality}</span></div>}
+              {profile.city && <div>Location: <span className="font-medium">{[profile.city, profile.state, profile.country].filter(Boolean).join(', ')}</span></div>}
+              {profile.gender && <div>Gender: <span className="font-medium capitalize">{profile.gender}</span></div>}
+            </div>
+            <button 
+              onClick={() => navigate('/profile/edit?section=photos-media')} 
+              className="mt-4 px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white hover:bg-[#f5e6d3]/10 flex items-center gap-2 text-xs uppercase tracking-widest font-semibold"
+            >
+              <Edit className="w-4 h-4" /> Update Photos
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Media Card: cover + gallery */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+      <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
         <div className="flex justify-between items-center mb-4">
           <h4 className="text-lg font-['Syne'] font-bold">Photos / Media</h4>
-          <a href={`/profile/edit?section=photos-media`} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
+          <button onClick={() => navigate('/profile/edit?section=photos-media')} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
             <Edit className="w-4 h-4" /> Edit
-          </a>
+          </button>
         </div>
         <div className="grid md:grid-cols-3 gap-4">
           <div className="md:col-span-1">
             <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2">Cover Photo</div>
-            {coverCandidates.length > 0 ? (
+            {derivedMedia.profileImage ? (
               <img
-                src={coverCandidates[0]}
+                src={derivedMedia.profileImage.media_url}
                 alt="Cover"
                 className="w-full aspect-[3/4] object-cover rounded-lg border border-white/10"
                 onError={(e) => {
-                  const el = e.currentTarget as HTMLImageElement & { _try?: number };
-                  el._try = (el._try || 0) + 1;
-                  if (el._try < coverCandidates.length) {
-                    el.src = coverCandidates[el._try];
-                  }
+                  console.error('Failed to load cover image:', e.currentTarget.src);
                 }}
               />
             ) : (
-              <div className="w-full aspect-[3/4] rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-zinc-500 text-sm">
+              <div className="w-full aspect-[3/4] rounded-lg border border-white/10 bg-[#f5e6d3]/5 flex items-center justify-center text-zinc-500 text-sm">
                 No cover set
               </div>
             )}
-            {profile.cover_photo_url && (
-              <a
-                href={profile.cover_photo_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-block text-[#dfcda5] hover:underline text-xs"
-              >
-                Open original on Drive →
-              </a>
+          </div>
+          <div className="md:col-span-1">
+            <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2">Intro Video</div>
+            {derivedMedia.introVideo ? (
+              <div className="w-full bg-black rounded-lg overflow-hidden aspect-video border border-white/10">
+                <video
+                  src={derivedMedia.introVideo.media_url}
+                  controls
+                  className="w-full h-full"
+                  onError={(e) => {
+                    console.error('Failed to load intro video:', e.currentTarget.src);
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="w-full aspect-video rounded-lg border border-white/10 bg-[#f5e6d3]/5 flex items-center justify-center text-zinc-500 text-sm">
+                No video set
+              </div>
             )}
           </div>
-          <div className="md:col-span-2">
+          <div className="md:col-span-1">
             <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2">Portfolio</div>
-            {portfolioFolder ? (
-              <a
-                href={portfolioFolder}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white text-xs font-bold uppercase tracking-widest hover:bg-white/10"
-              >
-                View Full Portfolio on Drive →
-              </a>
+            {derivedMedia.portfolio.length > 0 ? (
+              <div className="grid grid-cols-2 gap-2">
+                {derivedMedia.portfolio.slice(0, 4).map((item) => (
+                  <img
+                    key={item.id}
+                    src={item.media_url}
+                    alt="Portfolio"
+                    className="w-full aspect-square object-cover rounded border border-white/10"
+                  />
+                ))}
+                {derivedMedia.portfolio.length > 4 && (
+                  <div className="col-span-2 text-center text-xs text-zinc-500 mt-1">
+                    +{derivedMedia.portfolio.length - 4} more
+                  </div>
+                )}
+              </div>
             ) : (
-              <div className="w-full h-full min-h-[120px] rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-zinc-500 text-sm">
-                No portfolio folder link set
+              <div className="w-full h-full min-h-[120px] rounded-lg border border-white/10 bg-[#f5e6d3]/5 flex items-center justify-center text-zinc-500 text-sm">
+                No portfolio set
               </div>
             )}
           </div>
@@ -332,12 +384,12 @@ const ModelProfileView: React.FC = () => {
       </div>
 
       {/* Personal Information */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+      <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
         <div className="flex justify-between items-center mb-4">
           <h4 className="text-lg font-['Syne'] font-bold">Personal Information</h4>
-          <a href={`/profile/edit?section=personal-info`} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
+          <button onClick={() => navigate('/profile/edit?section=personal-info')} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
             <Edit className="w-4 h-4" /> Edit
-          </a>
+          </button>
         </div>
         <div className="grid md:grid-cols-2 gap-4 text-zinc-300">
           <div><span className="text-zinc-500 text-xs uppercase">Full Name</span><div className="font-medium">{profile.full_name}</div></div>
@@ -345,17 +397,18 @@ const ModelProfileView: React.FC = () => {
           <div><span className="text-zinc-500 text-xs uppercase">Phone</span><div className="font-medium">{profile.phone}</div></div>
           <div><span className="text-zinc-500 text-xs uppercase">Age</span><div className="font-medium">{age != null ? `${age} yrs` : '—'}</div></div>
           <div><span className="text-zinc-500 text-xs uppercase">Gender</span><div className="font-medium">{profile.gender}</div></div>
-          <div><span className="text-zinc-500 text-xs uppercase">Location</span><div className="font-medium">{[profile.city, profile.state, profile.country].filter(Boolean).join(', ')}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Nationality</span><div className="font-medium">{profile.nationality || '—'}</div></div>
+          <div className="md:col-span-2"><span className="text-zinc-500 text-xs uppercase">Location</span><div className="font-medium">{[profile.city, profile.state, profile.country].filter(Boolean).join(', ')}</div></div>
         </div>
       </div>
 
       {/* Professional */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+      <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
         <div className="flex justify-between items-center mb-4">
           <h4 className="text-lg font-['Syne'] font-bold">Professional Information</h4>
-          <a href={`/profile/edit?section=professional-info`} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
+          <button onClick={() => navigate('/profile/edit?section=professional-info')} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
             <Edit className="w-4 h-4" /> Edit
-          </a>
+          </button>
         </div>
         <div className="grid md:grid-cols-2 gap-4 text-zinc-300">
           <div><span className="text-zinc-500 text-xs uppercase">Experience</span><div className="font-medium">{profile.experience_level || '—'}</div></div>
@@ -367,12 +420,12 @@ const ModelProfileView: React.FC = () => {
       </div>
 
       {/* Measurements */}
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+      <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
         <div className="flex justify-between items-center mb-4">
-          <h4 className="text-lg font-['Syne'] font-bold">Measurements</h4>
-          <a href={`/profile/edit?section=measurements`} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
+          <h4 className="text-lg font-['Syne'] font-bold">Measurements & Rates</h4>
+          <button onClick={() => navigate('/profile/edit?section=measurements')} className="px-3 py-2 rounded-xl border border-white/10 text-zinc-300 hover:border-[#dfcda5] flex items-center gap-2 text-xs uppercase tracking-widest">
             <Edit className="w-4 h-4" /> Edit
-          </a>
+          </button>
         </div>
         <div className="grid md:grid-cols-3 gap-4 text-zinc-300">
           <div><span className="text-zinc-500 text-xs uppercase">Height</span><div className="font-medium">{profile.height_feet && profile.height_inches ? `${profile.height_feet}' ${profile.height_inches}"` : '—'}</div></div>
@@ -381,6 +434,8 @@ const ModelProfileView: React.FC = () => {
           <div><span className="text-zinc-500 text-xs uppercase">Hips</span><div className="font-medium">{profile.hips ? `${profile.hips}"` : '—'}</div></div>
           <div><span className="text-zinc-500 text-xs uppercase">Size</span><div className="font-medium">{(profile as any).size || '—'}</div></div>
           <div><span className="text-zinc-500 text-xs uppercase">Shoe Size</span><div className="font-medium">{profile.shoe_size || '—'}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Half Day Rate</span><div className="font-medium">{profile.min_budget_half_day ? `₹${profile.min_budget_half_day}` : '—'}</div></div>
+          <div><span className="text-zinc-500 text-xs uppercase">Full Day Rate</span><div className="font-medium">{profile.min_budget_full_day ? `₹${profile.min_budget_full_day}` : '—'}</div></div>
         </div>
       </div>
     </div>
@@ -421,7 +476,7 @@ const ModelBookings: React.FC = () => {
   };
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+    <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
       <h4 className="text-lg font-['Syne'] font-bold mb-4">Booking Requests</h4>
       {loading ? (
         <div className="text-zinc-400 text-sm">Loading booking requests...</div>
@@ -430,7 +485,7 @@ const ModelBookings: React.FC = () => {
       ) : (
         <div className="space-y-3">
           {bookings.map((b) => (
-            <div key={b.id} className="bg-zinc-900/70 border border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div key={b.id} className="bg-[#f5e6d3] border border-[#dfcda5] rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <div className="text-sm text-zinc-300">Booking from brand</div>
                 {b.message && <div className="text-xs text-zinc-400 mt-1 max-w-md">{b.message}</div>}
@@ -502,15 +557,15 @@ const ClientDashboard: React.FC<{ onEditBrand: () => void; onAddCasting: () => v
   }, [user]);
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+    <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
       <h3 className="text-2xl font-['Syne'] font-bold mb-4">Brand Overview</h3>
       {loading ? (
         <div className="text-zinc-400">Loading brand profile...</div>
       ) : (
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
+          <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-xl p-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center text-white font-bold text-xl">
+              <div className="w-16 h-16 rounded-lg bg-[#f5e6d3]/10 border border-white/20 flex items-center justify-center text-white font-bold text-xl">
                 {brandProfile?.brand_name?.charAt(0)?.toUpperCase() || 'B'}
               </div>
               <div>
@@ -536,7 +591,7 @@ const ClientDashboard: React.FC<{ onEditBrand: () => void; onAddCasting: () => v
               <button onClick={onAddCasting} className="px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white flex items-center gap-2"><Plus className="w-4 h-4"/> Add New Casting</button>
             </div>
           </div>
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4">
+          <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-xl p-4">
             <h4 className="text-sm uppercase tracking-widest text-zinc-500 mb-2">Recent Castings</h4>
             {recentCastings.length === 0 ? (
               <div className="text-zinc-400 text-sm">No castings posted yet.</div>
@@ -553,7 +608,7 @@ const ClientDashboard: React.FC<{ onEditBrand: () => void; onAddCasting: () => v
               </div>
             )}
           </div>
-          <div className="md:col-span-2 bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 mt-4">
+          <div className="md:col-span-2 bg-[#f5e6d3] border border-[#dfcda5] rounded-xl p-4 mt-4">
             <h4 className="text-sm uppercase tracking-widest text-zinc-500 mb-2">Recent Applications To Your Castings</h4>
             {applications.length === 0 ? (
               <div className="text-zinc-400 text-sm">No applications yet.</div>
@@ -562,7 +617,7 @@ const ClientDashboard: React.FC<{ onEditBrand: () => void; onAddCasting: () => v
                 {applications.slice(0, 5).map((app) => {
                   const c = app.casting as any as Casting | undefined;
                   return (
-                    <div key={app.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-zinc-950/60 border border-zinc-800">
+                    <div key={app.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-[#f5e6d3] border border-[#dfcda5]">
                       <div className="min-w-0">
                         <div className="text-sm font-medium text-white truncate">{c?.title ?? 'Casting'}</div>
                         <div className="text-[11px] text-zinc-500 mt-1">Applicant: {app.model_user_id.slice(0, 8)}…</div>
@@ -614,7 +669,7 @@ const ClientBookings: React.FC = () => {
   };
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+    <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
       <h4 className="text-lg font-['Syne'] font-bold mb-4">Your Booking Requests</h4>
       {loading ? (
         <div className="text-zinc-400 text-sm">Loading booking requests...</div>
@@ -623,7 +678,7 @@ const ClientBookings: React.FC = () => {
       ) : (
         <div className="space-y-3">
           {bookings.map((b) => (
-            <div key={b.id} className="bg-zinc-900/70 border border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div key={b.id} className="bg-[#f5e6d3] border border-[#dfcda5] rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div>
                 <div className="text-sm text-zinc-300">Request to a model</div>
                 {b.message && <div className="text-xs text-zinc-400 mt-1 max-w-md">{b.message}</div>}
@@ -698,19 +753,19 @@ const ClientBrandProfile: React.FC = () => {
 
   if (!form || loading) {
     return (
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm text-zinc-400">Loading brand profile...</div>
+      <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm text-zinc-400">Loading brand profile...</div>
     );
   }
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+    <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
       <h4 className="text-lg font-['Syne'] font-bold mb-4">Brand Profile</h4>
       <div className="grid md:grid-cols-2 gap-6">
         <div className="space-y-3">
           <label className="block text-xs uppercase tracking-widest text-zinc-500">Brand Name</label>
           <input
             required
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+            className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50"
             placeholder="Your Brand"
             value={form.brand_name}
             onChange={(e) => setForm({ ...form, brand_name: e.target.value })}
@@ -719,7 +774,7 @@ const ClientBrandProfile: React.FC = () => {
         <div className="space-y-3">
           <label className="block text-xs uppercase tracking-widest text-zinc-500">Website URL</label>
           <input
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+            className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50"
             placeholder="https://"
             value={form.website_url ?? ''}
             onChange={(e) => setForm({ ...form, website_url: e.target.value })}
@@ -728,7 +783,7 @@ const ClientBrandProfile: React.FC = () => {
         <div className="space-y-3">
           <label className="block text-xs uppercase tracking-widest text-zinc-500">Instagram Handle</label>
           <input
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+            className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50"
             placeholder="@handle"
             value={form.instagram_handle ?? ''}
             onChange={(e) => setForm({ ...form, instagram_handle: e.target.value })}
@@ -737,7 +792,7 @@ const ClientBrandProfile: React.FC = () => {
         <div className="space-y-3 md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-zinc-500">Contact Email</label>
           <input
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+            className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50"
             placeholder="contact@brand.com"
             value={form.contact_email ?? ''}
             onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
@@ -746,7 +801,7 @@ const ClientBrandProfile: React.FC = () => {
         <div className="space-y-3 md:col-span-2">
           <label className="block text-xs uppercase tracking-widest text-zinc-500">Brand Description</label>
           <textarea
-            className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 h-28"
+            className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50 h-28"
             placeholder="What does your brand do?"
             value={form.brand_description ?? ''}
             onChange={(e) => setForm({ ...form, brand_description: e.target.value })}
@@ -860,7 +915,7 @@ const ClientCastingsList: React.FC = () => {
   return (
     <>
       <div className="space-y-6">
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 backdrop-blur-sm">
+        <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
           <div className="flex justify-between items-center mb-4">
             <div>
               <h4 className="text-lg font-['Syne'] font-bold">Your Castings</h4>
@@ -868,7 +923,7 @@ const ClientCastingsList: React.FC = () => {
             </div>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-[#dfcda5] text-white hover:bg-white/5 transition-colors text-xs uppercase tracking-widest font-bold"
+              className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-[#dfcda5] text-white hover:bg-[#f5e6d3]/5 transition-colors text-xs uppercase tracking-widest font-bold"
             >
               <Plus className="w-4 h-4" /> Create Casting
             </button>
@@ -883,7 +938,7 @@ const ClientCastingsList: React.FC = () => {
               {castings.map((casting) => (
                 <div
                   key={casting.id}
-                  className="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 hover:border-zinc-600 transition-colors"
+                  className="bg-[#f5e6d3] border border-[#dfcda5] rounded-xl p-4 hover:border-[#c9a961] transition-colors"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -922,7 +977,7 @@ const ClientCastingsList: React.FC = () => {
                     </div>
                   </div>
                   {applicationsByCasting[casting.id as string]?.length ? (
-                    <div className="mt-3 border-t border-zinc-800 pt-3 text-xs text-zinc-300">
+                    <div className="mt-3 border-t border-[#dfcda5] pt-3 text-xs text-zinc-300">
                       <div className="mb-1 font-semibold">Recent Applicants</div>
                       <div className="space-y-1 max-h-28 overflow-y-auto pr-1">
                         {applicationsByCasting[casting.id as string]
@@ -958,7 +1013,7 @@ const ClientCastingsList: React.FC = () => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="relative bg-zinc-900 w-full max-w-2xl p-8 rounded-xl border border-zinc-800 shadow-2xl max-h-[90vh] overflow-y-auto"
+              className="relative bg-zinc-900 w-full max-w-2xl p-8 rounded-xl border border-[#dfcda5] shadow-2xl max-h-[90vh] overflow-y-auto"
             >
               <h3 className="text-2xl font-bold font-['Syne'] mb-6">Create New Casting</h3>
               <form onSubmit={handlePostCasting} className="space-y-4">
@@ -968,7 +1023,7 @@ const ClientCastingsList: React.FC = () => {
                     required
                     value={newCasting.title}
                     onChange={(e) => setNewCasting({ ...newCasting, title: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                    className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50"
                     placeholder="e.g. Winter Campaign 2024"
                   />
                 </div>
@@ -978,7 +1033,7 @@ const ClientCastingsList: React.FC = () => {
                     required
                     value={newCasting.description}
                     onChange={(e) => setNewCasting({ ...newCasting, description: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 h-32"
+                    className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50 h-32"
                     placeholder="Describe the role and project..."
                   />
                 </div>
@@ -989,7 +1044,7 @@ const ClientCastingsList: React.FC = () => {
                       required
                       value={newCasting.location}
                       onChange={(e) => setNewCasting({ ...newCasting, location: e.target.value })}
-                      className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                      className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50"
                       placeholder="City, Country"
                     />
                   </div>
@@ -1000,7 +1055,7 @@ const ClientCastingsList: React.FC = () => {
                         type="number"
                         value={newCasting.budget_min}
                         onChange={(e) => setNewCasting({ ...newCasting, budget_min: e.target.value })}
-                        className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                        className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50"
                         placeholder="30000"
                       />
                     </div>
@@ -1010,7 +1065,7 @@ const ClientCastingsList: React.FC = () => {
                         type="number"
                         value={newCasting.budget_max}
                         onChange={(e) => setNewCasting({ ...newCasting, budget_max: e.target.value })}
-                        className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                        className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50"
                         placeholder="50000"
                       />
                     </div>
@@ -1022,7 +1077,7 @@ const ClientCastingsList: React.FC = () => {
                     required
                     value={newCasting.requirements}
                     onChange={(e) => setNewCasting({ ...newCasting, requirements: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                    className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50"
                     placeholder="e.g. Female, 20-25, 5'8+"
                   />
                 </div>
@@ -1032,7 +1087,7 @@ const ClientCastingsList: React.FC = () => {
                     type="date"
                     value={newCasting.application_deadline}
                     onChange={(e) => setNewCasting({ ...newCasting, application_deadline: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50"
+                    className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50"
                   />
                 </div>
 
@@ -1040,7 +1095,7 @@ const ClientCastingsList: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="flex-1 py-3 border-2 border-[#dfcda5] hover:bg-white/5 transition-colors uppercase tracking-widest font-bold text-xs rounded-xl backdrop-blur-md"
+                    className="flex-1 py-3 border-2 border-[#dfcda5] hover:bg-[#f5e6d3]/5 transition-colors uppercase tracking-widest font-bold text-xs rounded-xl backdrop-blur-md"
                   >
                     Cancel
                   </button>
@@ -1122,7 +1177,7 @@ const SettingsPanel: React.FC<{ user: { email: string | null; } }> = ({ user }) 
           <span className="text-xs uppercase tracking-widest text-emerald-400">Verified</span>
         </div>
       </div>
-      <div className="pt-2 border-t border-zinc-800">
+      <div className="pt-2 border-t border-[#dfcda5]">
         <h4 className="text-lg font-['Syne'] font-bold mb-2">Change Password</h4>
         <p className="text-zinc-400 text-sm mb-4">Enter your current password to verify your identity, then set a new password (minimum 6 characters).</p>
         <form onSubmit={handlePasswordUpdate}>
@@ -1133,7 +1188,7 @@ const SettingsPanel: React.FC<{ user: { email: string | null; } }> = ({ user }) 
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
-              className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 placeholder:text-zinc-600"
+              className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50 placeholder:text-zinc-600"
             />
             <div className="grid md:grid-cols-2 gap-3">
               <input
@@ -1143,7 +1198,7 @@ const SettingsPanel: React.FC<{ user: { email: string | null; } }> = ({ user }) 
                 onChange={(e) => setNewPassword(e.target.value)}
                 minLength={6}
                 required
-                className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 placeholder:text-zinc-600"
+                className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50 placeholder:text-zinc-600"
               />
               <input
                 type="password"
@@ -1152,7 +1207,7 @@ const SettingsPanel: React.FC<{ user: { email: string | null; } }> = ({ user }) 
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 minLength={6}
                 required
-                className="w-full bg-zinc-950 border border-zinc-800 p-3 text-white focus:outline-none focus:border-white/50 placeholder:text-zinc-600"
+                className="w-full bg-[#e8d4bd] border border-[#dfcda5] p-3 text-white focus:outline-none focus:border-white/50 placeholder:text-zinc-600"
               />
             </div>
           </div>
@@ -1179,3 +1234,7 @@ const SettingsPanel: React.FC<{ user: { email: string | null; } }> = ({ user }) 
     </div>
   );
 };
+
+
+
+

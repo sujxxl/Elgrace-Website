@@ -21,14 +21,16 @@ $$ language plpgsql;
 */
 create table if not exists public.model_profiles (
   id uuid primary key default gen_random_uuid(),
-  full_name text not null,
-  dob date not null,
+  user_id uuid,
+  full_name text,
+  dob date,
   gender text not null check (gender in ('male','female','other')),
-  phone text not null,
+  phone text,
   email text not null,
-  country text not null,
-  state text not null,
-  city text not null,
+  nationality text,
+  country text,
+  state text,
+  city text,
   category text not null default 'model' check (category in ('model','client')),
   instagram jsonb not null default '[]',
   experience_level text check (experience_level in ('lt_1','1_3','3_5','gt_5')),
@@ -62,6 +64,7 @@ create table if not exists public.model_profiles (
 
 -- Safely migrate from older versions (additive only - no data loss):
 -- Ensure model_code column & unique constraint and new fields exist even if table pre-existed
+alter table public.model_profiles add column if not exists user_id uuid;
 alter table public.model_profiles add column if not exists model_code text;
 alter table public.model_profiles add column if not exists overall_rating integer check (overall_rating >= 0 and overall_rating <= 11);
 alter table public.model_profiles add column if not exists expected_budget text;
@@ -69,6 +72,16 @@ alter table public.model_profiles add column if not exists min_budget_half_day n
 alter table public.model_profiles add column if not exists min_budget_full_day numeric;
 alter table public.model_profiles add column if not exists size text;
 alter table public.model_profiles add column if not exists intro_video_url text;
+alter table public.model_profiles add column if not exists nationality text;
+
+-- Make dob and other fields nullable (remove NOT NULL if it exists)
+alter table public.model_profiles alter column dob drop not null;
+alter table public.model_profiles alter column full_name drop not null;
+alter table public.model_profiles alter column phone drop not null;
+alter table public.model_profiles alter column nationality drop not null;
+alter table public.model_profiles alter column country drop not null;
+alter table public.model_profiles alter column state drop not null;
+alter table public.model_profiles alter column city drop not null;
 
 do $$
 begin
@@ -185,6 +198,20 @@ create policy "Public read online models"
   for select
   using (status = 'ONLINE');
 
+-- Allow authenticated users to read their own profile
+drop policy if exists "Authenticated read own profile" on public.model_profiles;
+create policy "Authenticated read own profile"
+  on public.model_profiles
+  for select
+  using (auth.uid() = user_id OR auth.uid() = id);
+
+-- Allow authenticated users to create their own profiles
+drop policy if exists "Authenticated insert own profile" on public.model_profiles;
+create policy "Authenticated insert own profile"
+  on public.model_profiles
+  for insert
+  with check (auth.role() = 'authenticated');
+
 -- Allow public (including anon) to create new model profiles
 -- All such profiles are forced into UNDER_REVIEW so only admins
 -- can later approve and publish them.
@@ -231,7 +258,61 @@ create policy "Admin full access to casting_applications"
   using (auth.jwt() -> 'user_metadata' ->> 'role' = 'admin')
   with check (auth.jwt() -> 'user_metadata' ->> 'role' = 'admin');
 
+/*
+  MODEL MEDIA
+  - Tracks media files uploaded to VPS
+  - Supports profile photos, portfolio images, and intro videos
+*/
+create table if not exists public.model_media (
+  id uuid primary key default gen_random_uuid(),
+  model_id uuid not null,
+  media_type text not null check (media_type in ('image','video')),
+  media_role text not null check (media_role in ('profile','portfolio','intro_video')),
+  media_url text not null,
+  sort_order integer default 0,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+-- Indexes for performance
+create index if not exists idx_model_media_model_id on public.model_media(model_id);
+create index if not exists idx_model_media_role on public.model_media(media_role);
+
+-- Enforce singleton media per model (one profile photo, one intro video)
+create unique index if not exists unique_model_single_media
+on public.model_media (model_id, media_role)
+where media_role in ('profile','intro_video');
+
+drop trigger if exists model_media_set_updated_at on public.model_media;
+create trigger model_media_set_updated_at
+before update on public.model_media
+for each row
+execute procedure public.handle_updated_at();
+
+-- Enable RLS
+alter table public.model_media enable row level security;
+
+-- RLS Policies for model_media
+drop policy if exists "Public read model media" on public.model_media;
+create policy "Public read model media"
+  on public.model_media
+  for select
+  using (true);
+
+drop policy if exists "Authenticated users can insert their own media" on public.model_media;
+create policy "Authenticated users can insert their own media"
+  on public.model_media
+  for insert
+  with check (auth.uid() = model_id OR auth.jwt() -> 'user_metadata' ->> 'role' = 'admin');
+
+drop policy if exists "Admin full access to model_media" on public.model_media;
+create policy "Admin full access to model_media"
+  on public.model_media
+  for all
+  using (auth.jwt() -> 'user_metadata' ->> 'role' = 'admin')
+  with check (auth.jwt() -> 'user_metadata' ->> 'role' = 'admin');
+
 -- NOTE: Storage bucket (optional)
--- If you later switch to uploading images to Supabase instead of Google Drive,
+-- If you later switch to uploading images to Supabase instead of VPS,
 -- create a public storage bucket named "media" and allow public read.
--- The current app setup uses Google Drive links for cover photos/portfolio.
+-- The current app setup uses VPS file storage served via Apache.

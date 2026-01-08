@@ -25,7 +25,8 @@ import { ElgraceTalentsPage } from './components/ElgraceTalentsPage';
 import { GalleryPage } from './components/GalleryPage';
 import { ViewKey } from './siteConfig';
 import { TalentOnboardingPage } from './components/TalentOnboardingPage';
-import { ensureModelProfileForUser, ensureBrandProfileForUser, getProfileByUserId } from './services/ProfileService';
+import { ensureBrandProfileForUser, getProfileByUserId } from './services/ProfileService';
+import TestSession from './components/TestSession';
 
 const viewToPath = (v: ViewKey) =>
   v === 'home' ? '/' : `/${v}`;
@@ -58,9 +59,10 @@ const AppRouterContent: React.FC = () => {
 
       try {
         if (user.role === 'model') {
-          const profile = await ensureModelProfileForUser(user.id, user.email);
+          // Check if profile exists (do NOT create stub)
+          const profile = await getProfileByUserId(user.id);
           if (cancelled) return;
-          // Treat missing profile or missing status as incomplete
+          // If profile doesn't exist or has no status, they need to complete onboarding
           setProfileIncomplete(!profile || !profile.status);
         } else if (user.role === 'client') {
           await ensureBrandProfileForUser(user.id, user.email);
@@ -176,6 +178,15 @@ const AppRouterContent: React.FC = () => {
         />
 
         <Route
+          path="/test-session"
+          element={
+            <main className="relative z-10">
+              <TestSession />
+            </main>
+          }
+        />
+
+        <Route
           path="/talents/:userId"
           element={
             <main className="relative z-10">
@@ -228,6 +239,17 @@ const AppRouterContent: React.FC = () => {
             <ProtectedRoute requireAuth={true}>
               <main className="relative z-10">
                 {user?.role === 'admin' ? <AdminDashboard /> : <ProfileDashboard />}
+              </main>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile/edit"
+          element={
+            <ProtectedRoute requireAuth={true}>
+              <main className="relative z-10">
+                <ProfileEdit />
               </main>
             </ProtectedRoute>
           }
