@@ -247,7 +247,7 @@ export const TalentGallery: React.FC = () => {
     const handleBookNow = async (talent: Talent) => {
         try {
             if (!user) {
-                window.location.href = '/auth';
+                window.location.href = '/#/auth';
                 return;
             }
             if (user.role !== 'client') {

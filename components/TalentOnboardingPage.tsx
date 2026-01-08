@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Country, State, City } from 'country-state-city';
-import { ProfileData, getNextModelUserId, createPublicProfile, upsertProfile, getProfileByUserId } from '../services/ProfileService';
+import { ProfileData, getNextModelUserId, createPublicProfile, getProfileByUserId } from '../services/ProfileService';
 import { useAuth } from '../context/AuthContext';
 import { useMediaUpload } from '../hooks/useMediaUpload';
 import { useToast } from '../context/ToastContext';
@@ -69,9 +69,7 @@ export const TalentOnboardingPage: React.FC = () => {
     shoe_size: '',
     min_budget_half_day: '' as number | '',
     min_budget_full_day: '' as number | '',
-    cover_photo_url: '',
     portfolio_folder_link: '',
-    intro_video_url: '',
   });
 
   // Get country/state/city lists (memoized to avoid heavy recomputation)
@@ -246,9 +244,7 @@ export const TalentOnboardingPage: React.FC = () => {
         shoe_size: formData.shoe_size,
         min_budget_half_day: formData.min_budget_half_day ? Number(formData.min_budget_half_day) : undefined,
         min_budget_full_day: formData.min_budget_full_day ? Number(formData.min_budget_full_day) : undefined,
-        cover_photo_url: formData.cover_photo_url,
         portfolio_folder_link: formData.portfolio_folder_link,
-        intro_video_url: formData.intro_video_url,
         status: 'UNDER_REVIEW',
         model_code: nextCode,
       };

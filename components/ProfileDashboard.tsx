@@ -262,12 +262,13 @@ const ModelProfileView: React.FC = () => {
     return (
       <div className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm">
         <div className="text-zinc-400">Your model profile is not completed yet.</div>
-        <a
-          href="/talents/onboarding"
+        <button
+          type="button"
+          onClick={() => navigate('/talents/onboarding')}
           className="inline-block mt-3 px-4 py-2 rounded-xl border-2 border-[#dfcda5] text-white text-xs uppercase tracking-widest"
         >
           Complete Profile
-        </a>
+        </button>
       </div>
     );
   }
@@ -1223,7 +1224,7 @@ const SettingsPanel: React.FC<{ user: { email: string | null; } }> = ({ user }) 
               type="button"
               className="text-zinc-400 text-sm hover:text-[#dfcda5] transition-colors"
               onClick={() => {
-                window.location.href = '/auth?reset=1';
+                window.location.href = '/#/auth?reset=1';
               }}
             >
               Forgot password?
