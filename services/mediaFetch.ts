@@ -1,4 +1,10 @@
-const MEDIA_API_URL = import.meta.env.VITE_UPLOAD_API_URL || 'http://72.61.233.139:8093';
+import { UPLOAD_API_URL } from './config';
+
+function getMediaApiBaseUrl(): string {
+  const base = (UPLOAD_API_URL || '').replace(/\/$/, '');
+  if (!base) throw new Error('UPLOAD_API_URL missing');
+  return base;
+}
 
 export type MediaRecord = {
   id: string;
@@ -21,17 +27,15 @@ export async function fetchMediaForModel(
   token?: string
 ): Promise<MediaRecord[]> {
   try {
+    const base = getMediaApiBaseUrl();
     const headers: Record<string, string> = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const url = `${MEDIA_API_URL}/media?model_id=${encodeURIComponent(modelId)}`;
-    console.log('🔍 Fetching media from:', url);
+    const url = `${base}/media?model_id=${encodeURIComponent(modelId)}`;
 
     const res = await fetch(url, { headers });
-
-    console.log('📥 Response status:', res.status);
 
     if (!res.ok) {
       const errorText = await res.text();
@@ -40,7 +44,6 @@ export async function fetchMediaForModel(
     }
 
     const json = await res.json();
-    console.log('📦 Raw response:', json);
 
     // Handle multiple response formats
     let records: MediaRecord[] = [];
@@ -52,7 +55,6 @@ export async function fetchMediaForModel(
       records = json.data;
     }
 
-    console.log(`✅ Parsed ${records.length} media records`);
     return records;
   } catch (err) {
     console.error('💥 fetchMediaForModel error:', err);

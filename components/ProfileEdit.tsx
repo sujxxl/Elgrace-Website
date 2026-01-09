@@ -6,6 +6,7 @@ import { buildDriveImageUrls } from '../services/gdrive';
 import { compressImageFile } from '../services/image';
 import { deriveMedia, fetchMediaRecords, MediaItem } from '../services/mediaService';
 import { deleteMedia } from '../services/mediaApi';
+import { uploadFile } from '../services/upload';
 import { CheckCircle2 } from 'lucide-react';
 import { Country, State, City } from 'country-state-city';
 
@@ -600,8 +601,6 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
 
   useEffect(() => setForm(profile), [profile]);
 
-  const UPLOAD_API_URL = import.meta.env.VITE_UPLOAD_API_URL || 'http://72.61.233.139:8093';
-
   // Fetch existing media from model_media table
   useEffect(() => {
     if (!user?.id) return;
@@ -666,38 +665,15 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
       setUploadingCover(true);
       // Compress image
       const compressed = await compressImageFile(file, { maxBytes: 900 * 1024 });
-      
-      // Try to upload to VPS
-      const formData = new FormData();
-      formData.append('media_role', 'profile');
-      formData.append('model_id', user.id);
-      formData.append('file', compressed, `cover_${Date.now()}.jpg`);
-      
-      try {
-        console.log('Uploading to:', `${UPLOAD_API_URL}/upload`);
-        const uploadResponse = await fetch(`${UPLOAD_API_URL}/upload`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: formData,
-        });
-        
-        if (!uploadResponse.ok) {
-          const errorText = await uploadResponse.text();
-          throw new Error(`Server error (${uploadResponse.status}): ${errorText}`);
-        }
-        const { media_url } = await uploadResponse.json();
 
-        // Refresh media from model_media table
-        await refreshMedia();
-        
-        alert('✅ Cover photo uploaded to VPS!');
-      } catch (vpsError: any) {
-        const errorMsg = vpsError?.message || 'Unknown error';
-        console.error('VPS upload failed:', errorMsg);
-        alert(`❌ Upload failed: ${errorMsg}`);
-      }
+      await uploadFile(compressed, {
+        token: session.access_token,
+        mediaRole: 'profile',
+        modelId: user.id,
+      });
+
+      await refreshMedia();
+      alert('✅ Cover photo uploaded!');
     } catch (err: any) {
       console.error('Error:', err);
       alert(`Error: ${err?.message ?? 'Process failed'}`);
@@ -765,26 +741,11 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
     }
     try {
       setUploadingVideo(true);
-      const formData = new FormData();
-      const ext = file.name.split('.').pop() || 'mp4';
-      formData.append('media_role', 'intro_video');
-      formData.append('model_id', user.id);
-      formData.append('file', file, `intro_${Date.now()}.${ext}`);
-      
-      console.log('Uploading video to:', `${UPLOAD_API_URL}/upload`);
-      const uploadResponse = await fetch(`${UPLOAD_API_URL}/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: formData,
+      await uploadFile(file, {
+        token: session.access_token,
+        mediaRole: 'intro_video',
+        modelId: user.id,
       });
-      
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        throw new Error(`Server error (${uploadResponse.status}): ${errorText}`);
-      }
-      const { media_url } = await uploadResponse.json();
 
       // Refresh media from model_media table
       await refreshMedia();
@@ -826,28 +787,13 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
         const file = fileList[i];
         if (!file) continue;
         const compressed = await compressImageFile(file, { maxBytes: 900 * 1024 });
-        const formData = new FormData();
-        formData.append('media_role', 'portfolio');
-        formData.append('model_id', user.id);
-        formData.append('file', compressed, `portfolio_${Date.now()}_${i}.jpg`);
-        
         try {
-          console.log('Uploading portfolio image to:', `${UPLOAD_API_URL}/upload`);
-          const uploadResponse = await fetch(`${UPLOAD_API_URL}/upload`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-            },
-            body: formData,
+          const { media_url } = await uploadFile(compressed, {
+            token: session.access_token,
+            mediaRole: 'portfolio',
+            modelId: user.id,
           });
-          
-          if (uploadResponse.ok) {
-            const { media_url } = await uploadResponse.json();
-            uploaded.push(media_url);
-          } else {
-            const errorText = await uploadResponse.text();
-            console.error(`Upload failed for image ${i}:`, uploadResponse.status, errorText);
-          }
+          uploaded.push(media_url);
         } catch (err: any) {
           console.error(`Error uploading image ${i}:`, err?.message);
         }
