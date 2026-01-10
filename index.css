@@ -29,161 +29,161 @@ body {
   - Brand gold: #c9a961
 */
 
-/* Footer background */
-footer {
+/* Footer background (light pages only) */
+.theme-light footer {
   background-color: #fbf3e4 !important;
 }
 
 /* Map legacy dark Tailwind classes into the approved palette */
 
 /* Page backgrounds */
-.bg-zinc-950,
-.bg-zinc-900\/0,
-.bg-neutral-950,
-.bg-black {
+.theme-light .bg-zinc-950,
+.theme-light .bg-zinc-900\/0,
+.theme-light .bg-neutral-950,
+.theme-light .bg-black {
   background-color: #fbf3e4 !important;
 }
 
 /* Common surfaces/cards */
-.bg-zinc-900,
-.bg-zinc-800,
-.bg-zinc-900\/50,
-.bg-zinc-900\/60,
-.bg-zinc-900\/70,
-.bg-zinc-900\/80,
-.bg-zinc-900\/90,
-.bg-zinc-900\/95,
-.bg-zinc-950\/60,
-.bg-zinc-950\/80,
-.bg-zinc-950\/90 {
+.theme-light .bg-zinc-900,
+.theme-light .bg-zinc-800,
+.theme-light .bg-zinc-900\/50,
+.theme-light .bg-zinc-900\/60,
+.theme-light .bg-zinc-900\/70,
+.theme-light .bg-zinc-900\/80,
+.theme-light .bg-zinc-900\/90,
+.theme-light .bg-zinc-900\/95,
+.theme-light .bg-zinc-950\/60,
+.theme-light .bg-zinc-950\/80,
+.theme-light .bg-zinc-950\/90 {
   background-color: rgba(255, 255, 255, 0.96) !important;
 }
 
 /* Legacy hardcoded palette helpers (match real tokens, avoid hover: variants) */
-[class^="bg-[#cbb799]"],
-[class*=" bg-[#cbb799]"] {
+.theme-light [class^="bg-[#cbb799]"],
+.theme-light [class*=" bg-[#cbb799]"] {
   background-color: #ffffff !important;
 }
 
-[class~="border-[#dfcda5]"],
-[class~="border-[#e5d3a3]"] {
+.theme-light [class~="border-[#dfcda5]"],
+.theme-light [class~="border-[#e5d3a3]"] {
   border-color: #3d211a !important;
 }
 
 /* Handle arbitrary border colors with opacity suffixes (e.g. border-[#dfcda5]/40) */
-[class*="border-[#dfcda5]/"]:not([class*="hover:border-[#dfcda5]/"]):not([class*="focus:border-[#dfcda5]/"]),
-[class*="border-[#e5d3a3]/"]:not([class*="hover:border-[#e5d3a3]/"]):not([class*="focus:border-[#e5d3a3]/"]) {
+.theme-light [class*="border-[#dfcda5]/"]:not([class*="hover:border-[#dfcda5]/"]):not([class*="focus:border-[#dfcda5]/"]),
+.theme-light [class*="border-[#e5d3a3]/"]:not([class*="hover:border-[#e5d3a3]/"]):not([class*="focus:border-[#e5d3a3]/"]) {
   border-color: #3d211a !important;
 }
 
-[class*="hover:border-[#dfcda5]/"]:hover,
-[class*="hover:border-[#e5d3a3]/"]:hover,
-[class*="focus:border-[#dfcda5]/"]:focus,
-[class*="focus:border-[#e5d3a3]/"]:focus {
+.theme-light [class*="hover:border-[#dfcda5]/"]:hover,
+.theme-light [class*="hover:border-[#e5d3a3]/"]:hover,
+.theme-light [class*="focus:border-[#dfcda5]/"]:focus,
+.theme-light [class*="focus:border-[#e5d3a3]/"]:focus {
   border-color: #3d211a !important;
 }
 
-[class~="hover:border-[#dfcda5]"]:hover,
-[class~="hover:border-[#e5d3a3]"]:hover,
-[class~="focus:border-[#dfcda5]"]:focus,
-[class~="focus:border-[#e5d3a3]"]:focus {
+.theme-light [class~="hover:border-[#dfcda5]"]:hover,
+.theme-light [class~="hover:border-[#e5d3a3]"]:hover,
+.theme-light [class~="focus:border-[#dfcda5]"]:focus,
+.theme-light [class~="focus:border-[#e5d3a3]"]:focus {
   border-color: #3d211a !important;
 }
 
-[class~="text-[#dfcda5]"] {
+.theme-light [class~="text-[#dfcda5]"] {
   color: #3d211a !important;
 }
 
-[class~="hover:text-[#dfcda5]"]:hover,
-[class~="focus:text-[#dfcda5]"]:focus {
+.theme-light [class~="hover:text-[#dfcda5]"]:hover,
+.theme-light [class~="focus:text-[#dfcda5]"]:focus {
   color: #3d211a !important;
 }
 
-[class~="accent-[#dfcda5]"] {
+.theme-light [class~="accent-[#dfcda5]"] {
   accent-color: #3d211a !important;
 }
 
 /* Input-ish surfaces (common on old dark UI) */
-.bg-white\/5,
-.bg-white\/10,
-.bg-white\/15 {
+.theme-light .bg-white\/5,
+.theme-light .bg-white\/10,
+.theme-light .bg-white\/15 {
   background-color: #fdf4e3 !important;
 }
 
 /* When an element looks like an input (bg-white/5 + border), force input border tone */
-[class*="bg-white/5"][class*="border"],
-[class*="bg-white/10"][class*="border"],
-[class*="bg-white/15"][class*="border"] {
+.theme-light [class*="bg-white/5"][class*="border"],
+.theme-light [class*="bg-white/10"][class*="border"],
+.theme-light [class*="bg-white/15"][class*="border"] {
   border-color: #d8b56a !important;
 }
 
 /* Modal/backdrop scrims: avoid pure black, keep readable */
-.bg-black\/30 {
+.theme-light .bg-black\/30 {
   background-color: rgba(61, 33, 26, 0.12) !important;
 }
-.bg-black\/40 {
+.theme-light .bg-black\/40 {
   background-color: rgba(61, 33, 26, 0.16) !important;
 }
-.bg-black\/50 {
+.theme-light .bg-black\/50 {
   background-color: rgba(61, 33, 26, 0.20) !important;
 }
-.bg-black\/60 {
+.theme-light .bg-black\/60 {
   background-color: rgba(61, 33, 26, 0.24) !important;
 }
-.bg-black\/70 {
+.theme-light .bg-black\/70 {
   background-color: rgba(61, 33, 26, 0.26) !important;
 }
-.bg-black\/80 {
+.theme-light .bg-black\/80 {
   background-color: rgba(61, 33, 26, 0.30) !important;
 }
-.bg-black\/90 {
+.theme-light .bg-black\/90 {
   background-color: rgba(61, 33, 26, 0.34) !important;
 }
 
 /* Borders */
-.border-white\/5,
-.border-white\/10,
-.border-white\/15,
-.border-white\/20,
-.border-white\/50,
-.border-zinc-950,
-.border-zinc-900,
-.border-zinc-800,
-.border-zinc-700,
-.border-zinc-600 {
+.theme-light .border-white\/5,
+.theme-light .border-white\/10,
+.theme-light .border-white\/15,
+.theme-light .border-white\/20,
+.theme-light .border-white\/50,
+.theme-light .border-zinc-950,
+.theme-light .border-zinc-900,
+.theme-light .border-zinc-800,
+.theme-light .border-zinc-700,
+.theme-light .border-zinc-600 {
   border-color: #3d211a !important;
 }
 
 /* Text colors */
-.text-white,
-.text-zinc-50,
-.text-zinc-100,
-.text-zinc-200 {
+.theme-light .text-white,
+.theme-light .text-zinc-50,
+.theme-light .text-zinc-100,
+.theme-light .text-zinc-200 {
   color: #111827 !important;
 }
 
-.text-zinc-300,
-.text-zinc-400,
-.text-zinc-500 {
+.theme-light .text-zinc-300,
+.theme-light .text-zinc-400,
+.theme-light .text-zinc-500 {
   color: #4b5563 !important;
 }
 
-.text-zinc-600,
-.text-zinc-700 {
+.theme-light .text-zinc-600,
+.theme-light .text-zinc-700 {
   color: #6b7280 !important;
 }
 
 /* Shadow color overrides (avoid black shadows) */
-.shadow-black\/10,
-.shadow-black\/20,
-.shadow-black\/30,
-.shadow-black\/50 {
+.theme-light .shadow-black\/10,
+.theme-light .shadow-black\/20,
+.theme-light .shadow-black\/30,
+.theme-light .shadow-black\/50 {
   --tw-shadow-color: rgb(61 33 26 / 0.28) !important;
 }
 
 /* Canonical primary button style (profile/edit): neutralize old gradient buttons */
-button[class*="bg-gradient-to-"],
-a[class*="bg-gradient-to-"] {
+.theme-light button[class*="bg-gradient-to-"],
+.theme-light a[class*="bg-gradient-to-"] {
   background-image: none !important;
   background-color: #c9a961 !important;
   color: #111827 !important;
@@ -191,7 +191,7 @@ a[class*="bg-gradient-to-"] {
 }
 
 /* Ensure any gold backgrounds use dark text */
-[class*="bg-[#c9a961]"] {
+.theme-light [class*="bg-[#c9a961]"] {
   color: #111827 !important;
 }
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, useInView, animate } from 'framer-motion';
+import { homeSectionClasses } from '../theme/homeSections.ts';
 
 const Counter: React.FC<{ to: number; label: string }> = ({ to, label }) => {
   const nodeRef = useRef<HTMLSpanElement>(null);
@@ -23,7 +24,7 @@ const Counter: React.FC<{ to: number; label: string }> = ({ to, label }) => {
   return (
     <div>
       <span ref={nodeRef} className="block text-3xl font-bold font-['Syne']">0+</span>
-      <span className="text-sm text-zinc-500 uppercase tracking-wider">{label}</span>
+      <span className={`text-sm uppercase tracking-wider ${homeSectionClasses.mission.counterLabel}`}>{label}</span>
     </div>
   );
 };
@@ -40,9 +41,12 @@ export const Mission: React.FC = () => {
   ];
 
   return (
-    <section id="mission" className="py-24 md:py-32 bg-zinc-950 relative overflow-hidden">
+    <section
+      id="mission"
+      className={`py-24 md:py-32 relative overflow-hidden ${homeSectionClasses.mission.section}`}
+    >
       {/* Decorative blurry blob */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-purple-900/10 rounded-full blur-3xl pointer-events-none" />
+      <div className={`absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl pointer-events-none ${homeSectionClasses.mission.blob}`} />
 
       <div className="container mx-auto px-6">
         <div className="grid md:grid-cols-2 gap-16 items-center">
@@ -53,12 +57,12 @@ export const Mission: React.FC = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-             <h2 className="text-zinc-500 uppercase tracking-widest text-sm mb-4">Our Mission</h2>
+             <h2 className={`uppercase tracking-widest text-sm mb-4 ${homeSectionClasses.mission.kicker}`}>Our Mission</h2>
              <h3 className="text-3xl md:text-5xl font-['Syne'] font-bold leading-tight mb-8">
                We strive to exceed expectations and deliver exceptional representation.
              </h3>
-             <div className="w-20 h-1 bg-white mb-8" />
-             <p className="text-zinc-400 text-lg leading-relaxed mb-8">
+             <div className={`w-20 h-1 mb-8 ${homeSectionClasses.mission.divider}`} />
+             <p className={`text-lg leading-relaxed mb-8 ${homeSectionClasses.mission.body}`}>
                At ELGRACE TALENTS, our mission is to connect exceptional talent with world-class brands. We are a premier modeling firm dedicated to scouting, developing, and managing careers with a focus on longevity and professional excellence.
              </p>
              <div className="flex gap-8">
@@ -85,7 +89,7 @@ export const Mission: React.FC = () => {
                     className="w-full h-full object-cover hover:scale-110 transition-transform duration-700"
                    />
                    */}
-                   <div className="w-full h-full bg-zinc-900/80" />
+                  <div className={`w-full h-full ${homeSectionClasses.mission.placeholderTile}`} />
                 </motion.div>
              ))}
           </div>

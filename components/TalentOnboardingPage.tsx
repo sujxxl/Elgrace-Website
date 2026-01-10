@@ -268,7 +268,7 @@ export const TalentOnboardingPage: React.FC = () => {
       // TODO: Implement media upload to VPS and model_media record creation here
       // This will be done in the next phase when backend endpoints are ready
 
-      showToast(`Profile submitted successfully! Your model ID: ${nextCode}`, 'success');
+      showToast('Profile submitted successfully!', 'success');
       window.scrollTo({ top: 0, behavior: 'smooth' });
       navigate('/talents');
     } catch (err: any) {

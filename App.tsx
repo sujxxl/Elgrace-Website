@@ -112,14 +112,25 @@ const AppRouterContent: React.FC = () => {
     navigate(viewToPath(view));
   };
 
+  const isDarkShell = currentView === 'home' || currentView === 'services';
+  const isDarkContact = isDarkShell;
+  const navbarVariant = isDarkShell ? 'dark' : 'light';
+
   const showProfileHint = user && user.role === 'model' && profileIncomplete;
 
   return (
-    <div className="min-h-screen bg-[#fbf3e4] text-[#111827] selection:bg-[#c9a961] selection:text-[#111827] relative">
+    <div
+      className={`min-h-screen selection:bg-[#c9a961] selection:text-[#111827] relative ${
+        isDarkShell
+          ? 'bg-zinc-950 text-white selection:bg-white/15 selection:text-white'
+          : 'bg-[#fbf3e4] text-[#111827] theme-light'
+      }`}
+    >
       <Navbar
         onNavigate={onNavigate}
         currentView={currentView}
         showProfileHint={!!showProfileHint}
+        variant={navbarVariant}
       />
 
       <div className="pt-16">
@@ -131,7 +142,7 @@ const AppRouterContent: React.FC = () => {
               <Hero />
               <Mission />
               <Brands />
-              <ContactGrid />
+              <ContactGrid variant={isDarkContact ? 'dark' : 'light'} />
             </main>
           }
         />
@@ -142,7 +153,7 @@ const AppRouterContent: React.FC = () => {
             <DisabledRouteGate route="services">
               <main className="relative z-10">
                 <Services />
-                <ContactGrid />
+                <ContactGrid variant={isDarkContact ? 'dark' : 'light'} />
               </main>
             </DisabledRouteGate>
           }
@@ -154,7 +165,7 @@ const AppRouterContent: React.FC = () => {
             <DisabledRouteGate route="services_elgrace_talents">
               <main className="relative z-10">
                 <ElgraceTalentsPage />
-                <ContactGrid />
+                <ContactGrid variant={isDarkContact ? 'dark' : 'light'} />
               </main>
             </DisabledRouteGate>
           }
@@ -166,7 +177,7 @@ const AppRouterContent: React.FC = () => {
             <DisabledRouteGate route="services_eventicon">
               <main className="relative z-10">
                 <EventIconPage />
-                <ContactGrid />
+                <ContactGrid variant={isDarkContact ? 'dark' : 'light'} />
               </main>
             </DisabledRouteGate>
           }
@@ -178,7 +189,7 @@ const AppRouterContent: React.FC = () => {
             <DisabledRouteGate route="talents">
               <main className="relative z-10">
                 <TalentGallery />
-                <ContactGrid />
+                <ContactGrid variant="light" />
               </main>
             </DisabledRouteGate>
           }
@@ -204,7 +215,7 @@ const AppRouterContent: React.FC = () => {
             <DisabledRouteGate route="gallery">
               <main className="relative z-10">
                 <GalleryPage />
-                <ContactGrid />
+                <ContactGrid variant="light" />
               </main>
             </DisabledRouteGate>
           }

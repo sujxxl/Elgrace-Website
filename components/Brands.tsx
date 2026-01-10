@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { homeSectionClasses } from '../theme/homeSections.ts';
 
 const brands = [
   // Tier 1 - Global / Major Brands
@@ -24,18 +25,20 @@ const brands = [
 
 export const Brands: React.FC = () => {
   return (
-    <section className="py-12 bg-zinc-950 border-t border-white/5 relative z-10">
+    <section
+      className={`py-12 border-t relative z-10 ${homeSectionClasses.brands.section} ${homeSectionClasses.brands.topBorder}`}
+    >
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
           <motion.h3 
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-zinc-500 uppercase tracking-[0.2em] text-sm font-bold"
+            className={`uppercase tracking-[0.2em] text-sm font-bold ${homeSectionClasses.brands.kicker}`}
           >
             Trusted By
           </motion.h3>
-          <div className="w-12 h-px bg-[#dfcda5]/60 mx-auto mt-4" />
+          <div className={`w-12 h-px mx-auto mt-4 ${homeSectionClasses.brands.divider}`} />
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-12 md:gap-16 items-center justify-items-center">
@@ -47,7 +50,9 @@ export const Brands: React.FC = () => {
               transition={{ delay: i * 0.05, duration: 0.5 }}
               className="w-full flex justify-center group"
             >
-              <div className="px-4 py-3 rounded-xl border border-white/10 group-hover:border-[#dfcda5] transition-colors duration-500 backdrop-blur-sm bg-white/0">
+              <div
+                className={`px-4 py-3 rounded-xl border transition-colors duration-500 backdrop-blur-sm ${homeSectionClasses.brands.tile} ${homeSectionClasses.brands.tileHover}`}
+              >
                 {/* Placeholder logo image removed for now; render brand name text instead */}
                 {/**
                 <img 
@@ -57,7 +62,7 @@ export const Brands: React.FC = () => {
                 />
                 */}
                 <div className="min-w-[80px] flex items-center justify-center">
-                  <span className="text-xs md:text-sm font-medium text-zinc-200 tracking-wide">
+                  <span className={`text-xs md:text-sm font-medium tracking-wide ${homeSectionClasses.brands.brandText}`}>
                     {brand.name}
                   </span>
                 </div>

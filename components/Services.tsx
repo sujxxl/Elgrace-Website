@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import { ArrowUpRight, CheckCircle2, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { homeSectionClasses, homeServiceGradients } from '../theme/homeSections.ts';
 
 interface Service {
   id: number;
@@ -29,7 +30,7 @@ const services: Service[] = [
     ],
     icon: <Users className="w-6 h-6" />,
     image: "elgrace-logo-inverted.png",
-    color: "from-blue-900/20 to-purple-900/20"
+    color: homeServiceGradients.default
   },
   {
     id: 2,
@@ -45,7 +46,7 @@ const services: Service[] = [
     ],
     icon: <Users className="w-6 h-6" />,
     image: "https://picsum.photos/1000/&random=41",
-    color: "from-amber-900/20 to-red-900/20"
+    color: homeServiceGradients.default
   }
 ];
 
@@ -120,48 +121,48 @@ const Card: React.FC<{
         }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className="relative w-full max-w-6xl h-[70vh] md:h-[600px] flex flex-col md:flex-row bg-zinc-900 rounded-3xl overflow-hidden border border-white/10 origin-top shadow-2xl"
+        className={`relative w-full max-w-6xl h-[70vh] md:h-[600px] flex flex-col md:flex-row rounded-3xl overflow-hidden border origin-top shadow-2xl ${homeSectionClasses.services.card}`}
       >
         {/* Visual Content - Left/Top */}
         <div className="w-full md:w-5/12 relative overflow-hidden group">
-             <div className="absolute inset-0 bg-zinc-800 animate-pulse" />
+             <div className={`absolute inset-0 animate-pulse ${homeSectionClasses.services.imagePlaceholder}`} />
              <img 
                src={service.image} 
                alt={service.title} 
                className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700 ease-in-out" 
              />
              <div className={`absolute inset-0 bg-gradient-to-br ${service.color} mix-blend-overlay opacity-60`} />
-             <div className="absolute top-6 left-6 p-4 bg-black/30 backdrop-blur-md rounded-full border border-white/10 text-white">
+             <div className={`absolute top-6 left-6 p-4 backdrop-blur-md rounded-full border ${homeSectionClasses.services.iconBadge}`}>
                 {service.icon}
              </div>
         </div>
 
         {/* Text Content - Right/Bottom */}
-        <div className="w-full md:w-7/12 p-8 md:p-12 flex flex-col justify-between bg-zinc-900/90 backdrop-blur-xl relative">
+        <div className={`w-full md:w-7/12 p-8 md:p-12 flex flex-col justify-between backdrop-blur-xl relative ${homeSectionClasses.services.rightPanel}`}>
              {/* Gradient Glow */}
-             <div className={`absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br ${service.color} rounded-full blur-[100px] opacity-20 pointer-events-none`} />
+           <div className={`absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br ${service.color} rounded-full blur-[100px] pointer-events-none ${homeSectionClasses.services.glow}`} />
              
              <div className="relative z-10">
-                <h4 className="text-zinc-500 uppercase tracking-widest text-sm font-bold mb-2">{service.subtitle}</h4>
-                <h3 className="text-4xl md:text-5xl font-['Syne'] font-bold text-white mb-6">{service.title}</h3>
-                <p className="text-zinc-400 leading-relaxed text-lg mb-8">
+            <h4 className={`uppercase tracking-widest text-sm font-bold mb-2 ${homeSectionClasses.services.subtitle}`}>{service.subtitle}</h4>
+            <h3 className={`text-4xl md:text-5xl font-['Syne'] font-bold mb-6 ${homeSectionClasses.services.headerTitle}`}>{service.title}</h3>
+            <p className={`leading-relaxed text-lg mb-8 ${homeSectionClasses.services.body}`}>
                     {service.description}
                 </p>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                     {service.features.map((feature, i) => (
-                        <div key={i} className="flex items-center gap-3 text-zinc-300">
-                            <CheckCircle2 className="w-5 h-5 text-white/40 shrink-0" />
+                <div key={i} className={`flex items-center gap-3 ${homeSectionClasses.services.feature}`}>
+                  <CheckCircle2 className={`w-5 h-5 shrink-0 ${homeSectionClasses.services.featureIcon}`} />
                             <span className="text-sm">{feature}</span>
                         </div>
                     ))}
                 </div>
              </div>
 
-             <div className="relative z-10 pt-6 border-t border-white/5">
+           <div className={`relative z-10 pt-6 border-t ${homeSectionClasses.services.footerBorder}`}>
                <button
                  onClick={onExplore}
-                 className="group flex items-center gap-2 text-white font-bold uppercase tracking-widest text-sm transition-colors border-b border-transparent hover:border-[#dfcda5] pb-1"
+             className={`group flex items-center gap-2 font-bold uppercase tracking-widest text-sm transition-colors border-b border-transparent pb-1 ${homeSectionClasses.services.cta}`}
                >
                     Explore Services 
                     <ArrowUpRight className="w-4 h-4 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
@@ -183,7 +184,12 @@ export const Services: React.FC = () => {
   });
 
   return (
-    <section id="services" ref={container} className="relative bg-black" style={{ height: `${services.length * 100 + 50}vh` }}>
+    <section
+      id="services"
+      ref={container}
+      className={`relative ${homeSectionClasses.services.section}`}
+      style={{ height: `${services.length * 100 + 50}vh` }}
+    >
         
         {/* Header - Changed from sticky to static relative to avoid overlap */}
         <div className="pt-16 pb-12 text-center relative z-10">
@@ -191,7 +197,7 @@ export const Services: React.FC = () => {
                 initial={{ opacity: 0, y: -20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
-                className="text-zinc-500 uppercase tracking-widest text-sm mb-2"
+                className={`uppercase tracking-widest text-sm mb-2 ${homeSectionClasses.services.headerKicker}`}
             >
                 What We Do
             </motion.h2>
@@ -199,7 +205,7 @@ export const Services: React.FC = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.1 }}
-                className="text-3xl font-['Syne'] font-bold text-white"
+                className={`text-3xl font-['Syne'] font-bold ${homeSectionClasses.services.headerTitle}`}
             >
                 Our Expertise
             </motion.h3>

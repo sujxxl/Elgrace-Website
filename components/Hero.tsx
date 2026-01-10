@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowDown } from 'lucide-react';
+import { homeSectionClasses } from '../theme/homeSections.ts';
 
 export const Hero: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -45,7 +46,10 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <section ref={containerRef} className="relative h-screen w-full flex items-center justify-center overflow-hidden perspective-1000">
+    <section
+      ref={containerRef}
+      className={`relative h-screen w-full flex items-center justify-center overflow-hidden perspective-1000 ${homeSectionClasses.hero.section}`}
+    >
       {/* Background Image with Overlay */}
       <motion.div 
         style={{ y: bgY }}
@@ -59,8 +63,7 @@ export const Hero: React.FC = () => {
           className="w-full h-full object-cover opacity-30"
         />
         */}
-        {/* Light theme: no dark vignette/overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#fbf3e4] via-[#fffaf2] to-[#fbf3e4]" />
+        <div className={`absolute inset-0 ${homeSectionClasses.hero.overlay}`} />
       </motion.div>
 
       <div className="container mx-auto px-6 relative z-10 text-center">
@@ -77,7 +80,8 @@ export const Hero: React.FC = () => {
             {words.map((word, index) => (
               <motion.span 
                 key={index} 
-                className="inline-block mr-4 md:mr-8 last:mr-0 text-[10vw] sm:text-7xl md:text-8xl lg:text-9xl whitespace-nowrap font-['Syne'] font-extrabold tracking-tighter text-[#111827]"
+                className={`inline-block mr-4 md:mr-8 last:mr-0 text-[10vw] sm:text-7xl md:text-8xl lg:text-9xl whitespace-nowrap font-['Syne'] font-extrabold tracking-tighter ${homeSectionClasses.hero.title}`}
+                style={{ textShadow: '0 10px 30px rgba(255,255,255,0.1)' }}
               >
                 {word.split("").map((letter, idx) => (
                   <motion.span key={idx} variants={child} className="inline-block">
@@ -93,7 +97,7 @@ export const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.5, duration: 0.8 }}
-          className="mt-8 text-lg md:text-xl text-zinc-400 font-light tracking-widest uppercase max-w-2xl mx-auto"
+          className={`mt-8 text-lg md:text-xl font-light tracking-widest uppercase max-w-2xl mx-auto ${homeSectionClasses.hero.subtitle}`}
         >
           Premier Modeling & Talent Management
         </motion.p>
@@ -104,7 +108,7 @@ export const Hero: React.FC = () => {
             transition={{ delay: 2, duration: 1 }}
             className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
         >
-	    <ArrowDown className="animate-bounce-subtle text-zinc-500 w-8 h-8" />
+	    <ArrowDown className={`animate-bounce-subtle w-8 h-8 ${homeSectionClasses.hero.arrow}`} />
         </motion.div>
       </div>
     </section>

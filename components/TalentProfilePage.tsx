@@ -110,7 +110,7 @@ export const TalentProfilePage: React.FC = () => {
   const modelCode = profile.model_code || '—';
   const portfolioVideos = derivedMedia.portfolioVideos;
   const portfolioPhotos = derivedMedia.portfolio;
-  const previewPhotos = portfolioPhotos.slice(0, 6);
+  const previewPhotos = portfolioPhotos.slice(0, 5);
 
   const isAdmin = user?.role === 'admin';
 
@@ -200,7 +200,7 @@ export const TalentProfilePage: React.FC = () => {
               {/* Media: cover + intro side-by-side */}
               <div className="mt-8 grid grid-cols-2 gap-6">
                 {/* Cover Photo (3:4) */}
-                <div className="relative w-full aspect-[3/4] overflow-hidden">
+                <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden bg-[#f5e6d3]">
                   {hasCover ? (
                     <img
                       src={coverUrl}
@@ -226,12 +226,12 @@ export const TalentProfilePage: React.FC = () => {
                     loop={true}
                     playWhenInView={true}
                     exclusiveAudioGroup="talent-profile"
-                    containerClassName="w-full aspect-[3/4]"
+                    containerClassName="w-full aspect-[3/4] rounded-2xl overflow-hidden"
                     className="absolute inset-0 w-full h-full object-cover"
                     ariaLabel="Intro video"
                   />
                 ) : (
-                  <div className="w-full aspect-[3/4] flex items-center justify-center">
+                  <div className="w-full aspect-[3/4] rounded-2xl border border-[#e5d3a3] bg-[#f5e6d3] flex items-center justify-center">
                     <div className="text-center px-4">
                       <div className="font-['Syne'] text-base font-bold text-[#111827]">No intro video</div>
                       <div className="text-sm text-[#6b7280]">Intro video will appear here.</div>
@@ -414,7 +414,7 @@ export const TalentProfilePage: React.FC = () => {
             </div>
 
             {portfolioPhotos.length > 0 ? (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 {previewPhotos.map((m, idx) => (
                   <button
                     key={m.id}
@@ -423,7 +423,7 @@ export const TalentProfilePage: React.FC = () => {
                     className="text-left"
                     aria-label={`Open photo ${idx + 1}`}
                   >
-                    <div className="relative w-full aspect-[3/4]">
+                    <div className="relative w-full aspect-[9/16] rounded-2xl overflow-hidden bg-[#f5e6d3]">
                       <img
                         src={m.media_url}
                         alt={`Portfolio photo ${idx + 1}`}
@@ -467,7 +467,7 @@ export const TalentProfilePage: React.FC = () => {
               </div>
 
               <div className="relative bg-white">
-                <div className="relative w-full max-h-[76vh] aspect-[4/3] md:aspect-[16/10]">
+                <div className="relative w-full max-h-[76vh] aspect-[4/3] md:aspect-[16/10] rounded-2xl overflow-hidden">
                   {activeGallerySrc && (
                     <img
                       src={activeGallerySrc}
@@ -520,7 +520,7 @@ function PortfolioVideoRow({ videos }: { videos: string[] }) {
         {videos.map((src, idx) => (
           <div
             key={`${src}_${idx}`}
-            className="shrink-0 w-56 sm:w-60"
+            className="shrink-0 w-56 sm:w-60 rounded-2xl overflow-hidden bg-[#f5e6d3]"
           >
             <ThemedVideo
               src={src}
