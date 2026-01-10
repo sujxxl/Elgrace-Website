@@ -149,7 +149,7 @@ export const TalentProfilePage: React.FC = () => {
 
   return (
     <section className="min-h-screen bg-[#fbf3e4] pt-10 pb-16 px-6 text-[#111827]">
-      <div className="container mx-auto max-w-6xl">
+      <div className="w-full">
         <div className="flex items-center justify-between gap-3 mb-8">
           <Link
             to="/talents"
@@ -170,7 +170,7 @@ export const TalentProfilePage: React.FC = () => {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="rounded-3xl bg-[#f6ead8] p-6 md:p-8 shadow-[0_16px_50px_rgba(61,33,26,0.10)]"
+          className="w-full"
         >
           {/* Header (NO CARD) */}
           <div className="flex items-center justify-between gap-6">
@@ -192,10 +192,11 @@ export const TalentProfilePage: React.FC = () => {
           </div>
 
           {/* MAIN MEDIA + DETAILS ROW */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
-            {/* Cover Photo */}
-            <div>
-              <div className="relative w-full aspect-[4/3]">
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+            {/* Media (left half): Cover + Intro side-by-side */}
+            <div className="grid grid-cols-2 gap-6">
+              {/* Cover Photo (3:4) */}
+              <div className="relative w-full aspect-[3/4] overflow-hidden">
                 {hasCover ? (
                   <img
                     src={coverUrl}
@@ -204,17 +205,15 @@ export const TalentProfilePage: React.FC = () => {
                   />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="font-['Syne'] text-lg font-bold text-[#111827]">No cover photo</div>
+                    <div className="text-center px-4">
+                      <div className="font-['Syne'] text-base font-bold text-[#111827]">No cover photo</div>
                       <div className="text-sm text-[#6b7280]">Cover photo will appear here.</div>
                     </div>
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Intro Video */}
-            <div>
+              {/* Intro Video (3:4) */}
               {introVideoUrl ? (
                 <ThemedVideo
                   src={introVideoUrl}
@@ -223,21 +222,21 @@ export const TalentProfilePage: React.FC = () => {
                   loop={true}
                   playWhenInView={true}
                   exclusiveAudioGroup="talent-profile"
-                  containerClassName="w-full"
-                  className="w-full h-full aspect-video object-cover"
+                  containerClassName="w-full aspect-[3/4]"
+                  className="absolute inset-0 w-full h-full object-cover"
                   ariaLabel="Intro video"
                 />
               ) : (
-                <div className="w-full h-full aspect-video flex items-center justify-center">
-                  <div className="text-center px-6">
-                    <div className="font-['Syne'] text-lg font-bold text-[#111827]">No intro video</div>
+                <div className="w-full aspect-[3/4] flex items-center justify-center">
+                  <div className="text-center px-4">
+                    <div className="font-['Syne'] text-base font-bold text-[#111827]">No intro video</div>
                     <div className="text-sm text-[#6b7280]">Intro video will appear here.</div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Measurements + Details */}
+            {/* Details (right half) */}
             <div>
               <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em] mb-4">
                 Measurements & Details
