@@ -116,10 +116,10 @@ const HeightRangeSlider: React.FC<HeightRangeSliderProps> = ({
   return (
     <div ref={trackRef} className="relative h-6 flex items-center">
       {/* Track */}
-      <div className="absolute inset-x-0 h-1 rounded-full bg-zinc-200 dark:bg-zinc-800" />
+      <div className="absolute inset-x-0 h-1 rounded-full bg-zinc-200" />
       {/* Selected range highlight - matches min rating accent */}
       <div
-        className="absolute h-1 rounded-full bg-[#dfcda5] shadow-[0_0_8px_rgba(223,205,165,0.8)]"
+        className="absolute h-1 rounded-full bg-[#3d211a] shadow-[0_0_10px_rgba(61,33,26,0.25)]"
         style={{
           left: `${minPercent}%`,
           right: `${100 - maxPercent}%`,
@@ -130,7 +130,7 @@ const HeightRangeSlider: React.FC<HeightRangeSliderProps> = ({
         type="button"
         aria-label="Minimum height"
         onMouseDown={(e) => startDragging('min', e)}
-        className="absolute -translate-x-1/2 h-4 w-4 rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.25),0_0_0_4px_rgba(223,205,165,0.7)] dark:bg-zinc-50"
+        className="absolute -translate-x-1/2 h-4 w-4 rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.25),0_0_0_4px_rgba(61,33,26,0.25)]"
         style={{ left: `${minPercent}%` }}
       />
       {/* Max thumb */}
@@ -138,7 +138,7 @@ const HeightRangeSlider: React.FC<HeightRangeSliderProps> = ({
         type="button"
         aria-label="Maximum height"
         onMouseDown={(e) => startDragging('max', e)}
-        className="absolute -translate-x-1/2 h-4 w-4 rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.25),0_0_0_4px_rgba(223,205,165,0.7)] dark:bg-zinc-50"
+        className="absolute -translate-x-1/2 h-4 w-4 rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.25),0_0_0_4px_rgba(61,33,26,0.25)]"
         style={{ left: `${maxPercent}%` }}
       />
     </div>
@@ -444,14 +444,14 @@ export const AdminDashboard: React.FC = () => {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
         <h2 className="text-xl font-semibold">Model Profiles</h2>
         <div className="flex items-center gap-3">
-          <div className="inline-flex rounded-full border border-zinc-300 bg-white/80 p-1 text-xs uppercase tracking-[0.16em] dark:border-zinc-700 dark:bg-zinc-950/60">
+          <div className="inline-flex rounded-full border border-[#3d211a] bg-white p-1 text-xs uppercase tracking-[0.16em]">
             <button
               type="button"
               onClick={() => setProfileViewMode('detailed')}
               className={`px-3 py-1 rounded-full transition-colors ${
                 profileViewMode === 'detailed'
-                  ? 'bg-white text-black'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+                  ? 'bg-[#3d211a] text-[#fbf3e4]'
+                  : 'text-[#4b5563] hover:text-[#111827]'
               }`}
             >
               Detailed View
@@ -461,19 +461,19 @@ export const AdminDashboard: React.FC = () => {
               onClick={() => setProfileViewMode('table')}
               className={`px-3 py-1 rounded-full transition-colors ${
                 profileViewMode === 'table'
-                  ? 'bg-white text-black'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+                  ? 'bg-[#3d211a] text-[#fbf3e4]'
+                  : 'text-[#4b5563] hover:text-[#111827]'
               }`}
             >
               Table View
             </button>
           </div>
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-zinc-600 dark:text-zinc-400">Sort</span>
+            <span className="text-zinc-600">Sort</span>
             <select
               value={profileSortBy}
               onChange={(e) => setProfileSortBy(e.target.value as 'rating' | 'model_code' | 'age')}
-              className="bg-white border border-zinc-300 rounded px-2 py-1 text-xs text-zinc-900 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-200"
+              className="bg-[#fdf4e3] border-2 border-[#d8b56a] rounded px-2 py-1 text-xs text-zinc-900 focus:outline-none focus:border-[#c9a961]"
             >
               <option value="rating">Rating</option>
               <option value="model_code">Model ID</option>
@@ -482,7 +482,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <button
             onClick={loadProfiles}
-            className="px-3 py-1 text-xs border rounded-lg bg-[#3b2418] text-[#f6ead8] border-[#3b2418] hover:bg-[#4a3323] dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="px-3 py-1 text-xs border rounded-lg bg-[#3d211a] text-[#fbf3e4] border-[#3d211a] hover:bg-[#4a3323]"
           >
             Refresh
           </button>
@@ -534,9 +534,9 @@ export const AdminDashboard: React.FC = () => {
       return (
         <div className="mt-8">
           {header}
-          <div className="overflow-x-auto border rounded-xl bg-white/95 shadow-sm dark:bg-transparent dark:border-zinc-800">
+          <div className="overflow-x-auto border border-[#3d211a] rounded-xl bg-white shadow-sm">
             <table className="w-full text-sm">
-              <thead className="bg-zinc-100 text-zinc-600 uppercase text-xs dark:bg-zinc-900/80 dark:text-zinc-400">
+              <thead className="bg-[#fbf3e4] text-zinc-600 uppercase text-xs">
                 <tr>
                   <th className="px-4 py-3 text-left">Name</th>
                   <th className="px-4 py-3 text-left">Location</th>
@@ -546,7 +546,7 @@ export const AdminDashboard: React.FC = () => {
                   <th className="px-4 py-3 text-left">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <tbody className="divide-y divide-zinc-100">
                 {sortProfiles(profilesWithDerived).map((p) => {
                   const status = (p.status ?? 'UNDER_REVIEW') as ProfileStatus;
                   const locationParts = [p.city, p.state, p.country].filter(Boolean).join(', ');
@@ -554,9 +554,9 @@ export const AdminDashboard: React.FC = () => {
                   return (
                     <tr
                       key={p.id ?? p.model_code ?? p.email}
-                      className="hover:bg-zinc-50 dark:hover:bg-zinc-900/40"
+                      className="hover:bg-zinc-50"
                     >
-                      <td className="px-4 py-3 text-sm text-zinc-900 dark:text-white">
+                      <td className="px-4 py-3 text-sm text-zinc-900">
                         <button
                           type="button"
                           onClick={() => p.id && navigate(`/talents/${p.id}`)}
@@ -565,17 +565,17 @@ export const AdminDashboard: React.FC = () => {
                           {p.full_name}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300">{locationParts || '—'}</td>
-                      <td className="px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300">{ig || '—'}</td>
-                      <td className="px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300">{p.experience_level ?? '—'}</td>
+                      <td className="px-4 py-3 text-sm text-zinc-700">{locationParts || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-zinc-700">{ig || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-zinc-700">{p.experience_level ?? '—'}</td>
                       <td className="px-4 py-3 text-sm">
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
                             status === 'ONLINE'
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-500/40'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : status === 'OFFLINE'
-                              ? 'bg-zinc-100 text-zinc-700 border border-zinc-200 dark:bg-zinc-900/60 dark:text-zinc-300 dark:border-zinc-700/60'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-500/40'
+                              ? 'bg-zinc-100 text-zinc-700 border border-zinc-200'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
                           }`}
                         >
                           {profileStatusLabel[status]}
@@ -585,19 +585,19 @@ export const AdminDashboard: React.FC = () => {
                         <div className="flex gap-2 flex-wrap">
                           <button
                             onClick={() => handleProfileStatusChange(p, 'UNDER_REVIEW')}
-                            className="px-2 py-1 rounded border border-amber-400 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:border-amber-500/40 dark:text-amber-200 dark:bg-transparent dark:hover:bg-amber-900/30"
+                            className="px-2 py-1 rounded border border-amber-400 text-amber-700 bg-amber-50 hover:bg-amber-100"
                           >
                             Under Review
                           </button>
                           <button
                             onClick={() => handleProfileStatusChange(p, 'ONLINE')}
-                            className="px-2 py-1 rounded border border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:border-emerald-500/40 dark:text-emerald-200 dark:bg-transparent dark:hover:bg-emerald-900/30"
+                            className="px-2 py-1 rounded border border-emerald-400 text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
                           >
                             Online
                           </button>
                           <button
                             onClick={() => handleProfileStatusChange(p, 'OFFLINE')}
-                            className="px-2 py-1 rounded border border-zinc-300 text-zinc-700 bg-zinc-50 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-200 dark:bg-transparent dark:hover:bg-zinc-900/60"
+                            className="px-2 py-1 rounded border border-zinc-300 text-zinc-700 bg-zinc-50 hover:bg-zinc-100"
                           >
                             Offline
                           </button>
@@ -620,28 +620,29 @@ export const AdminDashboard: React.FC = () => {
         <div className="mt-4 flex flex-col lg:flex-row gap-4">
           <div className="w-full lg:w-80 lg:flex-shrink-0 text-xs">
             <div className="lg:sticky lg:top-24 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="uppercase tracking-[0.16em] text-[11px] text-zinc-500">Filters</span>
-                <span className="text-[11px] text-zinc-500">
-                  {filteredProfilesDetailed.length} / {profiles.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-1 gap-3">
+              <div className="rounded-2xl bg-white border border-[#3d211a] p-4 shadow-[0_12px_34px_rgba(61,33,26,0.10)]">
+                <div className="flex items-center justify-between">
+                  <span className="uppercase tracking-[0.16em] text-[11px] text-zinc-500">Filters</span>
+                  <span className="text-[11px] text-zinc-500">
+                    {filteredProfilesDetailed.length} / {profiles.length}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-1 gap-3">
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Search</label>
+                  <label className="uppercase tracking-widest text-zinc-600">Search</label>
                   <input
                     value={profileSearch}
                     onChange={(e) => setProfileSearch(e.target.value)}
                     placeholder="Name, email, model code, budget..."
-                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 placeholder:text-zinc-400 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white dark:placeholder:text-zinc-500"
+                    className="w-full bg-[#fdf4e3] border-2 border-[#d8b56a] p-2 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-500 focus:outline-none focus:border-[#c9a961]"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Status</label>
+                  <label className="uppercase tracking-widest text-zinc-600">Status</label>
                   <select
                     value={profileStatusFilter}
                     onChange={(e) => setProfileStatusFilter(e.target.value as 'ALL' | ProfileStatus)}
-                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
+                    className="w-full bg-[#fdf4e3] border-2 border-[#d8b56a] p-2 rounded-xl text-sm text-zinc-900 focus:outline-none focus:border-[#c9a961]"
                   >
                     <option value="ALL">Any Status</option>
                     <option value="UNDER_REVIEW">Under Review</option>
@@ -650,11 +651,11 @@ export const AdminDashboard: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Gender</label>
+                  <label className="uppercase tracking-widest text-zinc-600">Gender</label>
                   <select
                     value={profileGenderFilter}
                     onChange={(e) => setProfileGenderFilter(e.target.value as any)}
-                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
+                    className="w-full bg-[#fdf4e3] border-2 border-[#d8b56a] p-2 rounded-xl text-sm text-zinc-900 focus:outline-none focus:border-[#c9a961]"
                   >
                     <option value="All">Any</option>
                     <option value="female">Female</option>
@@ -663,11 +664,11 @@ export const AdminDashboard: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Open to Travel</label>
+                  <label className="uppercase tracking-widest text-zinc-600">Open to Travel</label>
                   <select
                     value={profileOpenToTravel}
                     onChange={(e) => setProfileOpenToTravel(e.target.value as 'any' | 'yes' | 'no')}
-                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
+                    className="w-full bg-[#fdf4e3] border-2 border-[#d8b56a] p-2 rounded-xl text-sm text-zinc-900 focus:outline-none focus:border-[#c9a961]"
                   >
                     <option value="any">Any</option>
                     <option value="yes">Yes</option>
@@ -676,13 +677,13 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Min Grade</label>
-                    <span className="text-[11px] font-medium text-zinc-800 dark:text-zinc-100">
+                    <label className="uppercase tracking-widest text-zinc-600">Min Grade</label>
+                    <span className="text-[11px] font-medium text-zinc-800">
                       {valueToGrade(profileMinRating)}
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between text-[11px] light dark:text-zinc-400">
+                    <div className="flex items-center justify-between text-[11px] text-zinc-500">
                       <span>F (0)</span>
                       <span>A* (11)</span>
                     </div>
@@ -693,14 +694,14 @@ export const AdminDashboard: React.FC = () => {
                       step={1}
                       value={profileMinRating}
                       onChange={(e) => setProfileMinRating(Number(e.target.value))}
-                      className="w-full accent-[#dfcda5]"
+                      className="w-full accent-[#3d211a]"
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
                   {/* Age range selector - same style as height */}
                   <div className="flex items-center justify-between">
-                    <span className="uppercase tracking-widest text-[11px] text-zinc-600 dark:text-zinc-500">
+                    <span className="uppercase tracking-widest text-[11px] text-zinc-600">
                       Age
                     </span>
                     <button
@@ -709,7 +710,7 @@ export const AdminDashboard: React.FC = () => {
                         setProfileMinAge(0);
                         setProfileMaxAge(100);
                       }}
-                      className="h-5 w-5 flex items-center justify-center rounded-full border border-zinc-300 text-[10px] hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900 text-zinc-500 dark:text-zinc-400"
+                      className="h-5 w-5 flex items-center justify-center rounded-full border border-[#3d211a] text-[10px] hover:bg-[#3d211a]/10 text-zinc-600"
                       aria-label="Reset age range"
                     >
                       ×
@@ -726,13 +727,13 @@ export const AdminDashboard: React.FC = () => {
                         setProfileMaxAge(maxV);
                       }}
                     />
-                    <div className="grid grid-cols-2 gap-3 text-[11px] text-[#3b2418] dark:text-zinc-300">
+                    <div className="grid grid-cols-2 gap-3 text-[11px] text-[#3b2418]">
                       <div className="space-y-1">
-                        <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                           Min Age
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-[#d8b56a] pb-0.5 text-xs text-[#3b2418]">
                             <input
                               type="number"
                               min={0}
@@ -743,18 +744,18 @@ export const AdminDashboard: React.FC = () => {
                                 const clamped = Math.max(0, Math.min(raw, profileMaxAge));
                                 setProfileMinAge(clamped);
                               }}
-                              className="w-full bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
+                              className="w-full bg-transparent outline-none text-center text-[#3b2418]"
                             />
-                            <span className="ml-2 text-[10px] text-[#3b2418] dark:text-zinc-400">yrs</span>
+                            <span className="ml-2 text-[10px] text-[#3b2418]">yrs</span>
                           </div>
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                           Max Age
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-[#d8b56a] pb-0.5 text-xs text-[#3b2418]">
                             <input
                               type="number"
                               min={0}
@@ -765,9 +766,9 @@ export const AdminDashboard: React.FC = () => {
                                 const clamped = Math.min(100, Math.max(raw, profileMinAge));
                                 setProfileMaxAge(clamped);
                               }}
-                              className="w-full bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
+                              className="w-full bg-transparent outline-none text-center text-[#3b2418]"
                             />
-                            <span className="ml-2 text-[10px] text-[#3b2418] dark:text-zinc-400">yrs</span>
+                            <span className="ml-2 text-[10px] text-[#3b2418]">yrs</span>
                           </div>
                         </div>
                       </div>
@@ -778,11 +779,11 @@ export const AdminDashboard: React.FC = () => {
                   {/* Height range selector */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="uppercase tracking-widest text-[11px] text-zinc-600 dark:text-zinc-500">
+                      <span className="uppercase tracking-widest text-[11px] text-zinc-600">
                         Height
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400">
+                    <div className="flex items-center gap-2 text-zinc-500">
                       {/* Close icon: resets to defaults */}
                       <button
                         type="button"
@@ -790,7 +791,7 @@ export const AdminDashboard: React.FC = () => {
                           setProfileMinHeightIn(HEIGHT_MIN_IN);
                           setProfileMaxHeightIn(HEIGHT_MAX_IN);
                         }}
-                        className="h-5 w-5 flex items-center justify-center rounded-full border border-zinc-300 text-[10px] hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                        className="h-5 w-5 flex items-center justify-center rounded-full border border-[#3d211a] text-[10px] hover:bg-[#3d211a]/10"
                         aria-label="Reset height range"
                       >
                         ×
@@ -810,13 +811,13 @@ export const AdminDashboard: React.FC = () => {
                       }}
                     />
                     {/* Inputs for min and max height in ft/in */}
-                    <div className="grid grid-cols-2 gap-3 text-[11px] text-[#3b2418] dark:text-zinc-300">
+                    <div className="grid grid-cols-2 gap-3 text-[11px] text-[#3b2418]">
                       <div className="space-y-1">
-                        <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                           Min Height
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-[#d8b56a] pb-0.5 text-xs text-[#3b2418]">
                             <input
                               type="number"
                               min={4}
@@ -828,11 +829,11 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.min(Math.max(ft * 12 + inches, HEIGHT_MIN_IN), profileMaxHeightIn);
                                 setProfileMinHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
+                              className="w-10 bg-transparent outline-none text-center text-[#3b2418]"
                             />
-                            <span className="ml-1 text-[10px] text-[#3b2418] dark:text-zinc-400">ft</span>
+                            <span className="ml-1 text-[10px] text-[#3b2418]">ft</span>
                           </div>
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-[#d8b56a] pb-0.5 text-xs text-[#3b2418]">
                             <input
                               type="number"
                               min={0}
@@ -844,18 +845,18 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.min(Math.max(ft * 12 + inch, HEIGHT_MIN_IN), profileMaxHeightIn);
                                 setProfileMinHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
+                              className="w-10 bg-transparent outline-none text-center text-[#3b2418]"
                             />
-                            <span className="ml-1 text-[10px] text-[#3b2418] dark:text-zinc-400">in</span>
+                            <span className="ml-1 text-[10px] text-[#3b2418]">in</span>
                           </div>
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-zinc-500">
                           Max Height
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-[#d8b56a] pb-0.5 text-xs text-[#3b2418]">
                             <input
                               type="number"
                               min={4}
@@ -867,11 +868,11 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.max(Math.min(ft * 12 + inches, HEIGHT_MAX_IN), profileMinHeightIn);
                                 setProfileMaxHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
+                              className="w-10 bg-transparent outline-none text-center text-[#3b2418]"
                             />
-                            <span className="ml-1 text-[10px] text-[#3b2418] dark:text-zinc-400">ft</span>
+                            <span className="ml-1 text-[10px] text-[#3b2418]">ft</span>
                           </div>
-                          <div className="flex-1 flex items-center border-b border-zinc-300 dark:border-zinc-600 pb-0.5 text-xs text-[#3b2418] dark:text-zinc-100">
+                          <div className="flex-1 flex items-center border-b border-[#d8b56a] pb-0.5 text-xs text-[#3b2418]">
                             <input
                               type="number"
                               min={0}
@@ -883,9 +884,9 @@ export const AdminDashboard: React.FC = () => {
                                 const total = Math.max(Math.min(ft * 12 + inch, HEIGHT_MAX_IN), profileMinHeightIn);
                                 setProfileMaxHeightIn(total);
                               }}
-                              className="w-10 bg-transparent outline-none text-center text-[#3b2418] dark:text-zinc-100"
+                              className="w-10 bg-transparent outline-none text-center text-[#3b2418]"
                             />
-                            <span className="ml-1 text-[10px] text-[#3b2418] dark:text-zinc-400">in</span>
+                            <span className="ml-1 text-[10px] text-[#3b2418]">in</span>
                           </div>
                         </div>
                       </div>
@@ -893,12 +894,12 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="uppercase tracking-widest text-zinc-600 dark:text-zinc-500">Location Contains</label>
+                  <label className="uppercase tracking-widest text-zinc-600">Location Contains</label>
                   <input
                     value={profileLocationSearch}
                     onChange={(e) => setProfileLocationSearch(e.target.value)}
                     placeholder="City / state / country"
-                    className="w-full bg-white border border-zinc-300 p-2 rounded text-sm text-zinc-900 dark:bg-zinc-950 dark:border-zinc-800 dark:text-white"
+                    className="w-full bg-[#fdf4e3] border-2 border-[#d8b56a] p-2 rounded-xl text-sm text-zinc-900 focus:outline-none focus:border-[#c9a961]"
                   />
                 </div>
                 <button
@@ -915,10 +916,11 @@ export const AdminDashboard: React.FC = () => {
                     setProfileMaxHeightIn(HEIGHT_MAX_IN);
                     setProfileLocationSearch('');
                   }}
-                  className="mt-2 w-full border border-zinc-300 rounded-full py-1.5 text-[11px] uppercase tracking-[0.16em] text-zinc-700 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-900/80"
+                  className="mt-2 w-full border border-[#3d211a] rounded-full py-1.5 text-[11px] uppercase tracking-[0.16em] text-[#111827] hover:bg-[#3d211a]/10"
                 >
                   Clear Filters
                 </button>
+              </div>
               </div>
             </div>
           </div>
@@ -986,10 +988,10 @@ export const AdminDashboard: React.FC = () => {
                             onMouseEnter={handleMouseEnter}
                             onMouseLeave={handleMouseLeave}
                             onClick={handleClick}
-                            className={`absolute top-0 h-full rounded-2xl border overflow-hidden cursor-pointer shadow-xl transition-colors duration-300
+                            className={`absolute top-0 h-full rounded-2xl border overflow-hidden cursor-pointer shadow-[0_18px_50px_rgba(61,33,26,0.12)] transition-colors duration-300
                               ${isRightEdge ? 'right-0 origin-right' : 'left-0 origin-left'}
-                              ${isExpanded ? 'shadow-2xl ring-1 ring-black/10 dark:ring-white/20' : 'hover:border-zinc-400/60 dark:hover:border-zinc-600'}
-                              bg-[#f6ead8] border-[#e0cdb0] text-zinc-100 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-100
+                              ${isExpanded ? 'ring-1 ring-black/10' : 'hover:border-[#3d211a]/70'}
+                              bg-white border-[#3d211a]/40 text-zinc-900
                             `}
                             initial={false}
                             animate={{
@@ -1004,17 +1006,17 @@ export const AdminDashboard: React.FC = () => {
                               <div
                                 className={`${
                                   isExpanded && screenSize !== 'mobile' ? 'w-1/2' : 'w-full'
-                                } h-full relative transition-all duration-500 bg-[#f2e2cc] dark:bg-[#111111]`}
+                                } h-full relative transition-all duration-500 bg-[#f2e2cc]`}
                               >
-                                <div className="w-full h-full bg-[#e7d5bc] dark:bg-zinc-900" />
+                                <div className="w-full h-full bg-[#e7d5bc]" />
 
                                 {/* Light-mode base tint so cards don't read as black even with dark photos */}
-                                <div className="absolute inset-0 bg-[#f6ead8]/55 pointer-events-none dark:white/10" />
+                                <div className="absolute inset-0 bg-[#fbf3e4]/55 pointer-events-none" />
 
                                 <motion.div
                                   initial={{ opacity: 1 }}
                                   animate={{ opacity: isExpanded ? 0 : 1 }}
-                                  className="absolute inset-0 bg-gradient-to-t from-[#f6ead8]/95 via-transparent to-transparent dark:from-black/80 flex flex-col justify-end p-4"
+                                  className="absolute inset-0 bg-gradient-to-t from-[#fbf3e4]/95 via-transparent to-transparent flex flex-col justify-end p-4"
                                 >
                                   <div className="flex items-end justify-between gap-3">
                                     <div className="min-w-0">
@@ -1029,10 +1031,10 @@ export const AdminDashboard: React.FC = () => {
                                     <span
                                       className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border backdrop-blur-sm ${
                                         status === 'ONLINE'
-                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-400 dark:text-black dark:border-emerald-300'
+                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                                           : status === 'OFFLINE'
-                                          ? 'bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-700 dark:text-zinc-50 dark:border-zinc-600'
-                                          : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-400 dark:text-black dark:border-amber-300'
+                                          ? 'bg-zinc-100 text-zinc-700 border-zinc-300'
+                                          : 'bg-amber-100 text-amber-800 border-amber-300'
                                       }`}
                                     >
                                       {profileStatusLabel[status]}
@@ -1050,39 +1052,39 @@ export const AdminDashboard: React.FC = () => {
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
                                     transition={{ delay: 0.05, duration: 0.25 }}
-                                    className="w-1/2 h-full p-5 bg-[#f6ead8] dark:bg-zinc-900 flex flex-col justify-between border-l border-[#e0cdb0] dark:border-white/10 text-xs text-zinc-100"
+                                    className="w-1/2 h-full p-5 bg-white flex flex-col justify-between border-l border-[#3d211a]/25 text-xs text-[#111827]"
                                   >
                                     <div className="space-y-3">
                                       <div className="flex items-start justify-between gap-3">
                                       <div className="min-w-0">
-                                        <div className="text-sm font-semibold truncate text-zinc-100">
+                                        <div className="text-sm font-semibold truncate text-[#111827]">
                                         {p.full_name || 'Unnamed Model'}
                                         </div>
-                                        <div className="text-[11px] text-zinc-300 dark:text-zinc-400 truncate">
+                                        <div className="text-[11px] text-[#6b7280] truncate">
                                         {p.locationLabel || 'Location TBA'}
                                         </div>
                                       </div>
                                       <span
                                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border ${
                                         status === 'ONLINE'
-                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-400 dark:text-black dark:border-emerald-300'
+                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                                           : status === 'OFFLINE'
-                                          ? 'bg-zinc-100 text-zinc-700 border-zinc-300 dark:bg-zinc-700 dark:text-zinc-50 dark:border-zinc-600'
-                                          : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-400 dark:text-black dark:border-amber-300'
+                                          ? 'bg-zinc-100 text-zinc-700 border-zinc-300'
+                                          : 'bg-amber-100 text-amber-800 border-amber-300'
                                         }`}
                                       >
                                         {profileStatusLabel[status]}
                                       </span>
                                       </div>
                                       {/* Thin divider between header and stats */}
-                                      <div className="border-t border-[#e0cdb0]/70 dark:border-white/10 my-2" />
+                                      <div className="border-t border-[#3d211a]/20 my-2" />
 
                                       {/* Compact stats without heavy labels */}
-                                      <div className="space-y-1.5 text-[11px] text-zinc-900 dark:text-zinc-100">
+                                      <div className="space-y-1.5 text-[11px] text-[#111827]">
                                         <div className="flex items-center justify-between gap-3">
                                           <span>{p.age != null ? `${p.age} yrs` : 'Age N/A'}</span>
                                           <span className="inline-flex items-center gap-1">
-                                            <Ruler className="w-3 h-3 text-zinc-500 dark:text-zinc-400" />
+                                            <Ruler className="w-3 h-3 text-zinc-500" />
                                             <span>{p.heightLabel}</span>
                                           </span>
                                         </div>
@@ -1093,7 +1095,7 @@ export const AdminDashboard: React.FC = () => {
                                               : 'Rating N/A'}
                                           </span>
                                           <span className="inline-flex items-center gap-1 text-right">
-                                            <Weight className="w-3 h-3 text-zinc-500 dark:text-zinc-400" />
+                                            <Weight className="w-3 h-3 text-zinc-500" />
                                             <span className="truncate max-w-[10rem]">{budgetText}</span>
                                           </span>
                                         </div>
@@ -1112,7 +1114,7 @@ export const AdminDashboard: React.FC = () => {
                                       </div>
 
                                       {/* Divider before chips */}
-                                      <div className="border-t border-[#e0cdb0]/70 dark:border-white/10 my-2" />
+                                      <div className="border-t border-[#3d211a]/20 my-2" />
 
                                       {(p.languages && p.languages.length > 0) ||
                                       (p.skills && p.skills.length > 0) ? (
@@ -1122,7 +1124,7 @@ export const AdminDashboard: React.FC = () => {
                                           {p.languages.slice(0, 10).map((lang) => (
                                           <span
                                             key={lang}
-                                            className="px-2 py-0.5 rounded-full border border-[#d6c3a6] text-zinc-100 dark:border-zinc-600 dark:text-zinc-100"
+                                            className="px-2 py-0.5 rounded-full border border-[#d8b56a] bg-[#fbf3e4] text-[#111827]"
                                           >
                                             {lang}
                                           </span>
@@ -1134,7 +1136,7 @@ export const AdminDashboard: React.FC = () => {
                                           {p.skills.slice(0, 10).map((skill) => (
                                           <span
                                             key={skill}
-                                            className="px-2 py-0.5 rounded-full border border-[#d6c3a6] text-zinc-100 dark:border-zinc-600 dark:text-zinc-100"
+                                            className="px-2 py-0.5 rounded-full border border-[#d8b56a] bg-[#fbf3e4] text-[#111827]"
                                           >
                                             {skill}
                                           </span>
@@ -1146,7 +1148,7 @@ export const AdminDashboard: React.FC = () => {
                                     </div>
 
                                     {/* Divider before actions */}
-                                    <div className="border-t border-[#e0cdb0]/70 dark:border-white/10 my-3" />
+                                    <div className="border-t border-[#3d211a]/20 my-3" />
 
                                     <div className="flex flex-wrap gap-2 text-[11px]">
                                       <button
@@ -1157,7 +1159,7 @@ export const AdminDashboard: React.FC = () => {
                                             navigate(`/talents/${p.id}`);
                                           }
                                         }}
-                                        className="px-3 py-1.5 rounded-full border border-[#d6c3a6] text-[#3b2418] bg-white/90 hover:bg-white transition dark:border-zinc-700 dark:text-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+                                        className="px-3 py-1.5 rounded-full border border-[#3d211a] text-[#111827] bg-transparent hover:bg-[#3d211a]/10 transition"
                                       >
                                         View Profile
                                       </button>
