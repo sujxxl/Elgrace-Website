@@ -211,14 +211,14 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                       <button
                         type="button"
                         onClick={() => setRole('model')}
-                        className={`flex-1 px-4 py-2 rounded-xl border text-sm font-medium ${role === 'model' ? 'border-[#dfcda5] text-white bg-white/10' : 'border-white/10 text-zinc-300'}`}
+                        className={`flex-1 px-4 py-2 rounded-xl border text-sm font-medium ${role === 'model' ? 'border-[#3d211a] text-white bg-white/10' : 'border-white/10 text-zinc-300'}`}
                       >
                         Model
                       </button>
                       <button
                         type="button"
                         onClick={() => setRole('client')}
-                        className={`flex-1 px-4 py-2 rounded-xl border text-sm font-medium ${role === 'client' ? 'border-[#dfcda5] text-white bg-white/10' : 'border-white/10 text-zinc-300'}`}
+                        className={`flex-1 px-4 py-2 rounded-xl border text-sm font-medium ${role === 'client' ? 'border-[#3d211a] text-white bg-white/10' : 'border-white/10 text-zinc-300'}`}
                       >
                         Client / Brand
                       </button>
@@ -231,7 +231,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                 <div className="flex justify-end">
                   <button
                     type="button"
-                    className="text-sm text-[#dfcda5] hover:underline"
+                    className="text-sm text-[#3d211a] hover:underline"
                     onClick={() => {
                       setMode('reset-request');
                       setMsg(null);
@@ -286,7 +286,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-semibold transition-all hover:from-zinc-700 hover:to-zinc-500 disabled:opacity-50 shadow-xl shadow-black/30 border-2 border-[#dfcda5] backdrop-blur-md"
+                className="w-full px-4 py-3 rounded-2xl bg-[#c9a961] text-[#111827] font-semibold transition-colors hover:bg-[#d6bb77] disabled:opacity-50 shadow-[0_12px_26px_rgba(61,33,26,0.18)] border-2 border-[#c9a961]"
               >
                 {loading
                   ? 'Loading...'
@@ -298,7 +298,17 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                         ? 'Create account'
                         : 'Log in'}
               </button>
-            </form>
+
+              {/* Magic link button: ONLY show for login */}
+            {mode === 'login' && (
+              <button
+                type="button"
+                onClick={handleMagic}
+                className="w-full mt-4 px-4 py-3 rounded-2xl bg-transparent text-[#111827] font-semibold transition-colors hover:bg-[#e5d3a3]/50 border-2 border-[#c9a961]"
+              >
+                Login using link
+              </button>
+            )}
 
             {/* Divider with magic link option */}
             {mode === 'login' && (
@@ -307,17 +317,21 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                 
               </div>
             )}
+            
+              {/* Secondary CTA (same hierarchy/size as submit on login) */}
+              {mode === 'login' && (
+                <button
+                  type="button"
+                  onClick={() => { setMode('signup'); setMsg(null); }}
+                  className="w-full px-4 py-3 rounded-2xl bg-transparent text-[#111827] font-semibold transition-colors hover:bg-[#3d211a]/10 border-2 border-[#3d211a]"
+                >
+                  Create an account
+                </button>
+              )}
+            </form>
 
-            {/* Magic link button: ONLY show for login */}
-            {mode === 'login' && (
-              <button
-                type="button"
-                onClick={handleMagic}
-                className="w-full mt-4 px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-semibold transition-all hover:from-zinc-700 hover:to-zinc-500 shadow-xl shadow-black/30 border-2 border-[#dfcda5] backdrop-blur-md"
-              >
-                Send magic link
-              </button>
-            )}
+
+            
 
             {/* Footer */}
             <div className="mt-6 text-center text-sm text-zinc-400 space-y-1">
@@ -328,19 +342,9 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                     <button
                       type="button"
                       onClick={() => setMode('reset-request')}
-                      className="text-[#dfcda5] hover:underline"
+                      className="text-[#3d211a] hover:underline"
                     >
                       Reset here
-                    </button>
-                  </div>
-                  <div>
-                    New here?{' '}
-                    <button
-                      type="button"
-                      onClick={() => { setMode('signup'); setMsg(null); }}
-                      className="text-[#dfcda5] hover:underline"
-                    >
-                      Create an account
                     </button>
                   </div>
                 </>
@@ -351,7 +355,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                   <button
                     type="button"
                     onClick={() => { setMode('login'); setMsg(null); }}
-                    className="text-[#dfcda5] hover:underline"
+                    className="text-[#3d211a] hover:underline"
                   >
                     Back to login
                   </button>
@@ -363,7 +367,7 @@ export const AuthPage: React.FC<{ onLoginSuccess?: () => void }> = ({ onLoginSuc
                   <button
                     type="button"
                     onClick={() => { setMode('login'); setMsg(null); }}
-                    className="text-[#dfcda5] hover:underline"
+                    className="text-[#3d211a] hover:underline"
                   >
                     Back to login
                   </button>

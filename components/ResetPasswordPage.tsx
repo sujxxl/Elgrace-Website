@@ -35,7 +35,7 @@ export const ResetPasswordPage: React.FC = () => {
   return (
     <section className="min-h-screen flex items-center justify-center py-20">
       <div className="w-full max-w-md px-6">
-        <div className="p-8 rounded-2xl bg-zinc-900/60 border border-zinc-800 backdrop-blur-sm">
+        <div className="p-8 rounded-2xl bg-white border border-[#3d211a] backdrop-blur-sm">
           <h2 className="text-2xl font-['Syne'] font-bold mb-2">Set a new password</h2>
           <p className="text-zinc-400 mb-6 text-sm">
             This link was sent to your email by Elgrace Talents. Enter a new password to secure your account.
@@ -75,7 +75,7 @@ export const ResetPasswordPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-4 px-4 py-3 rounded-2xl bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-600 text-white font-semibold transition-all hover:from-zinc-700 hover:to-zinc-500 disabled:opacity-50 shadow-xl shadow-black/30 border-2 border-[#dfcda5] backdrop-blur-md"
+              className="w-full mt-4 px-4 py-3 rounded-2xl bg-[#c9a961] text-[#111827] font-semibold transition-colors hover:bg-[#d6bb77] disabled:opacity-50 shadow-[0_12px_26px_rgba(61,33,26,0.18)] border-2 border-[#c9a961]"
             >
               {loading ? 'Updating...' : 'Update password'}
             </button>

@@ -7,7 +7,7 @@ export const siteConfig: { tabs: ViewTabConfig } = {
   tabs: {
     home: 1,
     services: 1,
-    talents: 1,
+    talents: 0,
     gallery: 0,
     castings: 0,
     auth: 1,

@@ -59,7 +59,8 @@ export const Hero: React.FC = () => {
           className="w-full h-full object-cover opacity-30"
         />
         */}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/50 to-transparent" />
+        {/* Light theme: no dark vignette/overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#fbf3e4] via-[#fffaf2] to-[#fbf3e4]" />
       </motion.div>
 
       <div className="container mx-auto px-6 relative z-10 text-center">
@@ -76,8 +77,7 @@ export const Hero: React.FC = () => {
             {words.map((word, index) => (
               <motion.span 
                 key={index} 
-                className="inline-block mr-4 md:mr-8 last:mr-0 text-[10vw] sm:text-7xl md:text-8xl lg:text-9xl whitespace-nowrap font-['Syne'] font-extrabold tracking-tighter text-white"
-                style={{ textShadow: '0 10px 30px rgba(255,255,255,0.1)' }}
+                className="inline-block mr-4 md:mr-8 last:mr-0 text-[10vw] sm:text-7xl md:text-8xl lg:text-9xl whitespace-nowrap font-['Syne'] font-extrabold tracking-tighter text-[#111827]"
               >
                 {word.split("").map((letter, idx) => (
                   <motion.span key={idx} variants={child} className="inline-block">

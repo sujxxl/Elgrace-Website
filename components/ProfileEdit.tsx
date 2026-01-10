@@ -1249,8 +1249,8 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
 
           <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
             {portfolio.length < 50 && (
-              <label className={`group shrink-0 w-24 sm:w-28 aspect-square rounded-xl border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold cursor-pointer ${uploadingPortfolio ? 'opacity-60 cursor-not-allowed' : ''}`}>
-                <div className="w-10 h-10 rounded-full bg-white/70 border border-[#dfcda5] flex items-center justify-center">
+              <label className={`group shrink-0 w-24 sm:w-28 aspect-square rounded-xl border-2 border-dashed border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold cursor-pointer ${uploadingPortfolio ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                <div className="w-10 h-10 rounded-full bg-[#fdf4e3] border border-[#d8b56a] flex items-center justify-center">
                   <Plus className="w-5 h-5 text-gray-700" />
                 </div>
                 <span className="mt-2">{uploadingPortfolio ? 'Uploading…' : 'Add Images'}</span>
@@ -1275,7 +1275,7 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
                 <button
                   type="button"
                   onClick={() => handleRemovePortfolioItem(item.id)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 rounded-full bg-white/90 border border-gray-200 text-gray-700 hover:text-gray-900 shadow-sm flex items-center justify-center"
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 rounded-full bg-[#fdf4e3] border border-[#d8b56a] text-gray-700 hover:text-gray-900 shadow-sm flex items-center justify-center"
                   title="Remove"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -1287,7 +1287,7 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
               <button
                 type="button"
                 onClick={() => setPortfolioModalOpen(true)}
-                className="shrink-0 w-24 sm:w-28 aspect-square rounded-xl border-2 border-dashed border-gray-200 bg-white text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold"
+                className="shrink-0 w-24 sm:w-28 aspect-square rounded-xl border-2 border-dashed border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold"
               >
                 See {portfolio.length - 8} more
               </button>
@@ -1296,14 +1296,14 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
 
           {portfolioModalOpen && (
             <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-              <div className="w-full max-w-4xl bg-white border border-[#dfcda5] rounded-3xl shadow-2xl relative">
+              <div className="w-full max-w-4xl bg-[#fff6e5] border border-[#e5d3a3] rounded-3xl shadow-2xl relative">
                 <button
                   type="button"
                   onClick={() => {
                     setPortfolioModalOpen(false);
                     setPortfolioLightboxIndex(null);
                   }}
-                  className="absolute top-4 right-4 w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
+                  className="absolute top-4 right-4 w-9 h-9 rounded-full border border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
                   aria-label="Close"
                 >
                   ×
@@ -1462,8 +1462,8 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
 
             <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
               {portfolioVideos.length < 10 && (
-                <label className={`group shrink-0 w-24 sm:w-28 aspect-square rounded-xl border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold cursor-pointer ${uploadingPortfolioVideos ? 'opacity-60 cursor-not-allowed' : ''}`}>
-                  <div className="w-10 h-10 rounded-full bg-white/70 border border-[#dfcda5] flex items-center justify-center">
+                <label className={`group shrink-0 w-24 sm:w-28 aspect-square rounded-xl border-2 border-dashed border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold cursor-pointer ${uploadingPortfolioVideos ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                  <div className="w-10 h-10 rounded-full bg-[#fdf4e3] border border-[#d8b56a] flex items-center justify-center">
                     <Plus className="w-5 h-5 text-gray-700" />
                   </div>
                   <span className="mt-2">{uploadingPortfolioVideos ? 'Uploading…' : 'Add Videos'}</span>
@@ -1510,11 +1510,11 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
 
             {portfolioVideosModalOpen && (
               <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                <div className="w-full max-w-4xl bg-white border border-[#dfcda5] rounded-3xl shadow-2xl relative">
+                <div className="w-full max-w-4xl bg-white border border-[#e5d3a3] rounded-3xl shadow-2xl relative">
                   <button
                     type="button"
                     onClick={() => setPortfolioVideosModalOpen(false)}
-                    className="absolute top-4 right-4 w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
+                    className="absolute top-4 right-4 w-9 h-9 rounded-full border border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
                     aria-label="Close"
                   >
                     ×

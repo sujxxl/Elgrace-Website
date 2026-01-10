@@ -294,7 +294,7 @@ export const TalentOnboardingPage: React.FC = () => {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
-        <div className="bg-white border border-[#dfcda5] rounded-3xl p-6 sm:p-8 shadow-lg">
+        <div className="bg-white border border-[#e5d3a3] rounded-3xl p-6 sm:p-8 shadow-lg">
           {/* STEP 1: Basic Info */}
           {currentStep === 1 && (
             <div>
@@ -449,7 +449,7 @@ export const TalentOnboardingPage: React.FC = () => {
                 <h3 className="text-lg font-semibold text-black mb-2">Profile Photo (required)</h3>
                 <div className="flex items-center gap-4 mb-3">
                   {profileUpload.items.length < 1 ? (
-                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                    <label className="px-4 py-2 rounded-full border-2 border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
                       Upload Photo
                       <input
                         type="file"
@@ -467,7 +467,7 @@ export const TalentOnboardingPage: React.FC = () => {
                       />
                     </label>
                   ) : (
-                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                    <label className="px-4 py-2 rounded-full border-2 border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
                       Replace Photo
                       <input
                         type="file"
@@ -520,7 +520,7 @@ export const TalentOnboardingPage: React.FC = () => {
                 <h3 className="text-lg font-semibold text-black mb-2">Portfolio (up to 50 images)</h3>
                 <div className="flex items-center gap-4 mb-3">
                   {portfolioUpload.canAddMore > 0 && (
-                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                    <label className="px-4 py-2 rounded-full border-2 border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
                       {portfolioUpload.items.length > 0 ? 'Add More Images' : 'Upload Portfolio'}
                       <input
                         type="file"
@@ -568,7 +568,7 @@ export const TalentOnboardingPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPortfolioModalOpen(true)}
-                      className="w-full aspect-square rounded-lg border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold"
+                      className="w-full aspect-square rounded-lg border-2 border-dashed border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold"
                     >
                       See {portfolioUpload.items.length - 3} more
                     </button>
@@ -577,11 +577,11 @@ export const TalentOnboardingPage: React.FC = () => {
 
                 {portfolioModalOpen && (
                   <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                    <div className="w-full max-w-4xl bg-white border border-[#dfcda5] rounded-3xl shadow-2xl relative">
+                    <div className="w-full max-w-4xl bg-white border border-[#e5d3a3] rounded-3xl shadow-2xl relative">
                       <button
                         type="button"
                         onClick={() => setPortfolioModalOpen(false)}
-                        className="absolute top-4 right-4 w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
+                        className="absolute top-4 right-4 w-9 h-9 rounded-full border border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
                         aria-label="Close"
                       >
                         ×
@@ -620,7 +620,7 @@ export const TalentOnboardingPage: React.FC = () => {
                 <h3 className="text-lg font-semibold text-black mb-2">Portfolio Videos (up to 10 videos)</h3>
                 <div className="flex items-center gap-4 mb-3">
                   {portfolioVideoUpload.canAddMore > 0 && (
-                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                    <label className="px-4 py-2 rounded-full border-2 border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
                       {portfolioVideoUpload.items.length > 0 ? 'Add More Videos' : 'Upload Portfolio Videos'}
                       <input
                         type="file"
@@ -676,7 +676,7 @@ export const TalentOnboardingPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPortfolioVideosModalOpen(true)}
-                      className="w-full rounded-lg border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold py-10"
+                      className="w-full rounded-lg border-2 border-dashed border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold py-10"
                     >
                       See {portfolioVideoUpload.items.length - 2} more
                     </button>
@@ -685,11 +685,11 @@ export const TalentOnboardingPage: React.FC = () => {
 
                 {portfolioVideosModalOpen && (
                   <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                    <div className="w-full max-w-4xl bg-white border border-[#dfcda5] rounded-3xl shadow-2xl relative">
+                    <div className="w-full max-w-4xl bg-white border border-[#e5d3a3] rounded-3xl shadow-2xl relative">
                       <button
                         type="button"
                         onClick={() => setPortfolioVideosModalOpen(false)}
-                        className="absolute top-4 right-4 w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
+                        className="absolute top-4 right-4 w-9 h-9 rounded-full border border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
                         aria-label="Close"
                       >
                         ×
@@ -733,7 +733,7 @@ export const TalentOnboardingPage: React.FC = () => {
                 <h3 className="text-lg font-semibold text-black mb-2">Intro Video (optional)</h3>
                 <div className="flex items-center gap-4 mb-3">
                   {introVideoUpload.items.length < 1 ? (
-                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                    <label className="px-4 py-2 rounded-full border-2 border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
                       Upload Video
                       <input
                         type="file"
@@ -751,7 +751,7 @@ export const TalentOnboardingPage: React.FC = () => {
                       />
                     </label>
                   ) : (
-                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                    <label className="px-4 py-2 rounded-full border-2 border-[#d8b56a] bg-[#fdf4e3] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
                       Replace Video
                       <input
                         type="file"

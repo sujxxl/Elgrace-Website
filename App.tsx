@@ -93,12 +93,11 @@ const AppRouterContent: React.FC = () => {
   const showProfileHint = user && user.role === 'model' && profileIncomplete;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white selection:bg-white selection:text-black relative">
+    <div className="min-h-screen bg-[#fbf3e4] text-[#111827] selection:bg-[#c9a961] selection:text-[#111827] relative">
       <Navbar
         onNavigate={onNavigate}
         currentView={currentView}
         showProfileHint={!!showProfileHint}
-        forceLight={location.pathname.startsWith('/profile') && user?.role !== 'admin'}
       />
 
       <div className="pt-16">

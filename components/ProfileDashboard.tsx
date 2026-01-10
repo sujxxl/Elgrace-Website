@@ -10,7 +10,7 @@ import { buildDriveImageUrls } from '../services/gdrive';
 import { deriveMedia, fetchMediaRecords, MediaItem } from '../services/mediaService';
 
 // This dashboard strictly inherits existing theme: black/white base, neutral glass,
-// existing buttons, spacing, borders, typography. Accent via outlines (#dfcda5) only.
+// existing buttons, spacing, borders, typography. Accent via outlines (#3d211a) only.
 
 type TabKey = 'dashboard' | 'profile' | 'castings' | 'bookings' | 'settings';
 
@@ -59,7 +59,10 @@ export const ProfileDashboard: React.FC = () => {
         <aside className="bg-[#f5e6d3] border border-[#dfcda5] rounded-2xl p-6 backdrop-blur-sm flex flex-col gap-6">
           {/* User Info */}
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-[#f5e6d3]/10 border border-white/20 flex items-center justify-center text-white font-bold">
+            <div
+              className="w-12 h-12 rounded-full bg-[#f5e6d3]/10 border flex items-center justify-center text-white font-bold"
+              style={{ borderColor: '#3d211a' }}
+            >
               {displayName.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -85,7 +88,7 @@ export const ProfileDashboard: React.FC = () => {
                 }`}
               >
                 <span>{tab.label}</span>
-                {activeTab === tab.key && <CheckCircle2 className="w-4 h-4 text-white/70" />}
+                {activeTab === tab.key && <CheckCircle2 className="w-4 h-4 text-[#3d211a]" />}
               </button>
             ))}
           </nav>
@@ -189,7 +192,7 @@ const ProfileStepper: React.FC<{
             `}
           >
             <span>{s.label}</span>
-            {isCompleted && <CheckCircle2 className="w-4 h-4 text-white/70" />}
+            {isCompleted && <CheckCircle2 className="w-4 h-4 text-[#3d211a]" />}
           </button>
         );
       })}

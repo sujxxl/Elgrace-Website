@@ -217,7 +217,7 @@ export const ContactGrid: React.FC = () => {
                                                     <img
                                                         src="https://upload.wikimedia.org/wikipedia/commons/b/b4/India_outline.svg"
                                                         alt="India outline"
-                                                        className="absolute inset-[28px] w-[calc(100%-56px)] h-[calc(100%-56px)] object-contain opacity-60 invert"
+                                                        className="absolute inset-[28px] w-[calc(100%-56px)] h-[calc(100%-56px)] object-contain opacity-80"
                                                     />
 
                                                     {/* Soft center glow */}
