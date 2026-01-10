@@ -170,32 +170,31 @@ export const TalentProfilePage: React.FC = () => {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="rounded-3xl border border-[#3d211a] bg-[#f6ead8] p-6 md:p-8 shadow-[0_16px_50px_rgba(61,33,26,0.12)]"
+          className="rounded-3xl bg-[#f6ead8] p-6 md:p-8 shadow-[0_16px_50px_rgba(61,33,26,0.10)]"
         >
-          <div className="rounded-2xl border border-[#3d211a]/25 bg-white p-5">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-full bg-[#fbf3e4] border border-[#3d211a] flex items-center justify-center">
-                  <span className="font-['Syne'] text-xl font-bold text-[#3d211a]">{modelInitial}</span>
-                </div>
-                <div className="min-w-0">
-                  {isAdmin && (
-                    <div className="font-['Syne'] text-lg font-bold text-[#111827] truncate">{profile.full_name}</div>
-                  )}
-                  <div className="text-[11px] uppercase tracking-[0.24em] text-[#6b7280]">Model Code</div>
-                </div>
+          {/* Header (NO CARD) */}
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-12 h-12 rounded-full bg-[#fbf3e4] flex items-center justify-center">
+                <span className="font-['Syne'] text-xl font-bold text-[#3d211a]">{modelInitial}</span>
               </div>
+              <div className="min-w-0">
+                {isAdmin && (
+                  <div className="font-['Syne'] text-lg font-bold text-[#111827] truncate">{profile.full_name}</div>
+                )}
+              </div>
+            </div>
 
-              <div className="text-right">
-                <div className="font-['Syne'] text-xl font-bold text-[#111827]">{modelCode}</div>
-              </div>
+            <div className="text-right">
+              <div className="text-[11px] uppercase tracking-[0.24em] text-[#6b7280]">Model Code</div>
+              <div className="font-['Syne'] text-xl font-bold text-[#111827]">{modelCode}</div>
             </div>
           </div>
 
           {/* MAIN MEDIA + DETAILS ROW */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
             {/* Cover Photo */}
-            <div className="rounded-2xl border border-[#3d211a]/25 bg-white overflow-hidden">
+            <div>
               <div className="relative w-full aspect-[4/3]">
                 {hasCover ? (
                   <img
@@ -204,7 +203,7 @@ export const TalentProfilePage: React.FC = () => {
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-white">
+                  <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
                       <div className="font-['Syne'] text-lg font-bold text-[#111827]">No cover photo</div>
                       <div className="text-sm text-[#6b7280]">Cover photo will appear here.</div>
@@ -215,7 +214,7 @@ export const TalentProfilePage: React.FC = () => {
             </div>
 
             {/* Intro Video */}
-            <div className="rounded-2xl border border-[#3d211a]/25 bg-white overflow-hidden">
+            <div>
               {introVideoUrl ? (
                 <ThemedVideo
                   src={introVideoUrl}
@@ -224,12 +223,12 @@ export const TalentProfilePage: React.FC = () => {
                   loop={true}
                   playWhenInView={true}
                   exclusiveAudioGroup="talent-profile"
-                  containerClassName="w-full h-full"
+                  containerClassName="w-full"
                   className="w-full h-full aspect-video object-cover"
                   ariaLabel="Intro video"
                 />
               ) : (
-                <div className="w-full h-full aspect-video flex items-center justify-center bg-white">
+                <div className="w-full h-full aspect-video flex items-center justify-center">
                   <div className="text-center px-6">
                     <div className="font-['Syne'] text-lg font-bold text-[#111827]">No intro video</div>
                     <div className="text-sm text-[#6b7280]">Intro video will appear here.</div>
@@ -239,56 +238,124 @@ export const TalentProfilePage: React.FC = () => {
             </div>
 
             {/* Measurements + Details */}
-            <div className="rounded-2xl border border-[#3d211a]/25 bg-white p-5">
+            <div>
               <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em] mb-4">
                 Measurements & Details
               </div>
+
               <dl className="divide-y divide-[#3d211a]/10 text-sm">
-                <div className="py-2 flex items-center justify-between gap-4">
+                <div className="py-2 flex items-center justify-between gap-6">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Location</dt>
                   <dd className="text-[#111827] flex items-center gap-2 min-w-0">
                     <MapPin className="w-4 h-4 text-[#3d211a]" />
                     <span className="truncate">{location || '—'}</span>
                   </dd>
                 </div>
-                <div className="py-2 flex items-center justify-between gap-4">
+                <div className="py-2 flex items-center justify-between gap-6">
+                  <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Followers</dt>
+                  <dd className="text-[#111827]">{followerLabel}</dd>
+                </div>
+                <div className="py-2 flex items-center justify-between gap-6">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Age</dt>
                   <dd className="text-[#111827]">{age != null ? `${age} yrs` : '—'}</dd>
                 </div>
-                <div className="py-2 flex items-center justify-between gap-4">
+                <div className="py-2 flex items-center justify-between gap-6">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Height</dt>
                   <dd className="text-[#111827] flex items-center gap-2">
                     <Ruler className="w-4 h-4 text-[#3d211a]" /> {heightLabel}
                   </dd>
                 </div>
-                <div className="py-2 flex items-center justify-between gap-4">
+                <div className="py-2 flex items-center justify-between gap-6">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Size</dt>
                   <dd className="text-[#111827] flex items-center gap-2">
                     <Weight className="w-4 h-4 text-[#3d211a]" /> {sizeLabel}
                   </dd>
                 </div>
-                <div className="py-2 flex items-center justify-between gap-4">
+                <div className="py-2 flex items-center justify-between gap-6">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Bust/Chest</dt>
                   <dd className="text-[#111827]">{profile.bust_chest ?? '—'}</dd>
                 </div>
-                <div className="py-2 flex items-center justify-between gap-4">
+                <div className="py-2 flex items-center justify-between gap-6">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Waist</dt>
                   <dd className="text-[#111827]">{profile.waist ?? '—'}</dd>
                 </div>
-                <div className="py-2 flex items-center justify-between gap-4">
+                <div className="py-2 flex items-center justify-between gap-6">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Hips</dt>
                   <dd className="text-[#111827]">{profile.hips ?? '—'}</dd>
                 </div>
-                <div className="py-2 flex items-center justify-between gap-4">
+                <div className="py-2 flex items-center justify-between gap-6">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Shoe</dt>
                   <dd className="text-[#111827]">{profile.shoe_size ?? '—'}</dd>
                 </div>
               </dl>
+
+              {/* Admin-only fields appended as extra rows (not rendered for public) */}
+              {isAdmin && (
+                <>
+                  <div className="mt-6 font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em]">
+                    Admin
+                  </div>
+                  <dl className="mt-3 divide-y divide-[#3d211a]/10 text-sm">
+                    <div className="py-2 flex items-center justify-between gap-6">
+                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Email</dt>
+                      <dd className="text-[#111827] truncate max-w-[12rem] sm:max-w-[16rem]">{profile.email}</dd>
+                    </div>
+                    <div className="py-2 flex items-center justify-between gap-6">
+                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Phone</dt>
+                      <dd className="text-[#111827]">{profile.phone ?? '—'}</dd>
+                    </div>
+                    <div className="py-2 flex items-start justify-between gap-6">
+                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] pt-1">Instagram</dt>
+                      <dd className="text-[#111827] text-right">
+                        {profile.instagram && profile.instagram.length > 0 ? (
+                          <div className="space-y-1">
+                            {profile.instagram.map((ig) => (
+                              <div key={ig.handle} className="whitespace-nowrap">
+                                @{ig.handle}{' '}
+                                <span className="text-[#6b7280] text-[11px] uppercase tracking-[0.16em]">
+                                  ({ig.followers.replace(/_/g, ' ')})
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          '—'
+                        )}
+                      </dd>
+                    </div>
+                    <div className="py-2 flex items-center justify-between gap-6">
+                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Min Budget (Half)</dt>
+                      <dd className="text-[#111827]">{money(profile.min_budget_half_day)}</dd>
+                    </div>
+                    <div className="py-2 flex items-center justify-between gap-6">
+                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Min Budget (Full)</dt>
+                      <dd className="text-[#111827]">{money(profile.min_budget_full_day)}</dd>
+                    </div>
+                    <div className="py-2 flex items-center justify-between gap-6">
+                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Portfolio Link</dt>
+                      <dd className="text-[#111827] text-right">
+                        {profile.portfolio_folder_link ? (
+                          <a
+                            href={profile.portfolio_folder_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#3d211a] hover:underline"
+                          >
+                            Open
+                          </a>
+                        ) : (
+                          '—'
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
+                </>
+              )}
             </div>
           </div>
 
           {/* PORTFOLIO VIDEOS ROW */}
-          <div className="mt-8">
+          <div className="mt-12">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
                 <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em]">Portfolio Videos</div>
@@ -299,14 +366,14 @@ export const TalentProfilePage: React.FC = () => {
             {portfolioVideos.length > 0 ? (
               <PortfolioVideoRow videos={portfolioVideos.map((v) => v.media_url)} />
             ) : (
-              <div className="rounded-2xl border border-[#e5d3a3] bg-white p-5 text-sm text-[#6b7280]">
+              <div className="text-sm text-[#6b7280]">
                 No portfolio videos uploaded.
               </div>
             )}
           </div>
 
           {/* PHOTOS PORTFOLIO */}
-          <div className="mt-10">
+          <div className="mt-12">
             <div className="flex items-end justify-between gap-4 mb-4">
               <div>
                 <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em]">Photos Portfolio</div>
@@ -316,9 +383,10 @@ export const TalentProfilePage: React.FC = () => {
                 type="button"
                 onClick={() => openGalleryAt(0)}
                 disabled={portfolioPhotos.length === 0}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#c9a961] bg-transparent text-[11px] uppercase tracking-[0.2em] text-[#111827] hover:bg-[#e5d3a3]/50 disabled:opacity-50"
+                className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-[#111827] disabled:opacity-50 hover:underline"
               >
                 View full gallery
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
 
@@ -329,10 +397,10 @@ export const TalentProfilePage: React.FC = () => {
                     key={m.id}
                     type="button"
                     onClick={() => openGalleryAt(idx)}
-                    className="text-left rounded-2xl overflow-hidden"
+                    className="text-left"
                     aria-label={`Open photo ${idx + 1}`}
                   >
-                    <div className="relative w-full aspect-[3/4] bg-white rounded-2xl overflow-hidden">
+                    <div className="relative w-full aspect-[3/4]">
                       <img
                         src={m.media_url}
                         alt={`Portfolio photo ${idx + 1}`}
@@ -344,126 +412,12 @@ export const TalentProfilePage: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="rounded-2xl border border-[#e5d3a3] bg-white p-5 text-sm text-[#6b7280]">
+              <div className="text-sm text-[#6b7280]">
                 No portfolio photos uploaded.
               </div>
             )}
           </div>
         </motion.div>
-
-        {/* Details sections (keep all existing info) */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="rounded-3xl border border-[#e5d3a3] bg-white p-6 md:p-8 shadow-[0_12px_34px_rgba(61,33,26,0.10)]">
-            <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em] mb-4">Profile</div>
-            <div className="space-y-2 text-sm text-[#4b5563]">
-              {isAdmin && <p>Email: <span className="text-[#111827]">{profile.email}</span></p>}
-              {isAdmin && <p>Phone: <span className="text-[#111827]">{profile.phone ?? '—'}</span></p>}
-              <p>Gender: <span className="text-[#111827]">{profile.gender}</span></p>
-              <p>Nationality: <span className="text-[#111827]">{profile.nationality}</span></p>
-              <p>Country: <span className="text-[#111827]">{profile.country ?? '—'}</span></p>
-              <p>State: <span className="text-[#111827]">{profile.state ?? '—'}</span></p>
-              <p>City: <span className="text-[#111827]">{profile.city ?? '—'}</span></p>
-              {profile.weight != null && <p>Weight: <span className="text-[#111827]">{profile.weight}</span></p>}
-            </div>
-
-            {profile.ramp_walk_description && (
-              <div className="mt-6">
-                <div className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] mb-2">Ramp Walk Experience</div>
-                <p className="text-sm text-[#4b5563] whitespace-pre-line">{profile.ramp_walk_description}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="rounded-3xl border border-[#e5d3a3] bg-white p-6 md:p-8 shadow-[0_12px_34px_rgba(61,33,26,0.10)]">
-            <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em] mb-4">Details</div>
-
-            {profile.instagram && profile.instagram.length > 0 && (
-              <div className="mb-6">
-                <div className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] mb-2">Followers</div>
-                {isAdmin ? (
-                  <div className="space-y-2 text-sm text-[#4b5563]">
-                    {profile.instagram.map((ig) => (
-                      <div key={ig.handle} className="flex justify-between gap-4">
-                        <span className="text-[#111827]">@{ig.handle}</span>
-                        <span className="text-[11px] uppercase tracking-[0.18em] text-[#6b7280]">{ig.followers.replace(/_/g, ' ')}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-[#4b5563]">
-                    Instagram followers: <span className="text-[#111827]">{followerLabel}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {profile.languages && profile.languages.length > 0 && (
-              <div className="mb-6">
-                <div className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] mb-2">Languages</div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {profile.languages.map((lang) => (
-                    <span key={lang} className="px-3 py-1 rounded-full border border-[#d8b56a] bg-[#fdf4e3] text-[#111827]">
-                      {lang}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {profile.skills && profile.skills.length > 0 && (
-              <div className="mb-6">
-                <div className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] mb-2">Skills</div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {profile.skills.map((skill) => (
-                    <span key={skill} className="px-3 py-1 rounded-full border border-[#d8b56a] bg-[#fdf4e3] text-[#111827]">
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="mb-6">
-              <div className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] mb-2">Meta</div>
-              <div className="space-y-1 text-sm text-[#4b5563]">
-                <p>Status: <span className="text-[#111827]">{profile.status ?? 'UNDER_REVIEW'}</span></p>
-                {profile.open_to_travel !== undefined && (
-                  <p>Open to travel: <span className="text-[#111827]">{profile.open_to_travel ? 'Yes' : 'No'}</span></p>
-                )}
-                {profile.experience_level && (
-                  <p>Experience: <span className="text-[#111827]">{profile.experience_level}</span></p>
-                )}
-              </div>
-            </div>
-
-            {isAdmin && (
-              <div className="mb-6">
-                <div className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] mb-2">Minimum Budget</div>
-                <div className="space-y-1 text-sm text-[#4b5563]">
-                  <p>Half day: <span className="text-[#111827]">{money(profile.min_budget_half_day)}</span></p>
-                  <p>Full day: <span className="text-[#111827]">{money(profile.min_budget_full_day)}</span></p>
-                  {profile.expected_budget && (
-                    <p>Notes: <span className="text-[#111827]">{profile.expected_budget}</span></p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {isAdmin && profile.portfolio_folder_link && (
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] mb-2">Portfolio</div>
-                <a
-                  href={profile.portfolio_folder_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-[#c9a961] bg-transparent text-[11px] uppercase tracking-[0.2em] text-[#111827] hover:bg-[#e5d3a3]/50"
-                >
-                  View Full Portfolio on Drive
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Full gallery modal */}
         {galleryOpen && portfolioPhotos.length > 0 && (
@@ -547,12 +501,12 @@ function PortfolioVideoRow({ videos }: { videos: string[] }) {
           >
             <ThemedVideo
               src={src}
-              autoPlay={false}
+              autoPlay={true}
               muted={true}
               loop={true}
               playWhenInView={true}
               exclusiveAudioGroup="talent-profile"
-              containerClassName="w-full rounded-2xl border border-[#e5d3a3] bg-white overflow-hidden"
+              containerClassName="w-full"
               className="w-full h-full aspect-[9/16] object-cover"
               ariaLabel={`Portfolio video ${idx + 1}`}
             />
