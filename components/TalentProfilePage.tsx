@@ -114,6 +114,20 @@ export const TalentProfilePage: React.FC = () => {
 
   const isAdmin = user?.role === 'admin';
 
+  const inch = (value?: number | null) => (value != null ? `${value}"` : '—');
+
+  const experienceLabel = (() => {
+    const v = profile.experience_level;
+    if (!v) return '—';
+    const map: Record<string, string> = {
+      lt_1: 'Less than 1 year',
+      '1_3': '1–3 years',
+      '3_5': '3–5 years',
+      gt_5: '5+ years',
+    };
+    return map[v] ?? String(v).replace(/_/g, ' ');
+  })();
+
   const followerLabel = (() => {
     if (!profile.instagram || profile.instagram.length === 0) return '—';
     // Show follower bucket(s) without exposing handles.
@@ -242,112 +256,129 @@ export const TalentProfilePage: React.FC = () => {
                 Measurements & Details
               </div>
 
-              <dl className="divide-y divide-[#3d211a]/10 text-sm">
-                <div className="py-2 flex items-center justify-between gap-6">
-                  <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Location</dt>
-                  <dd className="text-[#111827] flex items-center gap-2 min-w-0">
-                    <MapPin className="w-4 h-4 text-[#3d211a]" />
-                    <span className="truncate">{location || '—'}</span>
+              {/* Top metrics row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-10 gap-y-10">
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Height</div>
+                  <div className="font-['Syne'] text-2xl font-bold text-[#111827] leading-tight">{heightLabel}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Chest</div>
+                  <div className="font-['Syne'] text-2xl font-bold text-[#111827] leading-tight">{inch(profile.bust_chest)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Waist</div>
+                  <div className="font-['Syne'] text-2xl font-bold text-[#111827] leading-tight">{inch(profile.waist)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Shoe</div>
+                  <div className="font-['Syne'] text-2xl font-bold text-[#111827] leading-tight">{profile.shoe_size ?? '—'}</div>
+                </div>
+              </div>
+
+              {/* Detail grid */}
+              <dl className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-x-14 gap-y-10">
+                <div>
+                  <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Gender</dt>
+                  <dd className="font-['Syne'] text-lg font-bold text-[#111827]">{profile.gender ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Modeling Experience</dt>
+                  <dd className="font-['Syne'] text-lg font-bold text-[#111827]">{experienceLabel}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Age</dt>
+                  <dd className="font-['Syne'] text-lg font-bold text-[#111827]">{age != null ? String(age) : '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Location</dt>
+                  <dd className="font-['Syne'] text-lg font-bold text-[#111827]">{location || '—'}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Special Skills</dt>
+                  <dd className="font-['Syne'] text-lg font-bold text-[#111827]">
+                    {profile.skills && profile.skills.length > 0 ? profile.skills.join(', ') : '—'}
                   </dd>
                 </div>
-                <div className="py-2 flex items-center justify-between gap-6">
-                  <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Followers</dt>
-                  <dd className="text-[#111827]">{followerLabel}</dd>
-                </div>
-                <div className="py-2 flex items-center justify-between gap-6">
-                  <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Age</dt>
-                  <dd className="text-[#111827]">{age != null ? `${age} yrs` : '—'}</dd>
-                </div>
-                <div className="py-2 flex items-center justify-between gap-6">
-                  <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Height</dt>
-                  <dd className="text-[#111827] flex items-center gap-2">
-                    <Ruler className="w-4 h-4 text-[#3d211a]" /> {heightLabel}
+                <div>
+                  <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Languages Spoken</dt>
+                  <dd className="font-['Syne'] text-lg font-bold text-[#111827]">
+                    {profile.languages && profile.languages.length > 0 ? profile.languages.join(', ') : '—'}
                   </dd>
                 </div>
-                <div className="py-2 flex items-center justify-between gap-6">
-                  <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Size</dt>
-                  <dd className="text-[#111827] flex items-center gap-2">
-                    <Weight className="w-4 h-4 text-[#3d211a]" /> {sizeLabel}
+                <div>
+                  <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Instagram Followers</dt>
+                  <dd className="font-['Syne'] text-lg font-bold text-[#111827]">{followerLabel}</dd>
+                </div>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Open to Travel?</dt>
+                  <dd className="font-['Syne'] text-lg font-bold text-[#111827]">
+                    {profile.open_to_travel === undefined ? '—' : profile.open_to_travel ? 'Yes' : 'No'}
                   </dd>
                 </div>
-                <div className="py-2 flex items-center justify-between gap-6">
-                  <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Bust/Chest</dt>
-                  <dd className="text-[#111827]">{profile.bust_chest ?? '—'}</dd>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Ramp Walk Experience</dt>
+                  <dd className="font-['Syne'] text-lg font-bold text-[#111827]">
+                    {profile.ramp_walk_experience === undefined ? '—' : profile.ramp_walk_experience ? 'Yes' : 'No'}
+                  </dd>
                 </div>
-                <div className="py-2 flex items-center justify-between gap-6">
-                  <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Waist</dt>
-                  <dd className="text-[#111827]">{profile.waist ?? '—'}</dd>
-                </div>
-                <div className="py-2 flex items-center justify-between gap-6">
-                  <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Hips</dt>
-                  <dd className="text-[#111827]">{profile.hips ?? '—'}</dd>
-                </div>
-                <div className="py-2 flex items-center justify-between gap-6">
-                  <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Shoe</dt>
-                  <dd className="text-[#111827]">{profile.shoe_size ?? '—'}</dd>
+                <div>
+                  <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Size</dt>
+                  <dd className="font-['Syne'] text-lg font-bold text-[#111827]">{sizeLabel}</dd>
                 </div>
               </dl>
 
               {/* Admin-only fields appended as extra rows (not rendered for public) */}
               {isAdmin && (
                 <>
-                  <div className="mt-6 font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em]">
-                    Admin
+                  <div className="mt-12 pt-10 border-t border-[#3d211a]/10">
+                    <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em]">
+                      Admin
+                    </div>
+                    <dl className="mt-6 grid grid-cols-1 gap-y-8">
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Email</dt>
+                        <dd className="font-['Syne'] text-lg font-bold text-[#111827] break-words">{profile.email}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Phone</dt>
+                        <dd className="font-['Syne'] text-lg font-bold text-[#111827]">{profile.phone ?? '—'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Instagram Handles</dt>
+                        <dd className="font-['Syne'] text-lg font-bold text-[#111827]">
+                          {profile.instagram && profile.instagram.length > 0
+                            ? profile.instagram.map((ig) => `@${ig.handle}`).join(', ')
+                            : '—'}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Min Budget (Half)</dt>
+                        <dd className="font-['Syne'] text-lg font-bold text-[#111827]">{money(profile.min_budget_half_day)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Min Budget (Full)</dt>
+                        <dd className="font-['Syne'] text-lg font-bold text-[#111827]">{money(profile.min_budget_full_day)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Portfolio Link</dt>
+                        <dd className="font-['Syne'] text-lg font-bold text-[#111827]">
+                          {profile.portfolio_folder_link ? (
+                            <a
+                              href={profile.portfolio_folder_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#3d211a] hover:underline"
+                            >
+                              Open
+                            </a>
+                          ) : (
+                            '—'
+                          )}
+                        </dd>
+                      </div>
+                    </dl>
                   </div>
-                  <dl className="mt-3 divide-y divide-[#3d211a]/10 text-sm">
-                    <div className="py-2 flex items-center justify-between gap-6">
-                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Email</dt>
-                      <dd className="text-[#111827] truncate max-w-[12rem] sm:max-w-[16rem]">{profile.email}</dd>
-                    </div>
-                    <div className="py-2 flex items-center justify-between gap-6">
-                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Phone</dt>
-                      <dd className="text-[#111827]">{profile.phone ?? '—'}</dd>
-                    </div>
-                    <div className="py-2 flex items-start justify-between gap-6">
-                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] pt-1">Instagram</dt>
-                      <dd className="text-[#111827] text-right">
-                        {profile.instagram && profile.instagram.length > 0 ? (
-                          <div className="space-y-1">
-                            {profile.instagram.map((ig) => (
-                              <div key={ig.handle} className="whitespace-nowrap">
-                                @{ig.handle}{' '}
-                                <span className="text-[#6b7280] text-[11px] uppercase tracking-[0.16em]">
-                                  ({ig.followers.replace(/_/g, ' ')})
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          '—'
-                        )}
-                      </dd>
-                    </div>
-                    <div className="py-2 flex items-center justify-between gap-6">
-                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Min Budget (Half)</dt>
-                      <dd className="text-[#111827]">{money(profile.min_budget_half_day)}</dd>
-                    </div>
-                    <div className="py-2 flex items-center justify-between gap-6">
-                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Min Budget (Full)</dt>
-                      <dd className="text-[#111827]">{money(profile.min_budget_full_day)}</dd>
-                    </div>
-                    <div className="py-2 flex items-center justify-between gap-6">
-                      <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Portfolio Link</dt>
-                      <dd className="text-[#111827] text-right">
-                        {profile.portfolio_folder_link ? (
-                          <a
-                            href={profile.portfolio_folder_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#3d211a] hover:underline"
-                          >
-                            Open
-                          </a>
-                        ) : (
-                          '—'
-                        )}
-                      </dd>
-                    </div>
-                  </dl>
                 </>
               )}
             </div>
