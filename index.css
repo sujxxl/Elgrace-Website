@@ -2,6 +2,31 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Dark shell scrollbar (home + services only) */
+html.theme-dark {
+  /* Firefox */
+  scrollbar-color: rgba(223, 205, 165, 0.55) #09090b;
+  scrollbar-width: thin;
+}
+
+html.theme-dark::-webkit-scrollbar {
+  width: 10px;
+}
+
+html.theme-dark::-webkit-scrollbar-track {
+  background: #09090b;
+}
+
+html.theme-dark::-webkit-scrollbar-thumb {
+  background: rgba(223, 205, 165, 0.38);
+  border: 2px solid #09090b;
+  border-radius: 999px;
+}
+
+html.theme-dark::-webkit-scrollbar-thumb:hover {
+  background: rgba(223, 205, 165, 0.6);
+}
+
 body {
   overscroll-behavior-y: contain;
   background-color: #fbf3e4; /* page bg */

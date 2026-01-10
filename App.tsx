@@ -116,6 +116,14 @@ const AppRouterContent: React.FC = () => {
   const isDarkContact = isDarkShell;
   const navbarVariant = isDarkShell ? 'dark' : 'light';
 
+  React.useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle('theme-dark', isDarkShell);
+    return () => {
+      root.classList.remove('theme-dark');
+    };
+  }, [isDarkShell]);
+
   const showProfileHint = user && user.role === 'model' && profileIncomplete;
 
   return (

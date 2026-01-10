@@ -274,10 +274,10 @@ export const ContactGrid: React.FC<ContactGridProps> = ({ variant = 'light' }) =
 
                                                     {/* Label bottom-left */}
 															<div className={`absolute left-6 bottom-5 text-[10px] tracking-[0.28em] uppercase ${c.mapFooterLabel}`}>
-                                                        ELGRACE INDIA MAP
+                                                        ELGRACE MAP
                                                     </div>
                                                 </motion.div>
-                                            </div>
+                                            </div> 
                                         </div>
                 </div>
             </div>
@@ -305,7 +305,7 @@ export const ContactGrid: React.FC<ContactGridProps> = ({ variant = 'light' }) =
                     </p>
                     <button
                         onClick={copyHiringEmail}
-                        className={`inline-flex items-center gap-2 px-8 py-3 rounded-2xl text-xs md:text-sm font-bold uppercase tracking-widest bg-gradient-to-br border backdrop-blur-md cursor-pointer ${c.cta}`}
+                        className={`inline-flex items-center gap-2 px-8 py-3 rounded-2xl text-xs md:text-sm font-bold uppercase tracking-widest bg-gradient-to-br border-2 border-[#dfcda5] backdrop-blur-md cursor-pointer ${c.cta}`}
                     >
                         <Copy className="w-4 h-4" />
                         Apply here

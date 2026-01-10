@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView, showPro
   const linkIdle = isDark ? 'text-zinc-300 hover:text-white' : 'text-[#4b5563] hover:text-[#111827]';
 
   const brandText = isDark ? 'text-white' : 'text-[#111827]';
-  const underline = isDark ? 'bg-white/70' : 'bg-[#3d211a]';
+  const underline = isDark ? 'bg-[#dfcda5]' : 'bg-[#3d211a]';
 
   return (
     <motion.nav
@@ -132,7 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, currentView, showPro
                 }}
                 className={
                   isDark
-                    ? 'flex items-center gap-2 px-4 py-2 rounded text-xs font-bold uppercase tracking-widest transition-colors border-2 border-white/20 hover:bg-white/5 backdrop-blur-md text-white'
+                    ? 'flex items-center gap-2 px-4 py-2 rounded text-xs font-bold uppercase tracking-widest transition-colors border-2 border-[#dfcda5] hover:bg-white/5 backdrop-blur-md text-white'
                     : 'flex items-center gap-2 px-4 py-2 rounded text-xs font-bold uppercase tracking-widest transition-colors border-2 border-[#3d211a] hover:bg-white/5 backdrop-blur-md text-[#111827]'
                 }
               >
