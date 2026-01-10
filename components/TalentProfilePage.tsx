@@ -5,10 +5,12 @@ import { ArrowLeft, ChevronLeft, ChevronRight, MapPin, Ruler, Weight, X } from '
 import { getProfileByUserId, ProfileData } from '../services/ProfileService';
 import { deriveMedia, fetchMediaRecords, DerivedMedia } from '../services/mediaService';
 import { ThemedVideo } from './ThemedVideo';
+import { useAuth } from '../context/AuthContext';
 
 export const TalentProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [derivedMedia, setDerivedMedia] = useState<DerivedMedia>({
     profileImage: null,
@@ -110,6 +112,32 @@ export const TalentProfilePage: React.FC = () => {
   const portfolioPhotos = derivedMedia.portfolio;
   const previewPhotos = portfolioPhotos.slice(0, 6);
 
+  const isAdmin = user?.role === 'admin';
+
+  const followerLabel = (() => {
+    if (!profile.instagram || profile.instagram.length === 0) return '—';
+    // Show follower bucket(s) without exposing handles.
+    const labels = profile.instagram
+      .map((ig) => ig.followers)
+      .filter(Boolean)
+      .map((s) => String(s).replace(/_/g, ' '));
+    const unique = Array.from(new Set(labels));
+    return unique.length ? unique.join(', ') : '—';
+  })();
+
+  const money = (value?: number | null) => {
+    if (value == null) return '—';
+    try {
+      return new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency: 'INR',
+        maximumFractionDigits: 0,
+      }).format(value);
+    } catch {
+      return `₹${value}`;
+    }
+  };
+
   const activeGallerySrc = portfolioPhotos[galleryIndex]?.media_url;
   const openGalleryAt = (index: number) => {
     setGalleryIndex(Math.max(0, Math.min(index, portfolioPhotos.length - 1)));
@@ -142,39 +170,37 @@ export const TalentProfilePage: React.FC = () => {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="rounded-3xl border border-[#e5d3a3] bg-white p-6 md:p-8 shadow-[0_16px_50px_rgba(61,33,26,0.12)]"
+          className="rounded-3xl border border-[#3d211a] bg-[#f6ead8] p-6 md:p-8 shadow-[0_16px_50px_rgba(61,33,26,0.12)]"
         >
-          <div className="grid grid-cols-1 md:grid-cols-[240px_1fr_300px] gap-6 md:gap-8 items-stretch">
-            {/* Name Initial + Model Code */}
-            <div className="rounded-2xl border border-[#e5d3a3] bg-white p-5 flex flex-col justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-[#dfcda5] border border-[#c9a961] flex items-center justify-center">
-                  <span className="font-['Syne'] text-2xl font-bold text-[#3d211a]">{modelInitial}</span>
+          <div className="rounded-2xl border border-[#3d211a]/25 bg-white p-5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="w-12 h-12 rounded-full bg-[#fbf3e4] border border-[#3d211a] flex items-center justify-center">
+                  <span className="font-['Syne'] text-xl font-bold text-[#3d211a]">{modelInitial}</span>
                 </div>
                 <div className="min-w-0">
-                  <div className="font-['Syne'] text-lg font-bold text-[#111827] truncate">{profile.full_name}</div>
+                  {isAdmin && (
+                    <div className="font-['Syne'] text-lg font-bold text-[#111827] truncate">{profile.full_name}</div>
+                  )}
                   <div className="text-[11px] uppercase tracking-[0.24em] text-[#6b7280]">Model Code</div>
                 </div>
               </div>
 
-              <div className="mt-5 flex items-end justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-xs uppercase tracking-[0.28em] text-[#6b7280]">{profile.category === 'model' ? 'Model' : 'Client'}</div>
-                  <div className="font-['Syne'] text-xl font-bold text-[#111827] truncate">{modelCode}</div>
-                </div>
-                <div className="text-[11px] uppercase tracking-[0.2em] text-[#4b5563]">
-                  {profile.status ?? 'UNDER_REVIEW'}
-                </div>
+              <div className="text-right">
+                <div className="font-['Syne'] text-xl font-bold text-[#111827]">{modelCode}</div>
               </div>
             </div>
+          </div>
 
+          {/* MAIN MEDIA + DETAILS ROW */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
             {/* Cover Photo */}
-            <div className="rounded-2xl border border-[#e5d3a3] bg-white overflow-hidden">
-              <div className="relative w-full aspect-[4/3] md:aspect-[16/10]">
+            <div className="rounded-2xl border border-[#3d211a]/25 bg-white overflow-hidden">
+              <div className="relative w-full aspect-[4/3]">
                 {hasCover ? (
                   <img
                     src={coverUrl}
-                    alt={profile.full_name}
+                    alt={isAdmin ? profile.full_name : `Model ${modelCode}`}
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 ) : (
@@ -188,48 +214,72 @@ export const TalentProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Measurements / Details */}
-            <div className="rounded-2xl border border-[#e5d3a3] bg-white p-5">
+            {/* Intro Video */}
+            <div className="rounded-2xl border border-[#3d211a]/25 bg-white overflow-hidden">
+              {introVideoUrl ? (
+                <ThemedVideo
+                  src={introVideoUrl}
+                  autoPlay={true}
+                  muted={true}
+                  loop={true}
+                  playWhenInView={true}
+                  exclusiveAudioGroup="talent-profile"
+                  containerClassName="w-full h-full"
+                  className="w-full h-full aspect-video object-cover"
+                  ariaLabel="Intro video"
+                />
+              ) : (
+                <div className="w-full h-full aspect-video flex items-center justify-center bg-white">
+                  <div className="text-center px-6">
+                    <div className="font-['Syne'] text-lg font-bold text-[#111827]">No intro video</div>
+                    <div className="text-sm text-[#6b7280]">Intro video will appear here.</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Measurements + Details */}
+            <div className="rounded-2xl border border-[#3d211a]/25 bg-white p-5">
               <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em] mb-4">
-                Measurements
+                Measurements & Details
               </div>
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                <div>
+              <dl className="divide-y divide-[#3d211a]/10 text-sm">
+                <div className="py-2 flex items-center justify-between gap-4">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Location</dt>
-                  <dd className="text-[#111827] flex items-center gap-2">
+                  <dd className="text-[#111827] flex items-center gap-2 min-w-0">
                     <MapPin className="w-4 h-4 text-[#3d211a]" />
                     <span className="truncate">{location || '—'}</span>
                   </dd>
                 </div>
-                <div>
+                <div className="py-2 flex items-center justify-between gap-4">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Age</dt>
                   <dd className="text-[#111827]">{age != null ? `${age} yrs` : '—'}</dd>
                 </div>
-                <div>
+                <div className="py-2 flex items-center justify-between gap-4">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Height</dt>
                   <dd className="text-[#111827] flex items-center gap-2">
                     <Ruler className="w-4 h-4 text-[#3d211a]" /> {heightLabel}
                   </dd>
                 </div>
-                <div>
+                <div className="py-2 flex items-center justify-between gap-4">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Size</dt>
                   <dd className="text-[#111827] flex items-center gap-2">
                     <Weight className="w-4 h-4 text-[#3d211a]" /> {sizeLabel}
                   </dd>
                 </div>
-                <div>
+                <div className="py-2 flex items-center justify-between gap-4">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Bust/Chest</dt>
                   <dd className="text-[#111827]">{profile.bust_chest ?? '—'}</dd>
                 </div>
-                <div>
+                <div className="py-2 flex items-center justify-between gap-4">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Waist</dt>
                   <dd className="text-[#111827]">{profile.waist ?? '—'}</dd>
                 </div>
-                <div>
+                <div className="py-2 flex items-center justify-between gap-4">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Hips</dt>
                   <dd className="text-[#111827]">{profile.hips ?? '—'}</dd>
                 </div>
-                <div>
+                <div className="py-2 flex items-center justify-between gap-4">
                   <dt className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280]">Shoe</dt>
                   <dd className="text-[#111827]">{profile.shoe_size ?? '—'}</dd>
                 </div>
@@ -242,7 +292,7 @@ export const TalentProfilePage: React.FC = () => {
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
                 <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em]">Portfolio Videos</div>
-                <div className="text-sm text-[#6b7280]">Autoplay muted; tap controls to play or unmute.</div>
+                <div className="text-sm text-[#6b7280]">Autoplay muted.</div>
               </div>
             </div>
 
@@ -254,30 +304,6 @@ export const TalentProfilePage: React.FC = () => {
               </div>
             )}
           </div>
-
-          {/* INTRO VIDEO (FEATURED) */}
-          {introVideoUrl && (
-            <div className="mt-10">
-              <div className="text-center mb-3">
-                <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em]">Intro Video</div>
-                <div className="text-sm text-[#6b7280]">Featured intro — autoplay muted when in view.</div>
-              </div>
-
-              <div className="mx-auto max-w-4xl">
-                <ThemedVideo
-                  src={introVideoUrl}
-                  autoPlay={false}
-                  muted={true}
-                  loop={true}
-                  playWhenInView={true}
-                  exclusiveAudioGroup="talent-profile"
-                  containerClassName="w-full rounded-2xl border border-[#e5d3a3] bg-white overflow-hidden"
-                  className="w-full h-full aspect-video object-cover"
-                  ariaLabel="Intro video"
-                />
-              </div>
-            </div>
-          )}
 
           {/* PHOTOS PORTFOLIO */}
           <div className="mt-10">
@@ -297,16 +323,16 @@ export const TalentProfilePage: React.FC = () => {
             </div>
 
             {portfolioPhotos.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 {previewPhotos.map((m, idx) => (
                   <button
                     key={m.id}
                     type="button"
                     onClick={() => openGalleryAt(idx)}
-                    className="group text-left rounded-xl border border-[#e5d3a3] bg-white overflow-hidden transition-shadow hover:shadow-[0_12px_30px_rgba(61,33,26,0.14)]"
+                    className="text-left rounded-2xl overflow-hidden"
                     aria-label={`Open photo ${idx + 1}`}
                   >
-                    <div className="relative w-full aspect-[3/4] bg-white">
+                    <div className="relative w-full aspect-[3/4] bg-white rounded-2xl overflow-hidden">
                       <img
                         src={m.media_url}
                         alt={`Portfolio photo ${idx + 1}`}
@@ -330,8 +356,8 @@ export const TalentProfilePage: React.FC = () => {
           <div className="rounded-3xl border border-[#e5d3a3] bg-white p-6 md:p-8 shadow-[0_12px_34px_rgba(61,33,26,0.10)]">
             <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em] mb-4">Profile</div>
             <div className="space-y-2 text-sm text-[#4b5563]">
-              <p>Email: <span className="text-[#111827]">{profile.email}</span></p>
-              <p>Phone: <span className="text-[#111827]">{profile.phone ?? '—'}</span></p>
+              {isAdmin && <p>Email: <span className="text-[#111827]">{profile.email}</span></p>}
+              {isAdmin && <p>Phone: <span className="text-[#111827]">{profile.phone ?? '—'}</span></p>}
               <p>Gender: <span className="text-[#111827]">{profile.gender}</span></p>
               <p>Nationality: <span className="text-[#111827]">{profile.nationality}</span></p>
               <p>Country: <span className="text-[#111827]">{profile.country ?? '—'}</span></p>
@@ -353,15 +379,21 @@ export const TalentProfilePage: React.FC = () => {
 
             {profile.instagram && profile.instagram.length > 0 && (
               <div className="mb-6">
-                <div className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] mb-2">Instagram</div>
-                <div className="space-y-2 text-sm text-[#4b5563]">
-                  {profile.instagram.map((ig) => (
-                    <div key={ig.handle} className="flex justify-between gap-4">
-                      <span className="text-[#111827]">@{ig.handle}</span>
-                      <span className="text-[11px] uppercase tracking-[0.18em] text-[#6b7280]">{ig.followers.replace(/_/g, ' ')}</span>
-                    </div>
-                  ))}
-                </div>
+                <div className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] mb-2">Followers</div>
+                {isAdmin ? (
+                  <div className="space-y-2 text-sm text-[#4b5563]">
+                    {profile.instagram.map((ig) => (
+                      <div key={ig.handle} className="flex justify-between gap-4">
+                        <span className="text-[#111827]">@{ig.handle}</span>
+                        <span className="text-[11px] uppercase tracking-[0.18em] text-[#6b7280]">{ig.followers.replace(/_/g, ' ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-[#4b5563]">
+                    Instagram followers: <span className="text-[#111827]">{followerLabel}</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -404,7 +436,20 @@ export const TalentProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {profile.portfolio_folder_link && (
+            {isAdmin && (
+              <div className="mb-6">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] mb-2">Minimum Budget</div>
+                <div className="space-y-1 text-sm text-[#4b5563]">
+                  <p>Half day: <span className="text-[#111827]">{money(profile.min_budget_half_day)}</span></p>
+                  <p>Full day: <span className="text-[#111827]">{money(profile.min_budget_full_day)}</span></p>
+                  {profile.expected_budget && (
+                    <p>Notes: <span className="text-[#111827]">{profile.expected_budget}</span></p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {isAdmin && profile.portfolio_folder_link && (
               <div>
                 <div className="text-[11px] uppercase tracking-[0.22em] text-[#6b7280] mb-2">Portfolio</div>
                 <a
