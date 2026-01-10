@@ -3,35 +3,18 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MapPin, Ruler, Weight, ArrowLeft } from 'lucide-react';
 import { getProfileByUserId, ProfileData } from '../services/ProfileService';
-import { buildDriveImageUrls } from '../services/gdrive';
-
-const toYouTubeEmbedUrl = (url: string): string | null => {
-  if (!url) return null;
-  try {
-    const parsed = new URL(url);
-    const host = parsed.hostname.replace(/^www\./, '');
-    if (host === 'youtu.be') {
-      const id = parsed.pathname.split('/').filter(Boolean)[0];
-      return id ? `https://www.youtube.com/embed/${id}` : null;
-    }
-    if (host.endsWith('youtube.com')) {
-      // watch URLs carry ?v=ID; shorts/embed carry ID in path
-      const vid = parsed.searchParams.get('v');
-      if (vid) return `https://www.youtube.com/embed/${vid}`;
-      const parts = parsed.pathname.split('/').filter(Boolean);
-      if (parts[0] === 'embed' && parts[1]) return `https://www.youtube.com/embed/${parts[1]}`;
-      if (parts[0] === 'shorts' && parts[1]) return `https://www.youtube.com/embed/${parts[1]}`;
-    }
-  } catch (err) {
-    return null;
-  }
-  return null;
-};
+import { deriveMedia, fetchMediaRecords, DerivedMedia } from '../services/mediaService';
 
 export const TalentProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [derivedMedia, setDerivedMedia] = useState<DerivedMedia>({
+    profileImage: null,
+    introVideo: null,
+    portfolio: [],
+    portfolioVideos: [],
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,12 +35,17 @@ export const TalentProfilePage: React.FC = () => {
 
     (async () => {
       try {
-        const data = await getProfileByUserId(userId);
+        const [data, mediaRecords] = await Promise.all([
+          getProfileByUserId(userId),
+          fetchMediaRecords(userId),
+        ]);
         if (!data) {
           setError('Talent not found or not online yet.');
         } else {
           setProfile(data);
         }
+
+        setDerivedMedia(deriveMedia(mediaRecords));
       } catch (err) {
         console.error('Failed to load profile', err);
         setError('Failed to load talent profile');
@@ -108,9 +96,9 @@ export const TalentProfilePage: React.FC = () => {
     return age;
   };
   const age = computeAge(profile.dob);
-  const coverCandidates = buildDriveImageUrls(profile.cover_photo_url || '');
-  const hasCover = !!profile.cover_photo_url;
-  const introEmbedUrl = profile.intro_video_url ? toYouTubeEmbedUrl(profile.intro_video_url) : null;
+  const coverUrl = derivedMedia.profileImage?.media_url || '';
+  const introVideoUrl = derivedMedia.introVideo?.media_url || '';
+  const hasCover = !!coverUrl;
 
   return (
     <section className="min-h-screen bg-zinc-950 pt-10 pb-16 px-6">
@@ -138,16 +126,9 @@ export const TalentProfilePage: React.FC = () => {
           <div className="h-64 bg-gradient-to-br from-zinc-800 via-zinc-900 to-black relative">
             {hasCover && (
               <img
-                src={coverCandidates[0] || profile.cover_photo_url}
+                src={coverUrl}
                 alt={profile.full_name}
                 className="w-full h-full object-cover opacity-80"
-                onError={(e) => {
-                  const el = e.currentTarget as HTMLImageElement & { _try?: number };
-                  el._try = (el._try || 0) + 1;
-                  if (coverCandidates.length && el._try < coverCandidates.length) {
-                    el.src = coverCandidates[el._try];
-                  }
-                }}
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
@@ -176,29 +157,15 @@ export const TalentProfilePage: React.FC = () => {
 
           <div className="p-8 md:p-10 grid md:grid-cols-3 gap-10">
             <div className="space-y-6 md:col-span-2">
-              {profile.intro_video_url && (
+              {introVideoUrl && (
                 <div>
                   <h2 className="text-sm uppercase tracking-[0.25em] text-zinc-500 mb-2">Intro Video</h2>
-                  {introEmbedUrl ? (
-                    <div className="relative w-full pb-[56.25%] overflow-hidden rounded-2xl border border-zinc-800 bg-black">
-                      <iframe
-                        src={`${introEmbedUrl}?rel=0`}
-                        className="absolute inset-0 w-full h-full"
-                        title="Intro video"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                  ) : (
-                    <a
-                      href={profile.intro_video_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-[#dfcda5] underline"
-                    >
-                      View intro video
-                    </a>
-                  )}
+                  <video
+                    src={introVideoUrl}
+                    controls
+                    playsInline
+                    className="w-full rounded-2xl border border-zinc-800 bg-black"
+                  />
                 </div>
               )}
 

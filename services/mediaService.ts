@@ -6,7 +6,7 @@ export type MediaItem = {
   id: string;
   model_id: string;
   media_type: 'image' | 'video';
-  media_role: 'profile' | 'portfolio' | 'intro_video';
+  media_role: 'profile' | 'portfolio' | 'intro_video' | 'portfolio_video';
   media_url: string;
   sort_order: number;
   created_at: string;
@@ -61,6 +61,7 @@ export type DerivedMedia = {
   profileImage: MediaItem | null;
   introVideo: MediaItem | null;
   portfolio: MediaItem[];
+  portfolioVideos: MediaItem[];
 };
 
 // Required UI derivation pattern: find/filter by media_role
@@ -72,7 +73,12 @@ export function deriveMedia(records: MediaItem[]): DerivedMedia {
     .slice()
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
-  return { profileImage, introVideo, portfolio };
+  const portfolioVideos = records
+    .filter((m) => m.media_role === 'portfolio_video')
+    .slice()
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+  return { profileImage, introVideo, portfolio, portfolioVideos };
 }
 
 /**

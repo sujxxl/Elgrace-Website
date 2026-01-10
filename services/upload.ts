@@ -6,7 +6,7 @@ export type UploadResponse = {
 
 export type UploadOptions = {
   token: string;
-  mediaRole: 'profile' | 'portfolio' | 'intro_video';
+  mediaRole: 'profile' | 'portfolio' | 'intro_video' | 'portfolio_video';
   modelId?: string; // optional: backend can derive from JWT if omitted
   onProgress?: (pct: number) => void;
 };

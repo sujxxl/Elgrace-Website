@@ -17,6 +17,24 @@ const POPULAR_LANGUAGES = [
   'Korean', 'Italian'
 ];
 
+const SHOE_SIZES = [
+  'UK 3 (US 5)', 'UK 3.5 (US 5.5)', 'UK 4 (US 6)', 'UK 4.5 (US 6.5)',
+  'UK 5 (US 7)', 'UK 5.5 (US 7.5)', 'UK 6 (US 8)', 'UK 6.5 (US 8.5)',
+  'UK 7 (US 9)', 'UK 7.5 (US 9.5)', 'UK 8 (US 10)', 'UK 8.5 (US 10.5)',
+  'UK 9 (US 11)', 'UK 9.5 (US 11.5)', 'UK 10 (US 12)', 'UK 10.5 (US 12.5)',
+  'UK 11 (US 13)', 'UK 11.5 (US 13.5)', 'UK 12 (US 14)', 'UK 12.5 (US 14.5)',
+  'UK 13 (US 15)'
+];
+
+const SKILL_PRESETS = [
+  'Ramp Walk',
+  'Acting',
+  'TV / Film',
+  'Digital Creator / UGC',
+];
+
+const SIZE_OPTIONS = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
 function useQuery() {
   const { search } = useLocation();
   return useMemo(() => new URLSearchParams(search), [search]);
@@ -59,9 +77,9 @@ export const ProfileEdit: React.FC = () => {
         const baseProfile = {
           user_id: user.id,
           full_name: '',
-          dob: '',
-          gender: 'male',
-          phone: '',
+          dob: null,
+          gender: 'female',
+          phone: null,
           email: user.email,
           country: '',
           state: '',
@@ -69,9 +87,13 @@ export const ProfileEdit: React.FC = () => {
           category: 'model',
           instagram: [{ handle: '', followers: 'under_5k' }],
           model_code: nextCode,
+          nationality: '',
         } as ProfileData;
 
-        setProfile(existing ? { ...baseProfile, ...existing, model_code: nextCode } : baseProfile);
+        const merged = existing ? { ...baseProfile, ...existing, model_code: nextCode } : baseProfile;
+        // Onboarding defaults to India; keep edit consistent for new/empty profiles.
+        if (!merged.country) merged.country = 'IN';
+        setProfile(merged);
       } catch (e) {
         console.error(e);
         // Ensure form still renders even if table/query fails
@@ -79,11 +101,12 @@ export const ProfileEdit: React.FC = () => {
         setProfile({
           user_id: user.id,
           full_name: '',
-          dob: '',
-          gender: 'male',
-          phone: '',
+          dob: null,
+          gender: 'female',
+          phone: null,
           email: user.email,
-          country: '',
+          nationality: '',
+          country: 'IN',
           state: '',
           city: '',
           category: 'model',
@@ -145,9 +168,33 @@ export const ProfileEdit: React.FC = () => {
   };
 
   const completed = {
-    personal: !!profile?.full_name && !!profile?.dob && !!profile?.gender && !!profile?.phone && !!profile?.country && !!profile?.state && !!profile?.city && (profile?.instagram?.length ?? 0) > 0 && !!profile?.instagram?.[0]?.handle,
-    professional: !!profile?.experience_level && profile?.open_to_travel !== undefined && profile?.ramp_walk_experience !== undefined && (profile?.ramp_walk_experience ? !!profile?.ramp_walk_description : true) && (profile?.languages?.length ?? 0) > 0,
-    measurements: !!profile?.height_feet && !!profile?.height_inches && !!profile?.bust_chest && !!profile?.waist && !!profile?.shoe_size,
+    personal:
+      !!profile?.full_name &&
+      !!profile?.dob &&
+      !!profile?.gender &&
+      !!profile?.phone &&
+      !!profile?.nationality &&
+      !!profile?.country &&
+      !!profile?.state &&
+      !!profile?.city &&
+      profile?.open_to_travel !== undefined &&
+      (profile?.instagram?.length ?? 0) > 0 &&
+      !!profile?.instagram?.[0]?.handle,
+    professional:
+      !!profile?.experience_level &&
+      (profile?.languages?.length ?? 0) > 0 &&
+      (profile?.instagram?.length ?? 0) > 0 &&
+      !!profile?.instagram?.[0]?.handle,
+    measurements:
+      Number.isFinite(profile?.height_feet) && (profile?.height_feet ?? 0) > 0 &&
+      Number.isFinite(profile?.height_inches) && (profile?.height_inches ?? 0) >= 0 &&
+      Number.isFinite(profile?.bust_chest) && (profile?.bust_chest ?? 0) > 0 &&
+      Number.isFinite(profile?.waist) && (profile?.waist ?? 0) > 0 &&
+      Number.isFinite(profile?.hips) && (profile?.hips ?? 0) > 0 &&
+      !!profile?.size &&
+      !!profile?.shoe_size &&
+      (profile?.min_budget_half_day ?? 0) > 0 &&
+      (profile?.min_budget_full_day ?? 0) > 0,
     media: true,
   };
 
@@ -265,7 +312,7 @@ const PersonalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (p
       <div className="grid md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Full Name</label>
-          <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]" />
+          <input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required placeholder="Full Name *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]" />
         </div>
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Age (years)</label>
@@ -306,40 +353,44 @@ const PersonalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (p
         </div>
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Phone Number</label>
-          <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]" />
+          <input value={form.phone ?? ''} onChange={(e) => setForm({ ...form, phone: e.target.value })} required placeholder="Phone (WhatsApp) *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]" />
         </div>
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Contact Email</label>
-          <input value={form.email} readOnly className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+          <input value={form.email} readOnly placeholder="Email *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
         </div>
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Country</label>
           <select value={form.country} onChange={(e) => handleCountryChange(e.target.value)} required className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
-            <option value="">Select Country</option>
+            <option value="">Country *</option>
             {countries.map(c => <option key={c.isoCode} value={c.isoCode}>{c.name}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">State</label>
           <select value={form.state} onChange={(e) => handleStateChange(e.target.value)} required disabled={!form.country} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961] disabled:opacity-50">
-            <option value="">Select State</option>
+            <option value="">State *</option>
             {states.map(s => <option key={s.isoCode} value={s.isoCode}>{s.name}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">City</label>
           <select value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} required disabled={!form.state} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961] disabled:opacity-50">
-            <option value="">Select City</option>
+            <option value="">City *</option>
             {cities.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
           </select>
         </div>
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Nationality</label>
-          <input value={form.nationality || ''} onChange={(e) => setForm({ ...form, nationality: e.target.value })} placeholder="e.g., Indian, American" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]" />
+          <input value={form.nationality || ''} onChange={(e) => setForm({ ...form, nationality: e.target.value })} required placeholder="Nationality *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]" />
         </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Category</label>
-          <input value={form.category} readOnly className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+
+        <div className="md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Open to Travel *</label>
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setForm({ ...form, open_to_travel: true })} className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest ${form.open_to_travel === true ? 'bg-[#c9a961] border-[#c9a961] text-white' : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700'}`}>Yes</button>
+            <button type="button" onClick={() => setForm({ ...form, open_to_travel: false })} className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest ${form.open_to_travel === false ? 'bg-[#c9a961] border-[#c9a961] text-white' : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700'}`}>No</button>
+          </div>
         </div>
       </div>
 
@@ -349,7 +400,7 @@ const PersonalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (p
         <div className="space-y-3">
           {form.instagram.map((ig, idx) => (
             <div key={idx} className="grid md:grid-cols-2 gap-3">
-              <input value={ig.handle} onChange={(e) => updateInstagram(idx, 'handle', e.target.value)} placeholder="Instagram Handle" className="w-full bg-white border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]" />
+              <input value={ig.handle} onChange={(e) => updateInstagram(idx, 'handle', e.target.value)} placeholder="Handle (without @)" className="w-full bg-white border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]" />
               <select value={ig.followers} onChange={(e) => updateInstagram(idx, 'followers', e.target.value)} className="w-full bg-white border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
                 {followerBuckets.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
@@ -367,14 +418,15 @@ const PersonalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (p
       <div className="pt-4 flex gap-3">
         <button disabled={saving} onClick={() => onSave({
           full_name: form.full_name,
-          dob: form.dob,
+          dob: form.dob || null,
           gender: form.gender,
-          phone: form.phone,
+          phone: form.phone || null,
           nationality: form.nationality,
-          country: form.country,
-          state: form.state,
-          city: form.city,
+          country: form.country || null,
+          state: form.state || null,
+          city: form.city || null,
           instagram: form.instagram,
+          open_to_travel: form.open_to_travel,
         })} className="px-4 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a]">Save Personal Info</button>
       </div>
     </div>
@@ -385,7 +437,6 @@ const PersonalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (p
 const ProfessionalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (patch: Partial<ProfileData>) => void; }> = ({ profile, onSave, saving }) => {
   const [form, setForm] = useState<ProfileData>(profile);
   const [languageInput, setLanguageInput] = useState('');
-  const [skillInput, setSkillInput] = useState('');
   useEffect(() => setForm(profile), [profile]);
 
   return (
@@ -395,6 +446,7 @@ const ProfessionalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Experience Level</label>
           <select value={form.experience_level} onChange={(e) => setForm({ ...form, experience_level: e.target.value as any })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
+            <option value="">Select</option>
             <option value="lt_1">Less than 1 year</option>
             <option value="1_3">1–3 years</option>
             <option value="3_5">3–5 years</option>
@@ -405,7 +457,7 @@ const ProfessionalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Languages Spoken</label>
           <div className="flex gap-2 mb-3">
             <select value={languageInput} onChange={(e) => setLanguageInput(e.target.value)} className="flex-1 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
-              <option value="">Select a language</option>
+              <option value="">Select</option>
               {POPULAR_LANGUAGES.map((lang) => (
                 <option key={lang} value={lang}>{lang}</option>
               ))}
@@ -423,28 +475,29 @@ const ProfessionalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
             </div>
           )}
         </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Special Skills (optional)</label>
-          <div className="flex gap-2 mb-3">
-            <input type="text" value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyPress={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (skillInput.trim() && !form.skills?.includes(skillInput.trim())) { setForm({ ...form, skills: [...(form.skills || []), skillInput.trim()] }); setSkillInput(''); } } }} placeholder="Enter skill (e.g., Ramp Walk, Acting)" className="flex-1 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]" />
-            <button type="button" onClick={() => { if (skillInput.trim() && !form.skills?.includes(skillInput.trim())) { setForm({ ...form, skills: [...(form.skills || []), skillInput.trim()] }); setSkillInput(''); } }} className="px-4 py-3 bg-[#c9a961] text-white font-bold rounded-full hover:bg-[#b8985a] transition-colors border-none uppercase tracking-widest text-xs">Add</button>
-          </div>
-          {form.skills && form.skills.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {form.skills.map((skill) => (
-                <div key={skill} className="flex items-center gap-2 px-3 py-2 bg-[#dfcda5] border border-[#c9a961] rounded-full">
-                  <span className="text-black text-sm font-semibold">{skill}</span>
-                  <button type="button" onClick={() => setForm({ ...form, skills: form.skills?.filter(s => s !== skill) })} className="text-black hover:text-white transition-colors font-bold">×</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Open to Travel?</label>
-          <div className="flex gap-3">
-            <button type="button" onClick={() => setForm({ ...form, open_to_travel: true })} className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest transition-colors ${form.open_to_travel ? 'bg-[#c9a961] border-[#c9a961] text-white' : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700 hover:border-[#c9a961]'}`}>Yes</button>
-            <button type="button" onClick={() => setForm({ ...form, open_to_travel: false })} className={`px-4 py-2 rounded-full border-2 text-xs font-semibold uppercase tracking-widest transition-colors ${form.open_to_travel === false ? 'bg-[#c9a961] border-[#c9a961] text-white' : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700 hover:border-[#c9a961]'}`}>No</button>
+        <div className="md:col-span-2">
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Key Skills *</label>
+          <div className="flex flex-wrap gap-2">
+            {SKILL_PRESETS.map((skill) => {
+              const active = (form.skills || []).includes(skill);
+              return (
+                <button
+                  key={skill}
+                  type="button"
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      skills: active
+                        ? (form.skills || []).filter((s) => s !== skill)
+                        : [...(form.skills || []), skill],
+                    })
+                  }
+                  className={`px-3 py-1 rounded-full border-2 text-xs font-semibold uppercase tracking-widest ${active ? 'bg-[#c9a961] border-[#c9a961] text-white' : 'bg-[#fbf3e4] border-[#dfcda5] text-gray-700'}`}
+                >
+                  {skill}
+                </button>
+              );
+            })}
           </div>
         </div>
         <div>
@@ -466,7 +519,6 @@ const ProfessionalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
           experience_level: form.experience_level,
           languages: form.languages,
           skills: form.skills,
-          open_to_travel: form.open_to_travel,
           ramp_walk_experience: form.ramp_walk_experience,
           ramp_walk_description: form.ramp_walk_description || null,
         })} className="px-4 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a]">Save Professional Info</button>
@@ -477,114 +529,80 @@ const ProfessionalForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
 
 /* STEP 3: MEASUREMENTS */
 const MeasurementsForm: React.FC<{ profile: ProfileData; saving: boolean; onSave: (patch: Partial<ProfileData>) => void; }> = ({ profile, onSave, saving }) => {
-  const [form, setForm] = useState<ProfileData>(profile);
-  useEffect(() => setForm(profile), [profile]);
+  type MeasurementsState = {
+    height_feet: number | '';
+    height_inches: number | '';
+    bust_chest: number | '';
+    waist: number | '';
+    hips: number | '';
+    size: string;
+    shoe_size: string;
+    min_budget_half_day: number | '';
+    min_budget_full_day: number | '';
+  };
 
-  const nums = (start: number, end: number) => Array.from({ length: end - start + 1 }, (_, i) => start + i);
-  const feet = nums(4, 7);
-  const inches = nums(0, 11);
-  const measureInches = nums(20, 50);
-  const sizes = ['XXS','XS','S','M','L','XL','XXL'];
-  const shoeSizes = [
-    'UK 3 (US 5)', 'UK 3.5 (US 5.5)', 'UK 4 (US 6)', 'UK 4.5 (US 6.5)',
-    'UK 5 (US 7)', 'UK 5.5 (US 7.5)', 'UK 6 (US 8)', 'UK 6.5 (US 8.5)',
-    'UK 7 (US 9)', 'UK 7.5 (US 9.5)', 'UK 8 (US 10)', 'UK 8.5 (US 10.5)',
-    'UK 9 (US 11)', 'UK 9.5 (US 11.5)', 'UK 10 (US 12)', 'UK 10.5 (US 12.5)',
-    'UK 11 (US 13)', 'UK 11.5 (US 13.5)', 'UK 12 (US 14)', 'UK 12.5 (US 14.5)',
-    'UK 13 (US 15)'
-  ];
-  const POPULAR_LANGUAGES = [
-    'English', 'Hindi', 'Spanish', 'Mandarin Chinese', 'French', 'Arabic',
-    'Bengali', 'Russian', 'Portuguese', 'Urdu', 'Indonesian', 'German',
-    'Japanese', 'Swahili', 'Marathi', 'Telugu', 'Turkish', 'Tamil',
-    'Korean', 'Italian'
-  ];
+  const [form, setForm] = useState<MeasurementsState>(() => ({
+    height_feet: Number.isFinite(profile.height_feet) ? (profile.height_feet as number) : '',
+    height_inches: Number.isFinite(profile.height_inches) ? (profile.height_inches as number) : '',
+    bust_chest: Number.isFinite(profile.bust_chest) ? (profile.bust_chest as number) : '',
+    waist: Number.isFinite(profile.waist) ? (profile.waist as number) : '',
+    hips: Number.isFinite(profile.hips as any) ? ((profile.hips as any) as number) : '',
+    size: (profile.size ?? '') as string,
+    shoe_size: (profile.shoe_size ?? '') as string,
+    min_budget_half_day: Number.isFinite(profile.min_budget_half_day as any) ? ((profile.min_budget_half_day as any) as number) : '',
+    min_budget_full_day: Number.isFinite(profile.min_budget_full_day as any) ? ((profile.min_budget_full_day as any) as number) : '',
+  }));
+
+  useEffect(() => {
+    setForm({
+      height_feet: Number.isFinite(profile.height_feet) ? (profile.height_feet as number) : '',
+      height_inches: Number.isFinite(profile.height_inches) ? (profile.height_inches as number) : '',
+      bust_chest: Number.isFinite(profile.bust_chest) ? (profile.bust_chest as number) : '',
+      waist: Number.isFinite(profile.waist) ? (profile.waist as number) : '',
+      hips: Number.isFinite(profile.hips as any) ? ((profile.hips as any) as number) : '',
+      size: (profile.size ?? '') as string,
+      shoe_size: (profile.shoe_size ?? '') as string,
+      min_budget_half_day: Number.isFinite(profile.min_budget_half_day as any) ? ((profile.min_budget_half_day as any) as number) : '',
+      min_budget_full_day: Number.isFinite(profile.min_budget_full_day as any) ? ((profile.min_budget_full_day as any) as number) : '',
+    });
+  }, [profile]);
 
   return (
     <div className="bg-white border border-gray-200 rounded-3xl p-8">
-      <h4 className="text-lg font-['Syne'] font-bold mb-2 text-black">Your Measurements</h4>
-      <p className="text-gray-600 mb-4">Please provide accurate measurements. These help us match you to the right opportunities.</p>
-      <div className="grid md:grid-cols-2 gap-4">
+      <h4 className="text-lg font-['Syne'] font-bold mb-2 text-black">Measurements & Rates</h4>
+      <div className="grid md:grid-cols-2 gap-4 mb-6">
         <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Height (Feet)</label>
-          <select value={form.height_feet} onChange={(e) => setForm({ ...form, height_feet: Number(e.target.value) })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
-            {feet.map(f => <option key={f} value={f}>{f}</option>)}
-          </select>
+          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Height (ft/in) *</label>
+          <div className="flex gap-2">
+            <input type="number" value={form.height_feet === '' ? '' : form.height_feet} onChange={(e) => setForm({ ...form, height_feet: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="ft" className="w-1/2 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+            <input type="number" value={form.height_inches === '' ? '' : form.height_inches} onChange={(e) => setForm({ ...form, height_inches: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="in" className="w-1/2 bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+          </div>
         </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Height (Inches)</label>
-          <select value={form.height_inches} onChange={(e) => setForm({ ...form, height_inches: Number(e.target.value) })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
-            {inches.map(i => <option key={i} value={i}>{i}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Bust / Chest (inches)</label>
-          <select value={form.bust_chest} onChange={(e) => setForm({ ...form, bust_chest: Number(e.target.value) })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
-            {measureInches.map(i => <option key={i} value={i}>{i}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Waist (inches)</label>
-          <select value={form.waist} onChange={(e) => setForm({ ...form, waist: Number(e.target.value) })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
-            {measureInches.map(i => <option key={i} value={i}>{i}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Hips (inches)</label>
-          <select value={form.hips ?? ''} onChange={(e) => setForm({ ...form, hips: Number(e.target.value) })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
-            <option value="">—</option>
-            {measureInches.map(i => <option key={i} value={i}>{i}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Size</label>
-          <select value={form.size ?? ''} onChange={(e) => setForm({ ...form, size: e.target.value || null })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
-            <option value="">—</option>
-            {sizes.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Shoe Size</label>
-          <select value={form.shoe_size} onChange={(e) => setForm({ ...form, shoe_size: e.target.value })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black focus:outline-none focus:border-[#c9a961]">
-            {shoeSizes.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-      </div>
-      <div className="grid md:grid-cols-2 gap-4 mt-6">
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Min Budget (Half Day) ₹</label>
-          <input
-            type="number"
-            min={0}
-            value={form.min_budget_half_day ?? ''}
-            onChange={(e) => setForm({ ...form, min_budget_half_day: e.target.value ? Number(e.target.value) : undefined })}
-            placeholder="e.g., 5000"
-            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-          />
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Min Budget (Full Day) ₹</label>
-          <input
-            type="number"
-            min={0}
-            value={form.min_budget_full_day ?? ''}
-            onChange={(e) => setForm({ ...form, min_budget_full_day: e.target.value ? Number(e.target.value) : undefined })}
-            placeholder="e.g., 10000"
-            className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder-gray-500 focus:outline-none focus:border-[#c9a961]"
-          />
-        </div>
+        <input type="number" value={form.bust_chest === '' ? '' : form.bust_chest} onChange={(e) => setForm({ ...form, bust_chest: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="Bust / Chest *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+        <input type="number" value={form.waist === '' ? '' : form.waist} onChange={(e) => setForm({ ...form, waist: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="Waist *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+        <input type="number" value={form.hips === '' ? '' : form.hips} onChange={(e) => setForm({ ...form, hips: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="Hips *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+        <select value={form.size} onChange={(e) => setForm({ ...form, size: e.target.value })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black">
+          <option value="">Size *</option>
+          {SIZE_OPTIONS.map((s) => (<option key={s} value={s}>{s}</option>))}
+        </select>
+        <select value={form.shoe_size} onChange={(e) => setForm({ ...form, shoe_size: e.target.value })} className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black">
+          <option value="">Shoe Size *</option>
+          {SHOE_SIZES.map((size) => (<option key={size} value={size}>{size}</option>))}
+        </select>
+        <input type="number" min={1500} value={form.min_budget_half_day === '' ? '' : form.min_budget_half_day} onChange={(e) => setForm({ ...form, min_budget_half_day: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="Budget (Half Day) ₹ *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
+        <input type="number" min={2000} value={form.min_budget_full_day === '' ? '' : form.min_budget_full_day} onChange={(e) => setForm({ ...form, min_budget_full_day: e.target.value === '' ? '' : Number(e.target.value) })} placeholder="Budget (Full Day) ₹ *" className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black" />
       </div>
       <div className="pt-4">
         <button disabled={saving} onClick={() => onSave({
-          height_feet: form.height_feet,
-          height_inches: form.height_inches,
-          bust_chest: form.bust_chest,
-          waist: form.waist,
-          hips: form.hips ?? null,
-          size: form.size ?? null,
+          height_feet: form.height_feet === '' ? undefined : Number(form.height_feet),
+          height_inches: form.height_inches === '' ? undefined : Number(form.height_inches),
+          bust_chest: form.bust_chest === '' ? undefined : Number(form.bust_chest),
+          waist: form.waist === '' ? undefined : Number(form.waist),
+          hips: form.hips === '' ? undefined : Number(form.hips),
+          size: form.size || null,
           shoe_size: form.shoe_size,
-          min_budget_half_day: form.min_budget_half_day,
-          min_budget_full_day: form.min_budget_full_day,
+          min_budget_half_day: form.min_budget_half_day === '' ? null : Number(form.min_budget_half_day),
+          min_budget_full_day: form.min_budget_full_day === '' ? null : Number(form.min_budget_full_day),
         })} className="px-4 py-3 rounded-2xl bg-[#c9a961] text-white font-bold uppercase tracking-widest border-2 border-[#c9a961] hover:bg-[#b8985a]">Save Measurements & Rates</button>
       </div>
     </div>
@@ -597,6 +615,7 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
   const [form, setForm] = useState<ProfileData>(profile);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
+  const [portfolioModalOpen, setPortfolioModalOpen] = useState(false);
   const [mediaRecords, setMediaRecords] = useState<MediaItem[]>([]);
 
   useEffect(() => setForm(profile), [profile]);
@@ -617,7 +636,7 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
     setMediaRecords(records);
   };
 
-  const { profileImage, introVideo, portfolio } = useMemo(() => deriveMedia(mediaRecords), [mediaRecords]);
+  const { profileImage, introVideo, portfolio, portfolioVideos } = useMemo(() => deriveMedia(mediaRecords), [mediaRecords]);
 
   const requireToken = (): string | null => {
     if (!session?.access_token) {
@@ -719,6 +738,98 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
     }
   };
 
+  const [uploadingPortfolioVideos, setUploadingPortfolioVideos] = useState(false);
+  const [portfolioVideosModalOpen, setPortfolioVideosModalOpen] = useState(false);
+
+  const handleRemovePortfolioVideoItem = async (id: string) => {
+    const token = requireToken();
+    if (!token) return;
+    if (!window.confirm('Remove this portfolio video?')) return;
+
+    try {
+      setUploadingPortfolioVideos(true);
+      await deleteMedia(id, token);
+      setMediaRecords((prev) => prev.filter((m) => m.id !== id));
+    } catch (err: any) {
+      alert(`❌ Remove failed: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setUploadingPortfolioVideos(false);
+    }
+  };
+
+  const handlePortfolioVideoFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0 || !user) return;
+
+    const MAX_PORTFOLIO_VIDEOS = 10;
+    const existingCount = portfolioVideos.length;
+    if (existingCount >= MAX_PORTFOLIO_VIDEOS) {
+      alert(`✅ Portfolio already has ${MAX_PORTFOLIO_VIDEOS} videos. Remove some to add more.`);
+      e.target.value = '';
+      return;
+    }
+
+    const remainingSlots = MAX_PORTFOLIO_VIDEOS - existingCount;
+    const selectedFiles = Array.from(fileList) as File[];
+    const filesToUpload = selectedFiles.slice(0, remainingSlots);
+
+    if (selectedFiles.length > remainingSlots) {
+      alert(`You can add up to ${remainingSlots} more video(s). Only the first ${remainingSlots} will be uploaded.`);
+    }
+
+    // Check file sizes (20MB limit per video)
+    const MAX_SIZE = 20 * 1024 * 1024; // 20MB
+    const oversizedFiles = filesToUpload.filter((f) => f.size > MAX_SIZE);
+    if (oversizedFiles.length > 0) {
+      alert(`❌ ${oversizedFiles.length} file(s) exceed 20MB limit. Please select smaller videos.`);
+      e.target.value = '';
+      return;
+    }
+
+    if (!session?.access_token) {
+      alert('Please log in before uploading');
+      return;
+    }
+
+    try {
+      setUploadingPortfolioVideos(true);
+      let uploadedCount = 0;
+
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        if (!file) continue;
+        if (!file.type.startsWith('video/')) {
+          console.warn('Skipping non-video file', file.type);
+          continue;
+        }
+        try {
+          await uploadFile(file, {
+            token: session.access_token,
+            mediaRole: 'portfolio_video',
+            modelId: user.id,
+          });
+          uploadedCount += 1;
+        } catch (err: any) {
+          console.error(`Error uploading video ${i}:`, err?.message);
+        }
+      }
+
+      if (uploadedCount > 0) {
+        await refreshMedia();
+        alert(`✅ ${uploadedCount} video(s) uploaded!`);
+      } else {
+        alert('❌ Upload failed. Check browser console for details.');
+      }
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Unknown error';
+      console.error('Portfolio videos error:', errorMsg);
+      alert(`Upload failed: ${errorMsg}`);
+    } finally {
+      setUploadingPortfolioVideos(false);
+      e.target.value = '';
+    }
+  };
+
   const handleVideoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -764,11 +875,26 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
   const handlePortfolioFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (!fileList || fileList.length === 0 || !user) return;
+
+    const MAX_PORTFOLIO = 50;
+    const existingCount = portfolio.length;
+    if (existingCount >= MAX_PORTFOLIO) {
+      alert('✅ Portfolio already has 50 images. Remove some to add more.');
+      e.target.value = '';
+      return;
+    }
+
+    const remainingSlots = MAX_PORTFOLIO - existingCount;
+    const selectedFiles = Array.from(fileList) as File[];
+    const filesToUpload = selectedFiles.slice(0, remainingSlots);
+
+    if (selectedFiles.length > remainingSlots) {
+      alert(`You can add up to ${remainingSlots} more image(s). Only the first ${remainingSlots} will be uploaded.`);
+    }
     
     // Check file sizes (5MB limit per image)
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-    const files = Array.from(fileList) as File[];
-    const oversizedFiles = files.filter((f) => f.size > MAX_SIZE);
+    const oversizedFiles = filesToUpload.filter((f) => f.size > MAX_SIZE);
     if (oversizedFiles.length > 0) {
       alert(`❌ ${oversizedFiles.length} file(s) exceed 5MB limit. Please select smaller images.`);
       e.target.value = '';
@@ -783,8 +909,8 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
       setUploadingPortfolio(true);
       const uploaded: string[] = [];
       
-      for (let i = 0; i < fileList.length; i++) {
-        const file = fileList[i];
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
         if (!file) continue;
         const compressed = await compressImageFile(file, { maxBytes: 900 * 1024 });
         try {
@@ -880,22 +1006,26 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
         <div>
           <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Portfolio Images</label>
           <div className="mt-3">
-            <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
-              {uploadingPortfolio ? 'Uploading to VPS…' : (portfolio.length > 0 ? 'Add More Images' : 'Upload Portfolio (Multiple)')}
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handlePortfolioFilesChange}
-                disabled={uploadingPortfolio}
-              />
-            </label>
-            <p className="text-xs text-gray-600 mt-2">Upload multiple portfolio images. Select up to 10 images at once.</p>
+            {portfolio.length < 50 && (
+              <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                {uploadingPortfolio ? 'Uploading…' : (portfolio.length > 0 ? 'Add More Images' : 'Upload Portfolio (Multiple)')}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handlePortfolioFilesChange}
+                  disabled={uploadingPortfolio}
+                />
+              </label>
+            )}
+            <p className="text-xs text-gray-600 mt-2">
+              Up to 50 images total (max 5MB each). {portfolio.length < 50 ? `You can add ${50 - portfolio.length} more.` : 'Limit reached.'}
+            </p>
           </div>
           {portfolio.length > 0 && (
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              {portfolio.map((item) => (
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {portfolio.slice(0, 3).map((item) => (
                 <div key={item.id} className="relative">
                   <img
                     src={item.media_url}
@@ -913,6 +1043,56 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
                   </button>
                 </div>
               ))}
+
+              {portfolio.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setPortfolioModalOpen(true)}
+                  className="w-full aspect-square rounded border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold"
+                >
+                  See {portfolio.length - 3} more
+                </button>
+              )}
+            </div>
+          )}
+
+          {portfolioModalOpen && (
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+              <div className="w-full max-w-4xl bg-white border border-[#dfcda5] rounded-3xl shadow-2xl relative">
+                <button
+                  type="button"
+                  onClick={() => setPortfolioModalOpen(false)}
+                  className="absolute top-4 right-4 w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+                <div className="p-6 sm:p-8">
+                  <h5 className="text-lg font-['Syne'] font-bold text-black mb-1">Portfolio Gallery</h5>
+                  <p className="text-xs text-gray-600 mb-5">{portfolio.length} image(s)</p>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[70vh] overflow-auto pr-1">
+                    {portfolio.map((item) => (
+                      <div key={item.id} className="relative">
+                        <img
+                          src={item.media_url}
+                          alt="Portfolio"
+                          className="w-full aspect-square object-cover rounded-lg border border-gray-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePortfolioItem(item.id)}
+                          disabled={uploadingPortfolio}
+                          className="absolute top-2 right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold"
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           {form.portfolio_folder_link && (
@@ -929,6 +1109,103 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="mt-6">
+        <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Portfolio Videos</label>
+        <div className="mt-3">
+          {portfolioVideos.length < 10 && (
+            <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+              {uploadingPortfolioVideos ? 'Uploading…' : (portfolioVideos.length > 0 ? 'Add More Videos' : 'Upload Portfolio Videos (Multiple)')}
+              <input
+                type="file"
+                accept="video/*"
+                multiple
+                className="hidden"
+                onChange={handlePortfolioVideoFilesChange}
+                disabled={uploadingPortfolioVideos}
+              />
+            </label>
+          )}
+          <p className="text-xs text-gray-600 mt-2">
+            Up to 10 videos total (max 20MB each). {portfolioVideos.length < 10 ? `You can add ${10 - portfolioVideos.length} more.` : 'Limit reached.'}
+          </p>
+        </div>
+
+        {portfolioVideos.length > 0 && (
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {portfolioVideos.slice(0, 2).map((item) => (
+              <div key={item.id} className="relative">
+                <video
+                  src={item.media_url}
+                  controls
+                  playsInline
+                  className="w-full rounded-lg border border-gray-300 bg-black"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemovePortfolioVideoItem(item.id)}
+                  disabled={uploadingPortfolioVideos}
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold text-sm"
+                  title="Remove"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+
+            {portfolioVideos.length > 2 && (
+              <button
+                type="button"
+                onClick={() => setPortfolioVideosModalOpen(true)}
+                className="w-full rounded border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold py-10"
+              >
+                See {portfolioVideos.length - 2} more
+              </button>
+            )}
+          </div>
+        )}
+
+        {portfolioVideosModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+            <div className="w-full max-w-4xl bg-white border border-[#dfcda5] rounded-3xl shadow-2xl relative">
+              <button
+                type="button"
+                onClick={() => setPortfolioVideosModalOpen(false)}
+                className="absolute top-4 right-4 w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
+                aria-label="Close"
+              >
+                ×
+              </button>
+              <div className="p-6 sm:p-8">
+                <h5 className="text-lg font-['Syne'] font-bold text-black mb-1">Portfolio Videos</h5>
+                <p className="text-xs text-gray-600 mb-5">{portfolioVideos.length} video(s)</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[70vh] overflow-auto pr-1">
+                  {portfolioVideos.map((item) => (
+                    <div key={item.id} className="relative">
+                      <video
+                        src={item.media_url}
+                        controls
+                        playsInline
+                        className="w-full rounded-lg border border-gray-300 bg-black"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePortfolioVideoItem(item.id)}
+                        disabled={uploadingPortfolioVideos}
+                        className="absolute top-2 right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <div className="mt-6">
         <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Intro Video</label>

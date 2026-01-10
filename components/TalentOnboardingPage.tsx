@@ -40,6 +40,8 @@ export const TalentOnboardingPage: React.FC = () => {
 
   const [currentStep, setCurrentStep] = useState(1);
   const [submittingProfile, setSubmittingProfile] = useState(false);
+  const [portfolioModalOpen, setPortfolioModalOpen] = useState(false);
+  const [portfolioVideosModalOpen, setPortfolioVideosModalOpen] = useState(false);
   const progress = (currentStep / 4) * 100;
   const token = session?.access_token || '';
 
@@ -104,9 +106,19 @@ export const TalentOnboardingPage: React.FC = () => {
     mediaRole: 'portfolio',
     mediaType: 'image',
     multiple: true,
-    maxFiles: 6,
+    maxFiles: 50,
     maxSizeMB: 5,
     acceptMimes: ['image/jpeg', 'image/png', 'image/webp', 'image/*'],
+  });
+
+  const portfolioVideoUpload = useMediaUpload({
+    modelId,
+    mediaRole: 'portfolio_video',
+    mediaType: 'video',
+    multiple: true,
+    maxFiles: 10,
+    maxSizeMB: 20,
+    acceptMimes: ['video/mp4', 'video/webm', 'video/*'],
   });
 
   const introVideoUpload = useMediaUpload({
@@ -504,38 +516,40 @@ export const TalentOnboardingPage: React.FC = () => {
 
               {/* Portfolio images */}
               <section className="mb-8">
-                <h3 className="text-lg font-semibold text-black mb-2">Portfolio (up to 6 images)</h3>
+                <h3 className="text-lg font-semibold text-black mb-2">Portfolio (up to 50 images)</h3>
                 <div className="flex items-center gap-4 mb-3">
-                  <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
-                    {portfolioUpload.items.length > 0 ? 'Add More Images' : 'Upload Portfolio'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      disabled={!isModel || portfolioUpload.canAddMore <= 0}
-                      onChange={async (e) => {
-                        const files = e.target.files; if (!files) return;
-                        portfolioUpload.addFiles(files);
-                        if (token && files.length > 0) {
-                          try { await portfolioUpload.uploadAll(token); } catch {}
-                        }
-                        e.currentTarget.value = '';
-                      }}
-                    />
-                  </label>
-                  <span className="text-xs text-gray-600">Max 5MB each. JPG/PNG/WEBP.</span>
+                  {portfolioUpload.canAddMore > 0 && (
+                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                      {portfolioUpload.items.length > 0 ? 'Add More Images' : 'Upload Portfolio'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        disabled={!isModel || portfolioUpload.canAddMore <= 0}
+                        onChange={async (e) => {
+                          const files = e.target.files; if (!files) return;
+                          portfolioUpload.addFiles(files);
+                          if (token && files.length > 0) {
+                            try { await portfolioUpload.uploadAll(token); } catch {}
+                          }
+                          e.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                  <span className="text-xs text-gray-600">Max 5MB each. {portfolioUpload.canAddMore > 0 ? `You can add ${portfolioUpload.canAddMore} more.` : 'Limit reached.'}</span>
                 </div>
-                <div className="flex flex-wrap gap-4">
-                  {portfolioUpload.items.map((it, idx) => (
-                    <div key={idx} className="w-28 relative">
-                      {it.previewUrl && (<img src={it.previewUrl} alt="preview" className="w-28 h-28 object-cover rounded-lg border" />)}
-                      <button 
-                        type="button" 
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {portfolioUpload.items.slice(0, 3).map((it, idx) => (
+                    <div key={idx} className="w-full relative">
+                      {it.previewUrl && (<img src={it.previewUrl} alt="preview" className="w-full aspect-square object-cover rounded-lg border" />)}
+                      <button
+                        type="button"
                         onClick={async () => {
                           if (!token) return;
                           try { await portfolioUpload.deleteAt(idx, token); } catch {}
-                        }} 
+                        }}
                         className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold text-sm"
                         title="Remove"
                       >
@@ -548,7 +562,169 @@ export const TalentOnboardingPage: React.FC = () => {
                       </div>
                     </div>
                   ))}
+
+                  {portfolioUpload.items.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={() => setPortfolioModalOpen(true)}
+                      className="w-full aspect-square rounded-lg border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold"
+                    >
+                      See {portfolioUpload.items.length - 3} more
+                    </button>
+                  )}
                 </div>
+
+                {portfolioModalOpen && (
+                  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="w-full max-w-4xl bg-white border border-[#dfcda5] rounded-3xl shadow-2xl relative">
+                      <button
+                        type="button"
+                        onClick={() => setPortfolioModalOpen(false)}
+                        className="absolute top-4 right-4 w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
+                        aria-label="Close"
+                      >
+                        ×
+                      </button>
+                      <div className="p-6 sm:p-8">
+                        <h5 className="text-lg font-bold text-black mb-1">Portfolio Gallery</h5>
+                        <p className="text-xs text-gray-600 mb-5">{portfolioUpload.items.length} image(s)</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[70vh] overflow-auto pr-1">
+                          {portfolioUpload.items.map((it, idx) => (
+                            <div key={idx} className="relative">
+                              {it.previewUrl && (
+                                <img src={it.previewUrl} alt="preview" className="w-full aspect-square object-cover rounded-lg border" />
+                              )}
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!token) return;
+                                  try { await portfolioUpload.deleteAt(idx, token); } catch {}
+                                }}
+                                className="absolute top-2 right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold"
+                                title="Remove"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              {/* Portfolio videos */}
+              <section className="mb-8">
+                <h3 className="text-lg font-semibold text-black mb-2">Portfolio Videos (up to 10 videos)</h3>
+                <div className="flex items-center gap-4 mb-3">
+                  {portfolioVideoUpload.canAddMore > 0 && (
+                    <label className="px-4 py-2 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
+                      {portfolioVideoUpload.items.length > 0 ? 'Add More Videos' : 'Upload Portfolio Videos'}
+                      <input
+                        type="file"
+                        accept="video/*"
+                        multiple
+                        className="hidden"
+                        disabled={!isModel || portfolioVideoUpload.canAddMore <= 0}
+                        onChange={async (e) => {
+                          const files = e.target.files; if (!files) return;
+                          portfolioVideoUpload.addFiles(files);
+                          if (token && files.length > 0) {
+                            try { await portfolioVideoUpload.uploadAll(token); } catch {}
+                          }
+                          e.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
+                  <span className="text-xs text-gray-600">Max 20MB each. {portfolioVideoUpload.canAddMore > 0 ? `You can add ${portfolioVideoUpload.canAddMore} more.` : 'Limit reached.'}</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {portfolioVideoUpload.items.slice(0, 2).map((it, idx) => (
+                    <div key={idx} className="w-full relative">
+                      {it.previewUrl && (
+                        <video
+                          src={it.previewUrl}
+                          controls
+                          playsInline
+                          className="w-full rounded-lg border bg-black"
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!token) return;
+                          try { await portfolioVideoUpload.deleteAt(idx, token); } catch {}
+                        }}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold text-sm"
+                        title="Remove"
+                      >
+                        ×
+                      </button>
+                      <div className="text-xs mt-1">
+                        {it.status === 'uploading' && <div className="h-1 bg-gray-200 rounded"><div className="h-1 bg-[#c9a961] rounded" style={{ width: `${it.progress}%` }} /></div>}
+                        {it.status === 'error' && <span className="text-red-600">{it.error}</span>}
+                        {it.status === 'done' && <span className="text-green-700">Saved</span>}
+                      </div>
+                    </div>
+                  ))}
+
+                  {portfolioVideoUpload.items.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => setPortfolioVideosModalOpen(true)}
+                      className="w-full rounded-lg border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold py-10"
+                    >
+                      See {portfolioVideoUpload.items.length - 2} more
+                    </button>
+                  )}
+                </div>
+
+                {portfolioVideosModalOpen && (
+                  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="w-full max-w-4xl bg-white border border-[#dfcda5] rounded-3xl shadow-2xl relative">
+                      <button
+                        type="button"
+                        onClick={() => setPortfolioVideosModalOpen(false)}
+                        className="absolute top-4 right-4 w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
+                        aria-label="Close"
+                      >
+                        ×
+                      </button>
+                      <div className="p-6 sm:p-8">
+                        <h5 className="text-lg font-bold text-black mb-1">Portfolio Videos</h5>
+                        <p className="text-xs text-gray-600 mb-5">{portfolioVideoUpload.items.length} video(s)</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[70vh] overflow-auto pr-1">
+                          {portfolioVideoUpload.items.map((it, idx) => (
+                            <div key={idx} className="relative">
+                              {it.previewUrl && (
+                                <video
+                                  src={it.previewUrl}
+                                  controls
+                                  playsInline
+                                  className="w-full rounded-lg border bg-black"
+                                />
+                              )}
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!token) return;
+                                  try { await portfolioVideoUpload.deleteAt(idx, token); } catch {}
+                                }}
+                                className="absolute top-2 right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold"
+                                title="Remove"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </section>
 
               {/* Intro video */}

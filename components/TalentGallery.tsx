@@ -5,6 +5,7 @@ import { listOnlineProfiles, createBookingRequest, getBrandProfileByUserId } fro
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
+import { deriveMedia, fetchMediaRecords } from '../services/mediaService';
 
 type Category = 'All' | 'Male' | 'Female' | 'Kids';
 
@@ -307,7 +308,7 @@ export const TalentGallery: React.FC = () => {
                             id: p.id as string,
                             name: p.full_name,
                             category,
-                            image: p.cover_photo_url || '',
+                            image: '',
                             height: heightLabel,
                             size: sizeLabel,
                             location: location || 'Location TBA',
@@ -326,6 +327,47 @@ export const TalentGallery: React.FC = () => {
             }
         })();
     }, []);
+
+    useEffect(() => {
+        if (talents.length === 0) return;
+
+        let cancelled = false;
+
+        const loadThumbnails = async () => {
+            const ids = talents.map((t) => t.id).filter(Boolean);
+            const results: Record<string, string> = {};
+            const concurrency = 6;
+            let cursor = 0;
+
+            const workers = Array.from({ length: Math.min(concurrency, ids.length) }, async () => {
+                while (cursor < ids.length) {
+                    const id = ids[cursor++];
+                    try {
+                        const records = await fetchMediaRecords(id);
+                        const { profileImage } = deriveMedia(records);
+                        if (profileImage?.media_url) results[id] = profileImage.media_url;
+                    } catch {
+                        // Ignore per-card failures
+                    }
+                }
+            });
+
+            await Promise.all(workers);
+            if (cancelled) return;
+
+            setTalents((prev) =>
+                prev.map((t) => ({
+                    ...t,
+                    image: results[t.id] ?? t.image,
+                }))
+            );
+        };
+
+        loadThumbnails();
+        return () => {
+            cancelled = true;
+        };
+    }, [talents.length]);
 
         const filteredTalents = talents.filter(t => {
             // 1. Category Filter (Male, Female, Kids)

@@ -37,11 +37,16 @@ Create `.env` (or `.env.local`) with your Supabase project details:
 ```
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_UPLOAD_API_URL=https://api.elgrace.in
+VITE_MEDIA_BASE_URL=https://api.elgrace.in/media
 ```
 
 ## Supabase Schema
 
-Use the `model_profiles` table (owner-only RLS). Example DDL lives in `services/ProfileService.ts` under `PROFILE_TABLE_SQL`.
+Use the schema in `supabase_schema.sql`.
+
+- Profiles are stored in `public.model_profiles`.
+- Media is sourced from `public.model_media` via the backend `GET /media?model_id=...` endpoint (single source of truth).
 
 ## Key Features
 
@@ -49,10 +54,11 @@ Use the `model_profiles` table (owner-only RLS). Example DDL lives in `services/
 - Profile dashboard and edit flow
 - Country → State → City cascading selects
 - Multi-language and skills chip input
-- Measurements and media upload (Supabase storage `media` bucket)
+- Measurements and media upload (VPS Upload & Media API)
 - Success toast on profile save
 
 ## Notes
 
-- Ensure Supabase RLS policies exist for `model_profiles` and the `media` bucket is public for uploads.
+- Ensure the backend upload API is configured and reachable at `VITE_UPLOAD_API_URL`.
+- Supported upload roles: `profile`, `portfolio`, `intro_video`, `portfolio_video`.
 - The app assumes Syne font for headings and #dfcda5 as the accent color.

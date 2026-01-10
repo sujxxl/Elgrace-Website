@@ -53,8 +53,6 @@ create table if not exists public.model_profiles (
   min_budget_full_day numeric,
   -- Clothing size (e.g., XS, S, M, L). Kept separate from legacy weight.
   size text,
-  intro_video_url text,
-  cover_photo_url text,
   portfolio_folder_link text,
   status text not null default 'UNDER_REVIEW' check (status in ('UNDER_REVIEW','ONLINE','OFFLINE')),
   model_code text unique, -- human-facing ID like M-1000001
@@ -71,7 +69,6 @@ alter table public.model_profiles add column if not exists expected_budget text;
 alter table public.model_profiles add column if not exists min_budget_half_day numeric;
 alter table public.model_profiles add column if not exists min_budget_full_day numeric;
 alter table public.model_profiles add column if not exists size text;
-alter table public.model_profiles add column if not exists intro_video_url text;
 alter table public.model_profiles add column if not exists nationality text;
 
 -- Make dob and other fields nullable (remove NOT NULL if it exists)
@@ -210,7 +207,11 @@ drop policy if exists "Authenticated insert own profile" on public.model_profile
 create policy "Authenticated insert own profile"
   on public.model_profiles
   for insert
-  with check (auth.role() = 'authenticated');
+  with check (
+    auth.role() = 'authenticated'
+    and (auth.uid() = id or auth.uid() = user_id)
+    and status = 'UNDER_REVIEW'
+  );
 
 -- Allow public (including anon) to create new model profiles
 -- All such profiles are forced into UNDER_REVIEW so only admins
@@ -219,7 +220,7 @@ drop policy if exists "Public create model profiles under review" on public.mode
 create policy "Public create model profiles under review"
   on public.model_profiles
   for insert
-  with check (true);
+  with check (status = 'UNDER_REVIEW');
 
 drop policy if exists "Admin full access to model_profiles" on public.model_profiles;
 create policy "Admin full access to model_profiles"
@@ -267,16 +268,69 @@ create table if not exists public.model_media (
   id uuid primary key default gen_random_uuid(),
   model_id uuid not null,
   media_type text not null check (media_type in ('image','video')),
-  media_role text not null check (media_role in ('profile','portfolio','intro_video')),
+  media_role text not null check (media_role in ('profile','portfolio','intro_video','portfolio_video')),
   media_url text not null,
   sort_order integer default 0,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+-- Optional FK to keep media tied to profiles.
+-- IMPORTANT: On some existing installs, `model_media.model_id` may contain values
+-- that do not (yet) exist in `model_profiles.id` (e.g., legacy data, deleted profiles,
+-- or older flows that used auth user IDs). In that case, adding a validated FK fails.
+--
+-- This block adds the FK normally when data is already consistent.
+-- If orphan rows exist, it adds the FK as NOT VALID (so the schema file runs),
+-- and you can later fix the data and VALIDATE the constraint.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'model_media_model_id_fkey'
+  ) then
+    if exists (
+      select 1
+      from public.model_media mm
+      left join public.model_profiles mp on mp.id = mm.model_id
+      where mp.id is null
+      limit 1
+    ) then
+      alter table public.model_media
+        add constraint model_media_model_id_fkey
+        foreign key (model_id) references public.model_profiles(id)
+        on delete cascade
+        not valid;
+      raise notice 'Added model_media_model_id_fkey as NOT VALID (orphaned model_media rows exist). Fix data, then run: ALTER TABLE public.model_media VALIDATE CONSTRAINT model_media_model_id_fkey;';
+    else
+      alter table public.model_media
+        add constraint model_media_model_id_fkey
+        foreign key (model_id) references public.model_profiles(id)
+        on delete cascade;
+    end if;
+  end if;
+end;
+$$;
+
+-- Ensure media_type matches role (prevents accidental role/type mismatch)
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'model_media_role_type_check'
+  ) then
+    alter table public.model_media
+      add constraint model_media_role_type_check
+      check (
+        (media_role in ('profile','portfolio') and media_type = 'image')
+        or (media_role in ('intro_video','portfolio_video') and media_type = 'video')
+      );
+  end if;
+end;
+$$;
+
 -- Indexes for performance
 create index if not exists idx_model_media_model_id on public.model_media(model_id);
 create index if not exists idx_model_media_role on public.model_media(media_role);
+create index if not exists idx_model_media_model_role_sort on public.model_media(model_id, media_role, sort_order);
 
 -- Enforce singleton media per model (one profile photo, one intro video)
 create unique index if not exists unique_model_single_media

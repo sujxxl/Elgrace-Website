@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { uploadFile } from '../services/upload';
 import { deleteMedia } from '../services/mediaApi';
 
-export type MediaRole = 'profile' | 'portfolio' | 'intro_video';
+export type MediaRole = 'profile' | 'portfolio' | 'intro_video' | 'portfolio_video';
 export type MediaType = 'image' | 'video';
 
 export type MediaItem = {

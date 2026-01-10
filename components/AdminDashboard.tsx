@@ -1006,19 +1006,7 @@ export const AdminDashboard: React.FC = () => {
                                   isExpanded && screenSize !== 'mobile' ? 'w-1/2' : 'w-full'
                                 } h-full relative transition-all duration-500 bg-[#f2e2cc] dark:bg-[#111111]`}
                               >
-                                {p.cover_photo_url ? (
-                                  <img
-                                  src={p.cover_photo_url}
-                                  alt={p.full_name || 'Model image'}
-                                  className={`w-full h-full object-cover transition-all duration-700 ${
-                                    isExpanded
-                                    ? 'grayscale-0'
-                                    : 'dark:grayscale dark:hover:grayscale-0'
-                                  }`}
-                                  />
-                                ) : (
-                                  <div className="w-full h-full bg-[#e7d5bc] dark:bg-zinc-900" />
-                                )}
+                                <div className="w-full h-full bg-[#e7d5bc] dark:bg-zinc-900" />
 
                                 {/* Light-mode base tint so cards don't read as black even with dark photos */}
                                 <div className="absolute inset-0 bg-[#f6ead8]/55 pointer-events-none dark:white/10" />
@@ -1798,7 +1786,6 @@ const emptyProfile: ProfileData = {
   instagram: [{ handle: '', followers: 'under_5k' }],
   status: 'UNDER_REVIEW',
   model_code: null,
-  intro_video_url: '',
 };
 
 const ModelDataEntry: React.FC = () => {
@@ -2449,15 +2436,6 @@ const ModelDataEntry: React.FC = () => {
         <div className="bg-white rounded-3xl p-8 shadow-sm mb-6">
           <div className="grid md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Cover Photo URL</label>
-              <input
-                value={profile.cover_photo_url ?? ''}
-                onChange={(e) => setProfile({ ...profile, cover_photo_url: e.target.value })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="Direct image URL or Google Drive link"
-              />
-            </div>
-            <div>
               <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Portfolio Folder Link</label>
               <input
                 value={profile.portfolio_folder_link ?? ''}
@@ -2465,15 +2443,7 @@ const ModelDataEntry: React.FC = () => {
                 className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
                 placeholder="Google Drive folder link"
               />
-            </div>
-            <div>
-              <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Intro Video URL (YouTube)</label>
-              <input
-                value={profile.intro_video_url ?? ''}
-                onChange={(e) => setProfile({ ...profile, intro_video_url: e.target.value })}
-                className="w-full bg-[#fbf3e4] border-2 border-[#dfcda5] rounded-full px-4 py-3 text-black placeholder:text-gray-500 focus:outline-none focus:border-[#c9a961]"
-                placeholder="YouTube link to intro / self-tape"
-              />
+              <p className="mt-2 text-[11px] text-gray-600">Profile photo / intro video / portfolio images are managed via uploads and the /media API.</p>
             </div>
           </div>
         </div>
