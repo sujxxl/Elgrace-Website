@@ -252,12 +252,13 @@ export const TalentProfilePage: React.FC = () => {
 
             {/* Details (right half) */}
             <div>
-              <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em] mb-4">
-                Measurements & Details
-              </div>
+              <div className="rounded-2xl bg-[#fbf3e4] border border-[#3d211a]/10 p-6">
+                <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em] mb-3">
+                  Measurements & Details
+                </div>
 
               {/* Top metrics row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-10 gap-y-10">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-10 gap-y-6">
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Height</div>
                   <div className="font-['Syne'] text-2xl font-bold text-[#111827] leading-tight">{heightLabel}</div>
@@ -277,7 +278,7 @@ export const TalentProfilePage: React.FC = () => {
               </div>
 
               {/* Detail grid */}
-              <dl className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-x-14 gap-y-10">
+                <dl className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-x-14 gap-y-6">
                 <div>
                   <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Gender</dt>
                   <dd className="font-['Syne'] text-lg font-bold text-[#111827]">{profile.gender ?? '—'}</dd>
@@ -331,11 +332,11 @@ export const TalentProfilePage: React.FC = () => {
               {/* Admin-only fields appended as extra rows (not rendered for public) */}
               {isAdmin && (
                 <>
-                  <div className="mt-12 pt-10 border-t border-[#3d211a]/10">
+                  <div className="mt-8 pt-8 border-t border-[#3d211a]/10">
                     <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em]">
                       Admin
                     </div>
-                    <dl className="mt-6 grid grid-cols-1 gap-y-8">
+                    <dl className="mt-5 grid grid-cols-1 gap-y-6">
                       <div>
                         <dt className="text-[11px] uppercase tracking-[0.28em] text-[#6b7280]">Email</dt>
                         <dd className="font-['Syne'] text-lg font-bold text-[#111827] break-words">{profile.email}</dd>
@@ -381,6 +382,7 @@ export const TalentProfilePage: React.FC = () => {
                   </div>
                 </>
               )}
+              </div>
             </div>
           </div>
 
