@@ -164,21 +164,6 @@ export const TalentProfilePage: React.FC = () => {
   return (
     <section className="min-h-screen bg-[#fbf3e4] pt-10 pb-16 px-6 text-[#111827]">
       <div className="w-full">
-        <div className="flex items-center justify-between gap-3 mb-8">
-          <Link
-            to="/talents"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-[#e5d3a3] text-[11px] uppercase tracking-[0.2em] text-[#111827] hover:bg-[#e5d3a3]/50"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to Talents
-          </Link>
-          <Link
-            to="/profile"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-[#e5d3a3] text-[11px] uppercase tracking-[0.2em] text-[#111827] hover:bg-[#e5d3a3]/50"
-          >
-            Go to Mod Board
-          </Link>
-        </div>
-
         {/* TOP SECTION — IDENTITY ROW */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
@@ -186,73 +171,79 @@ export const TalentProfilePage: React.FC = () => {
           transition={{ duration: 0.35, ease: 'easeOut' }}
           className="w-full"
         >
-          {/* Header (NO CARD) */}
-          <div className="flex items-center justify-between gap-6">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="w-12 h-12 rounded-full bg-[#fbf3e4] flex items-center justify-center">
-                <span className="font-['Syne'] text-xl font-bold text-[#3d211a]">{modelInitial}</span>
-              </div>
-              <div className="min-w-0">
-                {isAdmin && (
-                  <div className="font-['Syne'] text-lg font-bold text-[#111827] truncate">{profile.full_name}</div>
-                )}
-              </div>
-            </div>
 
-            <div className="text-right">
-              <div className="text-[11px] uppercase tracking-[0.24em] text-[#6b7280]">Model Code</div>
-              <div className="font-['Syne'] text-xl font-bold text-[#111827]">{modelCode}</div>
-            </div>
-          </div>
+          {/* STRUCTURE: LEFT (Header + Media) | RIGHT (Details) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+            {/* Left column: name initial + model code, then cover + intro */}
+            <div className="min-w-0">
+              {/* Header */}
+              <div className="flex items-start justify-between gap-6">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-12 h-12 rounded-full bg-[#fbf3e4] flex items-center justify-center">
+                    <span className="font-['Syne'] italic text-2xl md:text-3xl font-bold tracking-tight leading-none text-[#3d211a]">
+                      {modelInitial}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    {isAdmin && (
+                      <div className="font-['Syne'] text-xl md:text-2xl font-bold text-[#111827] truncate">{profile.full_name}</div>
+                    )}
+                  </div>
+                </div>
 
-          {/* MAIN MEDIA + DETAILS ROW */}
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-            {/* Media (left half): Cover + Intro side-by-side */}
-            <div className="grid grid-cols-2 gap-6">
-              {/* Cover Photo (3:4) */}
-              <div className="relative w-full aspect-[3/4] overflow-hidden">
-                {hasCover ? (
-                  <img
-                    src={coverUrl}
-                    alt={isAdmin ? profile.full_name : `Model ${modelCode}`}
+                <div className="text-right">
+                  <div className="text-[11px] uppercase tracking-[0.24em] text-[#6b7280]">Model Code</div>
+                  <div className="font-['Syne'] text-2xl md:text-3xl font-bold text-[#111827]">{modelCode}</div>
+                </div>
+              </div>
+
+              {/* Media: cover + intro side-by-side */}
+              <div className="mt-8 grid grid-cols-2 gap-6">
+                {/* Cover Photo (3:4) */}
+                <div className="relative w-full aspect-[3/4] overflow-hidden">
+                  {hasCover ? (
+                    <img
+                      src={coverUrl}
+                      alt={isAdmin ? profile.full_name : `Model ${modelCode}`}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center px-4">
+                        <div className="font-['Syne'] text-base font-bold text-[#111827]">No cover photo</div>
+                        <div className="text-sm text-[#6b7280]">Cover photo will appear here.</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Intro Video (3:4) */}
+                {introVideoUrl ? (
+                  <ThemedVideo
+                    src={introVideoUrl}
+                    autoPlay={true}
+                    muted={true}
+                    loop={true}
+                    playWhenInView={true}
+                    exclusiveAudioGroup="talent-profile"
+                    containerClassName="w-full aspect-[3/4]"
                     className="absolute inset-0 w-full h-full object-cover"
+                    ariaLabel="Intro video"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-full aspect-[3/4] flex items-center justify-center">
                     <div className="text-center px-4">
-                      <div className="font-['Syne'] text-base font-bold text-[#111827]">No cover photo</div>
-                      <div className="text-sm text-[#6b7280]">Cover photo will appear here.</div>
+                      <div className="font-['Syne'] text-base font-bold text-[#111827]">No intro video</div>
+                      <div className="text-sm text-[#6b7280]">Intro video will appear here.</div>
                     </div>
                   </div>
                 )}
               </div>
-
-              {/* Intro Video (3:4) */}
-              {introVideoUrl ? (
-                <ThemedVideo
-                  src={introVideoUrl}
-                  autoPlay={true}
-                  muted={true}
-                  loop={true}
-                  playWhenInView={true}
-                  exclusiveAudioGroup="talent-profile"
-                  containerClassName="w-full aspect-[3/4]"
-                  className="absolute inset-0 w-full h-full object-cover"
-                  ariaLabel="Intro video"
-                />
-              ) : (
-                <div className="w-full aspect-[3/4] flex items-center justify-center">
-                  <div className="text-center px-4">
-                    <div className="font-['Syne'] text-base font-bold text-[#111827]">No intro video</div>
-                    <div className="text-sm text-[#6b7280]">Intro video will appear here.</div>
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Details (right half) */}
+            {/* Right column: details */}
             <div>
-              <div className="rounded-2xl bg-[#fbf3e4] border border-[#3d211a]/10 p-6">
+              <div className="rounded-2xl bg-[#f5e6d3] border border-[#e5d3a3] p-6">
                 <div className="font-['Syne'] text-sm font-bold text-[#111827] uppercase tracking-[0.22em] mb-3">
                   Measurements & Details
                 </div>
