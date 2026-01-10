@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { Hero } from './components/Hero';
 import { Mission } from './components/Mission';
 import { Services } from './components/Services';
@@ -23,7 +23,7 @@ import { BrandPage } from './components/BrandPage';
 import { EventIconPage } from './components/EventIconPage';
 import { ElgraceTalentsPage } from './components/ElgraceTalentsPage';
 import { GalleryPage } from './components/GalleryPage';
-import { ViewKey } from './siteConfig';
+import { siteConfig, RouteKey, ViewKey } from './siteConfig';
 import { TalentOnboardingPage } from './components/TalentOnboardingPage';
 import { ensureBrandProfileForUser, getProfileByUserId } from './services/ProfileService';
 import TestSession from './components/TestSession';
@@ -40,6 +40,28 @@ const pathToView = (p: string): ViewKey => {
   if (p.startsWith('/profile')) return 'profile';
   if (p.startsWith('/admin') || p.startsWith('/brands')) return 'profile';
   return 'home';
+};
+
+const DisabledRouteGate: React.FC<{
+  route: RouteKey;
+  children: React.ReactNode;
+  allowAdmin?: boolean;
+  allowAuthed?: boolean;
+  redirectTo?: string;
+}> = ({ route, children, allowAdmin = true, allowAuthed = false, redirectTo = '/' }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
+
+  const isEnabled = siteConfig.routes[route] === 1;
+  const isAdmin = user?.role === 'admin';
+  const isAuthed = !!user;
+
+  if (isEnabled) return <>{children}</>;
+  if (allowAdmin && isAdmin) return <>{children}</>;
+  if (allowAuthed && isAuthed) return <>{children}</>;
+
+  return <Navigate to={redirectTo} replace />;
 };
 
 const AppRouterContent: React.FC = () => {
@@ -117,40 +139,48 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/services"
           element={
-            <main className="relative z-10">
-              <Services />
-              <ContactGrid />
-            </main>
+            <DisabledRouteGate route="services">
+              <main className="relative z-10">
+                <Services />
+                <ContactGrid />
+              </main>
+            </DisabledRouteGate>
           }
         />
 
         <Route
           path="/services/elgrace-talents"
           element={
-            <main className="relative z-10">
-              <ElgraceTalentsPage />
-              <ContactGrid />
-            </main>
+            <DisabledRouteGate route="services_elgrace_talents">
+              <main className="relative z-10">
+                <ElgraceTalentsPage />
+                <ContactGrid />
+              </main>
+            </DisabledRouteGate>
           }
         />
 
         <Route
           path="/services/eventicon"
           element={
-            <main className="relative z-10">
-              <EventIconPage />
-              <ContactGrid />
-            </main>
+            <DisabledRouteGate route="services_eventicon">
+              <main className="relative z-10">
+                <EventIconPage />
+                <ContactGrid />
+              </main>
+            </DisabledRouteGate>
           }
         />
 
         <Route
           path="/talents"
           element={
-            <main className="relative z-10">
-              <TalentGallery />
-              <ContactGrid />
-            </main>
+            <DisabledRouteGate route="talents">
+              <main className="relative z-10">
+                <TalentGallery />
+                <ContactGrid />
+              </main>
+            </DisabledRouteGate>
           }
         />
 
@@ -159,9 +189,11 @@ const AppRouterContent: React.FC = () => {
           path="/talents/onboarding"
           element={
             <ProtectedRoute requireAuth={true}>
-              <main className="relative z-10">
-                <TalentOnboardingPage />
-              </main>
+              <DisabledRouteGate route="talents_onboarding" allowAuthed={true}>
+                <main className="relative z-10">
+                  <TalentOnboardingPage />
+                </main>
+              </DisabledRouteGate>
             </ProtectedRoute>
           }
         />
@@ -169,46 +201,56 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/gallery"
           element={
-            <main className="relative z-10">
-              <GalleryPage />
-              <ContactGrid />
-            </main>
+            <DisabledRouteGate route="gallery">
+              <main className="relative z-10">
+                <GalleryPage />
+                <ContactGrid />
+              </main>
+            </DisabledRouteGate>
           }
         />
 
         <Route
           path="/test-session"
           element={
-            <main className="relative z-10">
-              <TestSession />
-            </main>
+            <DisabledRouteGate route="test_session" allowAdmin={true}>
+              <main className="relative z-10">
+                <TestSession />
+              </main>
+            </DisabledRouteGate>
           }
         />
 
         <Route
           path="/talents/:userId"
           element={
-            <main className="relative z-10">
-              <TalentProfilePage />
-            </main>
+            <DisabledRouteGate route="talent_profile">
+              <main className="relative z-10">
+                <TalentProfilePage />
+              </main>
+            </DisabledRouteGate>
           }
         />
 
         <Route
           path="/castings"
           element={
-            <main className="relative z-10">
-              <Castings />
-            </main>
+            <DisabledRouteGate route="castings">
+              <main className="relative z-10">
+                <Castings />
+              </main>
+            </DisabledRouteGate>
           }
         />
 
         <Route
           path="/castings/:castingId"
           element={
-            <main className="relative z-10">
-              <CastingDetail />
-            </main>
+            <DisabledRouteGate route="casting_detail">
+              <main className="relative z-10">
+                <CastingDetail />
+              </main>
+            </DisabledRouteGate>
           }
         />
 
@@ -216,9 +258,11 @@ const AppRouterContent: React.FC = () => {
           path="/auth"
           element={
             <ProtectedRoute requireAuth={false} redirectTo="/profile">
-              <main className="relative z-10">
-                <AuthPage />
-              </main>
+              <DisabledRouteGate route="auth" allowAuthed={true}>
+                <main className="relative z-10">
+                  <AuthPage />
+                </main>
+              </DisabledRouteGate>
             </ProtectedRoute>
           }
         />
@@ -226,9 +270,11 @@ const AppRouterContent: React.FC = () => {
         <Route
           path="/reset-password"
           element={
-            <main className="relative z-10">
-              <ResetPasswordPage />
-            </main>
+            <DisabledRouteGate route="reset_password">
+              <main className="relative z-10">
+                <ResetPasswordPage />
+              </main>
+            </DisabledRouteGate>
           }
         />
 
@@ -236,9 +282,11 @@ const AppRouterContent: React.FC = () => {
           path="/profile"
           element={
             <ProtectedRoute requireAuth={true}>
-              <main className="relative z-10">
-                {user?.role === 'admin' ? <AdminDashboard /> : <ProfileDashboard />}
-              </main>
+              <DisabledRouteGate route="profile" allowAuthed={true}>
+                <main className="relative z-10">
+                  {user?.role === 'admin' ? <AdminDashboard /> : <ProfileDashboard />}
+                </main>
+              </DisabledRouteGate>
             </ProtectedRoute>
           }
         />
@@ -247,9 +295,11 @@ const AppRouterContent: React.FC = () => {
           path="/profile/edit"
           element={
             <ProtectedRoute requireAuth={true}>
-              <main className="relative z-10">
-                <ProfileEdit />
-              </main>
+              <DisabledRouteGate route="profile_edit" allowAuthed={true}>
+                <main className="relative z-10">
+                  <ProfileEdit />
+                </main>
+              </DisabledRouteGate>
             </ProtectedRoute>
           }
         />
@@ -258,9 +308,11 @@ const AppRouterContent: React.FC = () => {
           path="/admin"
           element={
             <ProtectedRoute requireAuth={true} requireRole="admin">
-              <main className="relative z-10">
-                <AdminDashboard />
-              </main>
+              <DisabledRouteGate route="admin" allowAdmin={true}>
+                <main className="relative z-10">
+                  <AdminDashboard />
+                </main>
+              </DisabledRouteGate>
             </ProtectedRoute>
           }
         />
@@ -269,9 +321,11 @@ const AppRouterContent: React.FC = () => {
           path="/brands/:userId"
           element={
             <ProtectedRoute requireAuth={true} requireRole="admin">
-              <main className="relative z-10">
-                <BrandPage />
-              </main>
+              <DisabledRouteGate route="brand_profile" allowAdmin={true}>
+                <main className="relative z-10">
+                  <BrandPage />
+                </main>
+              </DisabledRouteGate>
             </ProtectedRoute>
           }
         />

@@ -44,10 +44,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Show loading state while checking auth
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-        <div className="text-white text-center">
-          <div className="w-12 h-12 border-4 border-[#dfcda5] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-zinc-400">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#fbf3e4]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-[#3d211a] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#6b7280]">Loading...</p>
         </div>
       </div>
     );
