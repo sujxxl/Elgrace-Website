@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { ThemedVideo } from './ThemedVideo';
 import { useToast } from '../context/ToastContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Edit, Plus, MapPin, DollarSign, Calendar } from 'lucide-react';
@@ -341,16 +342,15 @@ const ModelProfileView: React.FC = () => {
           <div className="md:col-span-1">
             <div className="text-xs uppercase tracking-widest text-zinc-500 mb-2">Intro Video</div>
             {derivedMedia.introVideo ? (
-              <div className="w-full bg-black rounded-lg overflow-hidden aspect-video border border-white/10">
-                <video
-                  src={derivedMedia.introVideo.media_url}
-                  controls
-                  className="w-full h-full"
-                  onError={(e) => {
-                    console.error('Failed to load intro video:', e.currentTarget.src);
-                  }}
-                />
-              </div>
+              <ThemedVideo
+                src={derivedMedia.introVideo.media_url}
+                containerClassName="w-full bg-black rounded-lg overflow-hidden aspect-video border border-white/10"
+                className="w-full h-full object-cover"
+                ariaLabel="Intro video"
+                onError={(e) => {
+                  console.error('Failed to load intro video:', e.currentTarget.src);
+                }}
+              />
             ) : (
               <div className="w-full aspect-video rounded-lg border border-white/10 bg-[#f5e6d3]/5 flex items-center justify-center text-zinc-500 text-sm">
                 No video set

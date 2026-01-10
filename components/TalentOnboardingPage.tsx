@@ -5,6 +5,7 @@ import { ProfileData, getNextModelUserId, createPublicProfile, getProfileByUserI
 import { useAuth } from '../context/AuthContext';
 import { useMediaUpload } from '../hooks/useMediaUpload';
 import { useToast } from '../context/ToastContext';
+import { ThemedVideo } from './ThemedVideo';
 
 const STEP_NAMES = ['Basic Info', 'Work & Skills', 'Measurements & Rates', 'Media & Submit'];
 
@@ -645,11 +646,11 @@ export const TalentOnboardingPage: React.FC = () => {
                   {portfolioVideoUpload.items.slice(0, 2).map((it, idx) => (
                     <div key={idx} className="w-full relative">
                       {it.previewUrl && (
-                        <video
+                        <ThemedVideo
                           src={it.previewUrl}
-                          controls
-                          playsInline
-                          className="w-full rounded-lg border bg-black"
+                          containerClassName="w-full rounded-lg border bg-black overflow-hidden"
+                          className="w-full h-full"
+                          ariaLabel="Portfolio video preview"
                         />
                       )}
                       <button
@@ -700,11 +701,11 @@ export const TalentOnboardingPage: React.FC = () => {
                           {portfolioVideoUpload.items.map((it, idx) => (
                             <div key={idx} className="relative">
                               {it.previewUrl && (
-                                <video
+                                <ThemedVideo
                                   src={it.previewUrl}
-                                  controls
-                                  playsInline
-                                  className="w-full rounded-lg border bg-black"
+                                  containerClassName="w-full rounded-lg border bg-black overflow-hidden"
+                                  className="w-full h-full"
+                                  ariaLabel="Portfolio video preview"
                                 />
                               )}
                               <button
@@ -775,7 +776,12 @@ export const TalentOnboardingPage: React.FC = () => {
                   {introVideoUpload.items.map((it, idx) => (
                     <div key={idx} className="w-48 relative">
                       {it.previewUrl && (
-                        <video src={it.previewUrl} controls className="w-48 h-32 object-cover rounded-lg border" />
+                        <ThemedVideo
+                          src={it.previewUrl}
+                          containerClassName="w-48 h-32 rounded-lg border bg-black overflow-hidden"
+                          className="w-full h-full object-cover"
+                          ariaLabel="Intro video preview"
+                        />
                       )}
                       <button 
                         type="button" 

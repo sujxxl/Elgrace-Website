@@ -1,14 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { ProfileData, InstagramHandle, getProfileByUserId, upsertProfile, uploadImage, getNextModelUserId } from '../services/ProfileService';
 import { buildDriveImageUrls } from '../services/gdrive';
 import { compressImageFile } from '../services/image';
 import { deriveMedia, fetchMediaRecords, MediaItem } from '../services/mediaService';
 import { deleteMedia } from '../services/mediaApi';
 import { uploadFile } from '../services/upload';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, Plus, Trash2, X } from 'lucide-react';
 import { Country, State, City } from 'country-state-city';
+import { ThemedVideo } from './ThemedVideo';
 
 const POPULAR_LANGUAGES = [
   'English', 'Hindi', 'Spanish', 'Mandarin Chinese', 'French', 'Arabic',
@@ -612,11 +614,39 @@ const MeasurementsForm: React.FC<{ profile: ProfileData; saving: boolean; onSave
 /* STEP 4: MEDIA */
 const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
   const { user, session } = useAuth();
+  const { showToast } = useToast();
   const [form, setForm] = useState<ProfileData>(profile);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
   const [portfolioModalOpen, setPortfolioModalOpen] = useState(false);
+  const [portfolioLightboxIndex, setPortfolioLightboxIndex] = useState<number | null>(null);
   const [mediaRecords, setMediaRecords] = useState<MediaItem[]>([]);
+
+  type UploadRow = {
+    id: string;
+    name: string;
+    progress: number;
+    status: 'queued' | 'uploading' | 'done' | 'error';
+    error?: string;
+  };
+
+  const [coverProgress, setCoverProgress] = useState<number | null>(null);
+  const [introProgress, setIntroProgress] = useState<number | null>(null);
+  const [portfolioUploadRows, setPortfolioUploadRows] = useState<UploadRow[]>([]);
+  const [portfolioVideoUploadRows, setPortfolioVideoUploadRows] = useState<UploadRow[]>([]);
+
+  const pendingDeletesRef = useRef(
+    new Map<
+      string,
+      {
+        timer: number;
+        item: MediaItem;
+        index: number;
+        token: string;
+        label: string;
+      }
+    >()
+  );
 
   useEffect(() => setForm(profile), [profile]);
 
@@ -638,30 +668,103 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
 
   const { profileImage, introVideo, portfolio, portfolioVideos } = useMemo(() => deriveMedia(mediaRecords), [mediaRecords]);
 
+  useEffect(() => {
+    if (portfolioLightboxIndex == null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setPortfolioLightboxIndex(null);
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        setPortfolioLightboxIndex((prev) => {
+          if (prev == null) return prev;
+          if (portfolio.length <= 1) return prev;
+          return (prev - 1 + portfolio.length) % portfolio.length;
+        });
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        setPortfolioLightboxIndex((prev) => {
+          if (prev == null) return prev;
+          if (portfolio.length <= 1) return prev;
+          return (prev + 1) % portfolio.length;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [portfolioLightboxIndex, portfolio.length]);
+
   const requireToken = (): string | null => {
     if (!session?.access_token) {
-      alert('Please log in before making changes');
+      showToast('Please log in before making changes.', { tone: 'error', duration: 4000 });
       return null;
     }
     return session.access_token;
   };
 
-  const handleRemoveCover = async () => {
-    if (!profileImage) return;
+  useEffect(() => {
+    return () => {
+      for (const p of pendingDeletesRef.current.values()) {
+        window.clearTimeout(p.timer);
+      }
+      pendingDeletesRef.current.clear();
+    };
+  }, []);
+
+  const undoDelete = (id: string) => {
+    const pending = pendingDeletesRef.current.get(id);
+    if (!pending) return;
+    window.clearTimeout(pending.timer);
+    pendingDeletesRef.current.delete(id);
+    setMediaRecords((prev) => {
+      const next = prev.slice();
+      const insertAt = pending.index >= 0 ? Math.min(pending.index, next.length) : next.length;
+      next.splice(insertAt, 0, pending.item);
+      return next;
+    });
+    showToast('Restored.', { tone: 'info', duration: 2000 });
+  };
+
+  const queueDelete = (item: MediaItem, label: string) => {
     const token = requireToken();
     if (!token) return;
-    if (!window.confirm('Remove your cover photo?')) return;
 
-    try {
-      setUploadingCover(true);
-      await deleteMedia(profileImage.id, token);
-      setMediaRecords((prev) => prev.filter((m) => m.id !== profileImage.id));
-      alert('✅ Cover photo removed');
-    } catch (err: any) {
-      alert(`❌ Remove failed: ${err?.message || 'Unknown error'}`);
-    } finally {
-      setUploadingCover(false);
-    }
+    if (pendingDeletesRef.current.has(item.id)) return;
+    const index = mediaRecords.findIndex((m) => m.id === item.id);
+
+    setMediaRecords((prev) => prev.filter((m) => m.id !== item.id));
+
+    const timer = window.setTimeout(async () => {
+      const pending = pendingDeletesRef.current.get(item.id);
+      if (!pending) return;
+      pendingDeletesRef.current.delete(item.id);
+      try {
+        await deleteMedia(item.id, pending.token);
+        showToast(`${label} removed.`, { tone: 'success', duration: 2500 });
+      } catch (err: any) {
+        setMediaRecords((prev) => {
+          const next = prev.slice();
+          const insertAt = pending.index >= 0 ? Math.min(pending.index, next.length) : next.length;
+          next.splice(insertAt, 0, pending.item);
+          return next;
+        });
+        showToast(`Couldn’t remove ${label}.`, { tone: 'error', duration: 4500 });
+      }
+    }, 5000);
+
+    pendingDeletesRef.current.set(item.id, { timer, item, index, token, label });
+    showToast(`${label} removed.`, {
+      tone: 'info',
+      duration: 5000,
+      actionLabel: 'Undo',
+      onAction: () => undoDelete(item.id),
+    });
+  };
+
+  const handleRemoveCover = async () => {
+    if (!profileImage) return;
+    queueDelete(profileImage, 'Cover photo');
   };
 
   const handleCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -671,17 +774,18 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
     // Check file size (5MB limit)
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
     if (file.size > MAX_SIZE) {
-      alert(`❌ File too large! Maximum size is 5MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      showToast(`File too large. Max 5MB (yours is ${(file.size / 1024 / 1024).toFixed(2)}MB).`, { tone: 'error', duration: 5000 });
       e.target.value = '';
       return;
     }
     
     if (!session?.access_token) {
-      alert('Please log in before uploading');
+      showToast('Please log in before uploading.', { tone: 'error', duration: 4000 });
       return;
     }
     try {
       setUploadingCover(true);
+      setCoverProgress(0);
       // Compress image
       const compressed = await compressImageFile(file, { maxBytes: 900 * 1024 });
 
@@ -689,15 +793,17 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
         token: session.access_token,
         mediaRole: 'profile',
         modelId: user.id,
+        onProgress: (pct) => setCoverProgress(pct),
       });
 
       await refreshMedia();
-      alert('✅ Cover photo uploaded!');
+      showToast('Cover photo updated.', { tone: 'success', duration: 2500 });
     } catch (err: any) {
       console.error('Error:', err);
-      alert(`Error: ${err?.message ?? 'Process failed'}`);
+      showToast(err?.message ?? 'Cover upload failed.', { tone: 'error', duration: 5000 });
     } finally {
       setUploadingCover(false);
+      setCoverProgress(null);
       e.target.value = '';
     }
   };
@@ -706,55 +812,22 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
 
   const handleRemoveVideo = async () => {
     if (!introVideo) return;
-    const token = requireToken();
-    if (!token) return;
-    if (!window.confirm('Remove your intro video?')) return;
-
-    try {
-      setUploadingVideo(true);
-      await deleteMedia(introVideo.id, token);
-      setMediaRecords((prev) => prev.filter((m) => m.id !== introVideo.id));
-      alert('✅ Intro video removed');
-    } catch (err: any) {
-      alert(`❌ Remove failed: ${err?.message || 'Unknown error'}`);
-    } finally {
-      setUploadingVideo(false);
-    }
+    queueDelete(introVideo, 'Intro video');
   };
 
   const handleRemovePortfolioItem = async (id: string) => {
-    const token = requireToken();
-    if (!token) return;
-    if (!window.confirm('Remove this portfolio image?')) return;
-
-    try {
-      setUploadingPortfolio(true);
-      await deleteMedia(id, token);
-      setMediaRecords((prev) => prev.filter((m) => m.id !== id));
-    } catch (err: any) {
-      alert(`❌ Remove failed: ${err?.message || 'Unknown error'}`);
-    } finally {
-      setUploadingPortfolio(false);
-    }
+    const item = mediaRecords.find((m) => m.id === id);
+    if (!item) return;
+    queueDelete(item, 'Photo');
   };
 
   const [uploadingPortfolioVideos, setUploadingPortfolioVideos] = useState(false);
   const [portfolioVideosModalOpen, setPortfolioVideosModalOpen] = useState(false);
 
   const handleRemovePortfolioVideoItem = async (id: string) => {
-    const token = requireToken();
-    if (!token) return;
-    if (!window.confirm('Remove this portfolio video?')) return;
-
-    try {
-      setUploadingPortfolioVideos(true);
-      await deleteMedia(id, token);
-      setMediaRecords((prev) => prev.filter((m) => m.id !== id));
-    } catch (err: any) {
-      alert(`❌ Remove failed: ${err?.message || 'Unknown error'}`);
-    } finally {
-      setUploadingPortfolioVideos(false);
-    }
+    const item = mediaRecords.find((m) => m.id === id);
+    if (!item) return;
+    queueDelete(item, 'Video');
   };
 
   const handlePortfolioVideoFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -764,7 +837,7 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
     const MAX_PORTFOLIO_VIDEOS = 10;
     const existingCount = portfolioVideos.length;
     if (existingCount >= MAX_PORTFOLIO_VIDEOS) {
-      alert(`✅ Portfolio already has ${MAX_PORTFOLIO_VIDEOS} videos. Remove some to add more.`);
+      showToast(`You’ve added ${MAX_PORTFOLIO_VIDEOS} of ${MAX_PORTFOLIO_VIDEOS} videos.`, { tone: 'info', duration: 4000 });
       e.target.value = '';
       return;
     }
@@ -774,26 +847,34 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
     const filesToUpload = selectedFiles.slice(0, remainingSlots);
 
     if (selectedFiles.length > remainingSlots) {
-      alert(`You can add up to ${remainingSlots} more video(s). Only the first ${remainingSlots} will be uploaded.`);
+      showToast(`Only the first ${remainingSlots} video(s) will be uploaded.`, { tone: 'info', duration: 4500 });
     }
 
     // Check file sizes (20MB limit per video)
     const MAX_SIZE = 20 * 1024 * 1024; // 20MB
     const oversizedFiles = filesToUpload.filter((f) => f.size > MAX_SIZE);
     if (oversizedFiles.length > 0) {
-      alert(`❌ ${oversizedFiles.length} file(s) exceed 20MB limit. Please select smaller videos.`);
+      showToast(`${oversizedFiles.length} file(s) exceed 20MB.`, { tone: 'error', duration: 5000 });
       e.target.value = '';
       return;
     }
 
     if (!session?.access_token) {
-      alert('Please log in before uploading');
+      showToast('Please log in before uploading.', { tone: 'error', duration: 4000 });
       return;
     }
 
     try {
       setUploadingPortfolioVideos(true);
       let uploadedCount = 0;
+
+      const rows: UploadRow[] = filesToUpload.map((f, i) => ({
+        id: `${Date.now()}-pv-${i}-${f.name}`,
+        name: f.name,
+        progress: 0,
+        status: 'queued',
+      }));
+      setPortfolioVideoUploadRows(rows);
 
       for (let i = 0; i < filesToUpload.length; i++) {
         const file = filesToUpload[i];
@@ -803,27 +884,36 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
           continue;
         }
         try {
+          const rowId = rows[i]?.id;
+          if (rowId) setPortfolioVideoUploadRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, status: 'uploading', progress: 0 } : r)));
           await uploadFile(file, {
             token: session.access_token,
             mediaRole: 'portfolio_video',
             modelId: user.id,
+            onProgress: (pct) => {
+              if (!rowId) return;
+              setPortfolioVideoUploadRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, progress: pct } : r)));
+            },
           });
           uploadedCount += 1;
+          if (rowId) setPortfolioVideoUploadRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, status: 'done', progress: 100 } : r)));
         } catch (err: any) {
           console.error(`Error uploading video ${i}:`, err?.message);
+          const rowId = rows[i]?.id;
+          if (rowId) setPortfolioVideoUploadRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, status: 'error', error: err?.message || 'Upload failed' } : r)));
         }
       }
 
       if (uploadedCount > 0) {
         await refreshMedia();
-        alert(`✅ ${uploadedCount} video(s) uploaded!`);
+        showToast(`Uploaded ${uploadedCount} video(s).`, { tone: 'success', duration: 3000 });
       } else {
-        alert('❌ Upload failed. Check browser console for details.');
+        showToast('Upload failed. Please try again.', { tone: 'error', duration: 4500 });
       }
     } catch (err: any) {
       const errorMsg = err?.message || 'Unknown error';
       console.error('Portfolio videos error:', errorMsg);
-      alert(`Upload failed: ${errorMsg}`);
+      showToast(`Upload failed: ${errorMsg}`, { tone: 'error', duration: 5000 });
     } finally {
       setUploadingPortfolioVideos(false);
       e.target.value = '';
@@ -834,40 +924,43 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (!file.type.startsWith('video/')) {
-      alert('Please select a video file');
+      showToast('Please select a video file.', { tone: 'error', duration: 4000 });
       return;
     }
     
     // Check file size (20MB limit)
     const MAX_SIZE = 20 * 1024 * 1024; // 20MB
     if (file.size > MAX_SIZE) {
-      alert(`❌ Video too large! Maximum size is 20MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      showToast(`Video too large. Max 20MB (yours is ${(file.size / 1024 / 1024).toFixed(2)}MB).`, { tone: 'error', duration: 5000 });
       e.target.value = '';
       return;
     }
     
     if (!session?.access_token) {
-      alert('Please log in before uploading');
+      showToast('Please log in before uploading.', { tone: 'error', duration: 4000 });
       return;
     }
     try {
       setUploadingVideo(true);
+      setIntroProgress(0);
       await uploadFile(file, {
         token: session.access_token,
         mediaRole: 'intro_video',
         modelId: user.id,
+        onProgress: (pct) => setIntroProgress(pct),
       });
 
       // Refresh media from model_media table
       await refreshMedia();
-      
-      alert('✅ Intro video uploaded!');
+
+      showToast('Intro video updated.', { tone: 'success', duration: 2500 });
     } catch (err: any) {
       const errorMsg = err?.message || 'Unknown error';
       console.error('Video upload error:', errorMsg);
-      alert(`Upload failed: ${errorMsg}`);
+      showToast(`Upload failed: ${errorMsg}`, { tone: 'error', duration: 5000 });
     } finally {
       setUploadingVideo(false);
+      setIntroProgress(null);
       e.target.value = '';
     }
   };
@@ -879,7 +972,7 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
     const MAX_PORTFOLIO = 50;
     const existingCount = portfolio.length;
     if (existingCount >= MAX_PORTFOLIO) {
-      alert('✅ Portfolio already has 50 images. Remove some to add more.');
+      showToast(`You’ve added ${MAX_PORTFOLIO} of ${MAX_PORTFOLIO} images.`, { tone: 'info', duration: 4000 });
       e.target.value = '';
       return;
     }
@@ -889,24 +982,31 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
     const filesToUpload = selectedFiles.slice(0, remainingSlots);
 
     if (selectedFiles.length > remainingSlots) {
-      alert(`You can add up to ${remainingSlots} more image(s). Only the first ${remainingSlots} will be uploaded.`);
+      showToast(`Only the first ${remainingSlots} image(s) will be uploaded.`, { tone: 'info', duration: 4500 });
     }
     
     // Check file sizes (5MB limit per image)
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
     const oversizedFiles = filesToUpload.filter((f) => f.size > MAX_SIZE);
     if (oversizedFiles.length > 0) {
-      alert(`❌ ${oversizedFiles.length} file(s) exceed 5MB limit. Please select smaller images.`);
+      showToast(`${oversizedFiles.length} file(s) exceed 5MB.`, { tone: 'error', duration: 5000 });
       e.target.value = '';
       return;
     }
     
     if (!session?.access_token) {
-      alert('Please log in before uploading');
+      showToast('Please log in before uploading.', { tone: 'error', duration: 4000 });
       return;
     }
     try {
       setUploadingPortfolio(true);
+      const rows: UploadRow[] = filesToUpload.map((f, i) => ({
+        id: `${Date.now()}-p-${i}-${f.name}`,
+        name: f.name,
+        progress: 0,
+        status: 'queued',
+      }));
+      setPortfolioUploadRows(rows);
       const uploaded: string[] = [];
       
       for (let i = 0; i < filesToUpload.length; i++) {
@@ -914,29 +1014,38 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
         if (!file) continue;
         const compressed = await compressImageFile(file, { maxBytes: 900 * 1024 });
         try {
+          const rowId = rows[i]?.id;
+          if (rowId) setPortfolioUploadRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, status: 'uploading', progress: 0 } : r)));
           const { media_url } = await uploadFile(compressed, {
             token: session.access_token,
             mediaRole: 'portfolio',
             modelId: user.id,
+            onProgress: (pct) => {
+              if (!rowId) return;
+              setPortfolioUploadRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, progress: pct } : r)));
+            },
           });
           uploaded.push(media_url);
+          if (rowId) setPortfolioUploadRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, status: 'done', progress: 100 } : r)));
         } catch (err: any) {
           console.error(`Error uploading image ${i}:`, err?.message);
+          const rowId = rows[i]?.id;
+          if (rowId) setPortfolioUploadRows((prev) => prev.map((r) => (r.id === rowId ? { ...r, status: 'error', error: err?.message || 'Upload failed' } : r)));
         }
       }
       
       if (uploaded.length > 0) {
         // Refresh media from model_media table
         await refreshMedia();
-        
-        alert(`✅ ${uploaded.length} images uploaded!`);
+
+        showToast(`Uploaded ${uploaded.length} image(s).`, { tone: 'success', duration: 3000 });
       } else {
-        alert('❌ Upload failed. Check browser console for details.');
+        showToast('Upload failed. Please try again.', { tone: 'error', duration: 4500 });
       }
     } catch (err: any) {
       const errorMsg = err?.message || 'Unknown error';
       console.error('Portfolio error:', errorMsg);
-      alert(`Upload failed: ${errorMsg}`);
+      showToast(`Upload failed: ${errorMsg}`, { tone: 'error', duration: 5000 });
     } finally {
       setUploadingPortfolio(false);
       e.target.value = '';
@@ -944,37 +1053,27 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-3xl p-8">
-      <h4 className="text-lg font-['Syne'] font-bold mb-4 text-black">Photos / Media</h4>
-      <div className="grid md:grid-cols-2 gap-6">
+    <div className="bg-white border border-gray-200 rounded-3xl p-5 sm:p-6">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Cover Photo</label>
-          {!profileImage && (
-            <div className="mt-3">
-              <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
-                {uploadingCover ? 'Uploading to VPS…' : 'Upload Cover Photo'}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleCoverFileChange}
-                  disabled={uploadingCover}
-                />
-              </label>
-              <p className="text-xs text-gray-600 mt-2">Max 5MB. We compress to under 1MB.</p>
-            </div>
-          )}
-          {profileImage && (
-            <div className="mt-3">
-              <div className="text-xs text-gray-700 mb-1 font-semibold">Current Cover:</div>
-              <img
-                src={profileImage.media_url}
-                alt="Cover"
-                className="w-48 aspect-[3/4] object-cover rounded-md border border-gray-300"
-              />
-              <div className="mt-3 flex flex-wrap gap-2">
-                <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
-                  {uploadingCover ? 'Uploading…' : 'Replace Cover'}
+          <h4 className="text-lg font-['Syne'] font-bold text-black">Photos & Media</h4>
+        </div>
+      </div>
+
+      <div className="mt-4 grid lg:grid-cols-2 gap-6">
+        {/* LEFT: Cover + Intro (side by side) */}
+        <div className="rounded-3xl bg-[#fbf3e4]/35 p-4 sm:p-5">
+          <div className="grid sm:grid-cols-2 gap-5">
+            <div>
+              <div className="flex items-center gap-2">
+                <label className="block text-xs uppercase tracking-widest text-gray-700 font-semibold">Cover Photo</label>
+                <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/60 border border-[#dfcda5] text-gray-700 font-semibold">Primary</span>
+              </div>
+
+            {!profileImage && (
+              <div className="mt-3">
+                <label className="px-5 py-3 rounded-full border-2 border-[#c9a961] bg-[#c9a961] text-white hover:bg-[#b8985a] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-flex items-center gap-2">
+                  {uploadingCover ? 'Uploading…' : 'Upload Cover'}
                   <input
                     type="file"
                     accept="image/*"
@@ -983,32 +1082,178 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
                     disabled={uploadingCover}
                   />
                 </label>
-                <button
-                  type="button"
-                  onClick={handleRemoveCover}
-                  disabled={uploadingCover}
-                  className="px-4 py-3 rounded-full border-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs uppercase tracking-widest font-semibold"
-                >
-                  Remove
-                </button>
+                {typeof coverProgress === 'number' && (
+                  <div className="mt-3">
+                    <div className="h-2 rounded-full bg-white/70 overflow-hidden">
+                      <div className="h-full bg-[#c9a961]" style={{ width: `${coverProgress}%` }} />
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-600">Uploading… {coverProgress}%</p>
+                  </div>
+                )}
               </div>
-              <a
-                href={profileImage.media_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-2 inline-block text-[#c9a961] hover:underline text-xs font-semibold"
-              >
-                Open full size →
-              </a>
+            )}
+
+            {profileImage && (
+              <div className="mt-3">
+                <div className="text-xs text-gray-700 mb-2 font-semibold">Current cover</div>
+                <img
+                  src={profileImage.media_url}
+                  alt="Cover"
+                  className="w-full max-w-[260px] aspect-[3/4] object-cover rounded-xl border border-gray-200 shadow-sm"
+                />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <label className="px-5 py-3 rounded-full border-2 border-[#c9a961] bg-[#c9a961] text-white hover:bg-[#b8985a] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-flex items-center gap-2">
+                    {uploadingCover ? 'Uploading…' : 'Replace Cover'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleCoverFileChange}
+                      disabled={uploadingCover}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRemoveCover}
+                    disabled={uploadingCover}
+                    className="px-3 py-3 text-xs uppercase tracking-widest font-semibold text-gray-600 hover:text-gray-900"
+                  >
+                    Remove
+                  </button>
+                </div>
+                {typeof coverProgress === 'number' && (
+                  <div className="mt-3">
+                    <div className="h-2 rounded-full bg-white/70 overflow-hidden">
+                      <div className="h-full bg-[#c9a961]" style={{ width: `${coverProgress}%` }} />
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-600">Uploading… {coverProgress}%</p>
+                  </div>
+                )}
+                <a
+                  href={profileImage.media_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block text-[#c9a961] hover:underline text-xs font-semibold"
+                >
+                  Open full size →
+                </a>
+              </div>
+            )}
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between gap-4">
+                <label className="block text-xs uppercase tracking-widest text-gray-700 font-semibold">Intro Video</label>
+                <span className="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/60 border border-gray-200 text-gray-700 font-semibold">Optional</span>
+              </div>
+
+            {!introVideo && (
+              <div className="mt-3">
+                <label className={`px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-white/60 text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-flex items-center gap-2 ${uploadingVideo ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                  {uploadingVideo ? 'Uploading…' : 'Upload Intro'}
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    onChange={handleVideoFileChange}
+                    disabled={uploadingVideo}
+                  />
+                </label>
+                {typeof introProgress === 'number' && (
+                  <div className="mt-3">
+                    <div className="h-2 rounded-full bg-white/70 overflow-hidden">
+                      <div className="h-full bg-[#c9a961]" style={{ width: `${introProgress}%` }} />
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-600">Uploading… {introProgress}%</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {introVideo && (
+              <div className="mt-4">
+                <div className="text-xs text-gray-700 mb-2 font-semibold">Current intro</div>
+                <ThemedVideo
+                  src={introVideo.media_url}
+                  containerClassName="w-full max-w-[260px] aspect-[3/4] rounded-xl border border-gray-200 bg-black"
+                  className="w-full h-full object-cover"
+                  ariaLabel="Intro video"
+                />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <label className={`px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-white/60 text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-flex items-center gap-2 ${uploadingVideo ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                    {uploadingVideo ? 'Uploading…' : 'Replace Video'}
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={handleVideoFileChange}
+                      disabled={uploadingVideo}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRemoveVideo}
+                    className="px-3 py-3 text-xs uppercase tracking-widest font-semibold text-gray-600 hover:text-gray-900"
+                  >
+                    Remove
+                  </button>
+                </div>
+                {typeof introProgress === 'number' && (
+                  <div className="mt-3">
+                    <div className="h-2 rounded-full bg-white/70 overflow-hidden">
+                      <div className="h-full bg-[#c9a961]" style={{ width: `${introProgress}%` }} />
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-600">Uploading… {introProgress}%</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        </div>
+
+        {/* RIGHT: Portfolio */}
+        <div className="rounded-3xl bg-white border border-gray-100 p-4 sm:p-5">
+          <div>
+            <div className="flex items-center justify-between gap-4">
+              <label className="block text-xs uppercase tracking-widest text-gray-700 font-semibold">Portfolio Images</label>
+              <span className="text-xs text-gray-600 font-semibold">{portfolio.length} of 50</span>
+            </div>
+            <p className="text-xs text-gray-600 mt-1">You’ve added {portfolio.length} of 50 images.</p>
+
+          {portfolioUploadRows.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {portfolioUploadRows.slice(0, 4).map((r) => (
+                <div key={r.id} className="rounded-xl border border-gray-100 bg-white px-3 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-gray-700 truncate">{r.name}</p>
+                    <p className="text-[11px] text-gray-500 whitespace-nowrap">
+                      {r.status === 'error' ? 'Failed' : r.status === 'done' ? 'Done' : `${r.progress}%`}
+                    </p>
+                  </div>
+                  <div className="mt-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className={r.status === 'error' ? 'h-full bg-red-300' : 'h-full bg-[#c9a961]'}
+                      style={{ width: `${Math.max(2, r.progress)}%` }}
+                    />
+                  </div>
+                  {r.status === 'error' && r.error && <p className="mt-1 text-[11px] text-red-600">{r.error}</p>}
+                </div>
+              ))}
+              {portfolioUploadRows.length > 4 && (
+                <p className="text-[11px] text-gray-500">Uploading {portfolioUploadRows.length - 4} more…</p>
+              )}
             </div>
           )}
-        </div>
-        <div>
-          <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Portfolio Images</label>
-          <div className="mt-3">
+
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
             {portfolio.length < 50 && (
-              <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
-                {uploadingPortfolio ? 'Uploading…' : (portfolio.length > 0 ? 'Add More Images' : 'Upload Portfolio (Multiple)')}
+              <label className={`group shrink-0 w-24 sm:w-28 aspect-square rounded-xl border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold cursor-pointer ${uploadingPortfolio ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                <div className="w-10 h-10 rounded-full bg-white/70 border border-[#dfcda5] flex items-center justify-center">
+                  <Plus className="w-5 h-5 text-gray-700" />
+                </div>
+                <span className="mt-2">{uploadingPortfolio ? 'Uploading…' : 'Add Images'}</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -1019,49 +1264,45 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
                 />
               </label>
             )}
-            <p className="text-xs text-gray-600 mt-2">
-              Up to 50 images total (max 5MB each). {portfolio.length < 50 ? `You can add ${50 - portfolio.length} more.` : 'Limit reached.'}
-            </p>
-          </div>
-          {portfolio.length > 0 && (
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {portfolio.slice(0, 3).map((item) => (
-                <div key={item.id} className="relative">
-                  <img
-                    src={item.media_url}
-                    alt="Portfolio"
-                    className="w-full aspect-square object-cover rounded border border-gray-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePortfolioItem(item.id)}
-                    disabled={uploadingPortfolio}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold text-sm"
-                    title="Remove"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
 
-              {portfolio.length > 3 && (
+            {portfolio.slice(0, 8).map((item) => (
+              <div key={item.id} className="group relative shrink-0 w-24 sm:w-28">
+                <img
+                  src={item.media_url}
+                  alt="Portfolio"
+                  className="w-full aspect-square object-cover rounded-xl border border-gray-200"
+                />
                 <button
                   type="button"
-                  onClick={() => setPortfolioModalOpen(true)}
-                  className="w-full aspect-square rounded border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold"
+                  onClick={() => handleRemovePortfolioItem(item.id)}
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 rounded-full bg-white/90 border border-gray-200 text-gray-700 hover:text-gray-900 shadow-sm flex items-center justify-center"
+                  title="Remove"
                 >
-                  See {portfolio.length - 3} more
+                  <Trash2 className="w-4 h-4" />
                 </button>
-              )}
-            </div>
-          )}
+              </div>
+            ))}
+
+            {portfolio.length > 8 && (
+              <button
+                type="button"
+                onClick={() => setPortfolioModalOpen(true)}
+                className="shrink-0 w-24 sm:w-28 aspect-square rounded-xl border-2 border-dashed border-gray-200 bg-white text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold"
+              >
+                See {portfolio.length - 8} more
+              </button>
+            )}
+          </div>
 
           {portfolioModalOpen && (
             <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
               <div className="w-full max-w-4xl bg-white border border-[#dfcda5] rounded-3xl shadow-2xl relative">
                 <button
                   type="button"
-                  onClick={() => setPortfolioModalOpen(false)}
+                  onClick={() => {
+                    setPortfolioModalOpen(false);
+                    setPortfolioLightboxIndex(null);
+                  }}
                   className="absolute top-4 right-4 w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
                   aria-label="Close"
                 >
@@ -1069,191 +1310,245 @@ const MediaForm: React.FC<{ profile: ProfileData; }> = ({ profile }) => {
                 </button>
                 <div className="p-6 sm:p-8">
                   <h5 className="text-lg font-['Syne'] font-bold text-black mb-1">Portfolio Gallery</h5>
-                  <p className="text-xs text-gray-600 mb-5">{portfolio.length} image(s)</p>
+                  <p className="text-xs text-gray-600 mb-5">You’ve added {portfolio.length} of 50 images.</p>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[70vh] overflow-auto pr-1">
-                    {portfolio.map((item) => (
-                      <div key={item.id} className="relative">
-                        <img
-                          src={item.media_url}
-                          alt="Portfolio"
-                          className="w-full aspect-square object-cover rounded-lg border border-gray-300"
-                        />
+                    {portfolio.map((item, idx) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setPortfolioLightboxIndex(idx)}
+                        className="group relative text-left"
+                        aria-label="Open image"
+                      >
+                        <div className="w-full aspect-[3/4] rounded-lg border border-gray-200 bg-[#fbf3e4]/30 overflow-hidden flex items-center justify-center">
+                          <img
+                            src={item.media_url}
+                            alt="Portfolio"
+                            className="max-w-full max-h-full object-contain"
+                            loading="lazy"
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={() => handleRemovePortfolioItem(item.id)}
-                          disabled={uploadingPortfolio}
-                          className="absolute top-2 right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold"
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClickCapture={(e) => e.stopPropagation()}
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity w-9 h-9 bg-white/90 border border-gray-200 text-gray-700 rounded-full flex items-center justify-center hover:text-gray-900 shadow-sm"
                           title="Remove"
                         >
-                          ×
+                          <Trash2 className="w-4 h-4" />
                         </button>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
               </div>
             </div>
           )}
-          {form.portfolio_folder_link && (
-            <div className="mt-3">
-              <p className="text-xs text-gray-600 mb-1">Legacy Drive Link:</p>
-              <a
-                href={form.portfolio_folder_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block text-[#c9a961] hover:underline text-xs font-semibold"
+
+          {portfolioModalOpen && portfolioLightboxIndex != null && portfolio[portfolioLightboxIndex] && (
+            <div
+              className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Image viewer"
+              onMouseDown={() => setPortfolioLightboxIndex(null)}
+            >
+              <div
+                className="relative w-full max-w-5xl"
+                onMouseDown={(e) => e.stopPropagation()}
               >
-                {form.portfolio_folder_link.substring(0, 50)}...
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
+                <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
+                  <div className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white text-xs uppercase tracking-widest">
+                    {portfolioLightboxIndex + 1} / {portfolio.length}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPortfolioLightboxIndex(null)}
+                    className="w-10 h-10 rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/15 flex items-center justify-center"
+                    aria-label="Close viewer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
 
-      <div className="mt-6">
-        <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Portfolio Videos</label>
-        <div className="mt-3">
-          {portfolioVideos.length < 10 && (
-            <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
-              {uploadingPortfolioVideos ? 'Uploading…' : (portfolioVideos.length > 0 ? 'Add More Videos' : 'Upload Portfolio Videos (Multiple)')}
-              <input
-                type="file"
-                accept="video/*"
-                multiple
-                className="hidden"
-                onChange={handlePortfolioVideoFilesChange}
-                disabled={uploadingPortfolioVideos}
-              />
-            </label>
-          )}
-          <p className="text-xs text-gray-600 mt-2">
-            Up to 10 videos total (max 20MB each). {portfolioVideos.length < 10 ? `You can add ${10 - portfolioVideos.length} more.` : 'Limit reached.'}
-          </p>
-        </div>
+                {portfolio.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPortfolioLightboxIndex((prev) => {
+                        if (prev == null) return prev;
+                        return (prev - 1 + portfolio.length) % portfolio.length;
+                      })
+                    }
+                    className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/15 flex items-center justify-center"
+                    aria-label="Previous image"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                )}
 
-        {portfolioVideos.length > 0 && (
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {portfolioVideos.slice(0, 2).map((item) => (
-              <div key={item.id} className="relative">
-                <video
-                  src={item.media_url}
-                  controls
-                  playsInline
-                  className="w-full rounded-lg border border-gray-300 bg-black"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemovePortfolioVideoItem(item.id)}
-                  disabled={uploadingPortfolioVideos}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold text-sm"
-                  title="Remove"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+                {portfolio.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPortfolioLightboxIndex((prev) => {
+                        if (prev == null) return prev;
+                        return (prev + 1) % portfolio.length;
+                      })
+                    }
+                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 border border-white/20 text-white hover:bg-white/15 flex items-center justify-center"
+                    aria-label="Next image"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                )}
 
-            {portfolioVideos.length > 2 && (
-              <button
-                type="button"
-                onClick={() => setPortfolioVideosModalOpen(true)}
-                className="w-full rounded border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold py-10"
-              >
-                See {portfolioVideos.length - 2} more
-              </button>
-            )}
-          </div>
-        )}
-
-        {portfolioVideosModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <div className="w-full max-w-4xl bg-white border border-[#dfcda5] rounded-3xl shadow-2xl relative">
-              <button
-                type="button"
-                onClick={() => setPortfolioVideosModalOpen(false)}
-                className="absolute top-4 right-4 w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
-                aria-label="Close"
-              >
-                ×
-              </button>
-              <div className="p-6 sm:p-8">
-                <h5 className="text-lg font-['Syne'] font-bold text-black mb-1">Portfolio Videos</h5>
-                <p className="text-xs text-gray-600 mb-5">{portfolioVideos.length} video(s)</p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[70vh] overflow-auto pr-1">
-                  {portfolioVideos.map((item) => (
-                    <div key={item.id} className="relative">
-                      <video
-                        src={item.media_url}
-                        controls
-                        playsInline
-                        className="w-full rounded-lg border border-gray-300 bg-black"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleRemovePortfolioVideoItem(item.id)}
-                        disabled={uploadingPortfolioVideos}
-                        className="absolute top-2 right-2 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 shadow-lg font-bold"
-                        title="Remove"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+                <div className="rounded-3xl border border-white/10 bg-black/30 overflow-hidden shadow-2xl">
+                  <img
+                    src={portfolio[portfolioLightboxIndex].media_url}
+                    alt="Portfolio"
+                    className="w-full max-h-[80vh] object-contain bg-black"
+                  />
                 </div>
               </div>
             </div>
+          )}
+            {form.portfolio_folder_link && (
+              <div className="mt-3">
+                <p className="text-xs text-gray-600 mb-1">Legacy Drive Link:</p>
+                <a
+                  href={form.portfolio_folder_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block text-[#c9a961] hover:underline text-xs font-semibold"
+                >
+                  {form.portfolio_folder_link.substring(0, 50)}...
+                </a>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-      <div className="mt-6">
-        <label className="block text-xs uppercase tracking-widest text-gray-700 mb-2 font-semibold">Intro Video</label>
-        {!introVideo && (
-          <div className="mt-3">
-            <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
-              {uploadingVideo ? 'Uploading…' : 'Upload Video'}
-              <input
-                type="file"
-                accept="video/*"
-                className="hidden"
-                onChange={handleVideoFileChange}
-                disabled={uploadingVideo}
-              />
-            </label>
-            <p className="text-xs text-gray-600 mt-2">Max 20MB. MP4/WebM/MOV, etc.</p>
-          </div>
-        )}
-        {introVideo && (
-          <div className="mt-4">
-            <div className="text-xs text-gray-700 mb-2 font-semibold">Current Video:</div>
-            <video
-              src={introVideo.media_url}
-              controls
-              className="w-full rounded-lg border border-gray-300 bg-black"
-            />
-            <div className="mt-3 flex flex-wrap gap-2">
-              <label className="px-4 py-3 rounded-full border-2 border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] cursor-pointer text-xs uppercase tracking-widest font-semibold inline-block">
-                {uploadingVideo ? 'Uploading…' : 'Replace Video'}
-                <input
-                  type="file"
-                  accept="video/*"
-                  className="hidden"
-                  onChange={handleVideoFileChange}
-                  disabled={uploadingVideo}
-                />
-              </label>
-              <button
-                type="button"
-                onClick={handleRemoveVideo}
-                disabled={uploadingVideo}
-                className="px-4 py-3 rounded-full border-2 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs uppercase tracking-widest font-semibold"
-              >
-                Remove
-              </button>
+
+          {/* Portfolio Videos under images */}
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <div className="flex items-center justify-between gap-4">
+              <label className="block text-xs uppercase tracking-widest text-gray-700 font-semibold">Portfolio Videos</label>
+              <span className="text-xs text-gray-600 font-semibold">{portfolioVideos.length} of 10</span>
             </div>
+            <p className="text-xs text-gray-600 mt-1">You’ve added {portfolioVideos.length} of 10 videos.</p>
+
+            {portfolioVideoUploadRows.length > 0 && (
+              <div className="mt-3 space-y-2">
+                {portfolioVideoUploadRows.slice(0, 3).map((r) => (
+                  <div key={r.id} className="rounded-xl border border-gray-100 bg-white px-3 py-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs text-gray-700 truncate">{r.name}</p>
+                      <p className="text-[11px] text-gray-500 whitespace-nowrap">
+                        {r.status === 'error' ? 'Failed' : r.status === 'done' ? 'Done' : `${r.progress}%`}
+                      </p>
+                    </div>
+                    <div className="mt-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                      <div
+                        className={r.status === 'error' ? 'h-full bg-red-300' : 'h-full bg-[#c9a961]'}
+                        style={{ width: `${Math.max(2, r.progress)}%` }}
+                      />
+                    </div>
+                    {r.status === 'error' && r.error && <p className="mt-1 text-[11px] text-red-600">{r.error}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              {portfolioVideos.length < 10 && (
+                <label className={`group shrink-0 w-24 sm:w-28 aspect-square rounded-xl border-2 border-dashed border-[#dfcda5] bg-[#fbf3e4] text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold cursor-pointer ${uploadingPortfolioVideos ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                  <div className="w-10 h-10 rounded-full bg-white/70 border border-[#dfcda5] flex items-center justify-center">
+                    <Plus className="w-5 h-5 text-gray-700" />
+                  </div>
+                  <span className="mt-2">{uploadingPortfolioVideos ? 'Uploading…' : 'Add Videos'}</span>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    multiple
+                    className="hidden"
+                    onChange={handlePortfolioVideoFilesChange}
+                    disabled={uploadingPortfolioVideos}
+                  />
+                </label>
+              )}
+
+              {portfolioVideos.slice(0, 8).map((item) => (
+                <div key={item.id} className="group relative shrink-0 w-24 sm:w-28">
+                  <ThemedVideo
+                    src={item.media_url}
+                    containerClassName="w-full aspect-square rounded-xl border border-gray-200 bg-black"
+                    className="w-full h-full object-cover"
+                    ariaLabel="Portfolio video"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePortfolioVideoItem(item.id)}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 rounded-full bg-white/90 border border-gray-200 text-gray-700 hover:text-gray-900 shadow-sm flex items-center justify-center"
+                    title="Remove"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+
+              {portfolioVideos.length > 8 && (
+                <button
+                  type="button"
+                  onClick={() => setPortfolioVideosModalOpen(true)}
+                  className="shrink-0 w-24 sm:w-28 aspect-square rounded-xl border-2 border-dashed border-gray-200 bg-white text-gray-700 hover:border-[#c9a961] flex flex-col items-center justify-center text-xs uppercase tracking-widest font-semibold"
+                >
+                  See {portfolioVideos.length - 8} more
+                </button>
+              )}
+            </div>
+
+            {portfolioVideosModalOpen && (
+              <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                <div className="w-full max-w-4xl bg-white border border-[#dfcda5] rounded-3xl shadow-2xl relative">
+                  <button
+                    type="button"
+                    onClick={() => setPortfolioVideosModalOpen(false)}
+                    className="absolute top-4 right-4 w-9 h-9 rounded-full border border-gray-300 bg-white text-gray-700 hover:border-[#c9a961] flex items-center justify-center font-bold"
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                  <div className="p-6 sm:p-8">
+                    <h5 className="text-lg font-['Syne'] font-bold text-black mb-1">Portfolio Videos</h5>
+                    <p className="text-xs text-gray-600 mb-5">You’ve added {portfolioVideos.length} of 10 videos.</p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[70vh] overflow-auto pr-1">
+                      {portfolioVideos.map((item) => (
+                        <div key={item.id} className="group relative">
+                          <ThemedVideo
+                            src={item.media_url}
+                            containerClassName="w-full rounded-xl border border-gray-200 bg-black"
+                            className="w-full h-full"
+                            ariaLabel="Portfolio video"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePortfolioVideoItem(item.id)}
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity w-9 h-9 bg-white/90 border border-gray-200 text-gray-700 rounded-full flex items-center justify-center hover:text-gray-900 shadow-sm"
+                            title="Remove"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

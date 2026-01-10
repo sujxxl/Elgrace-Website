@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { MapPin, Ruler, Weight, ArrowLeft } from 'lucide-react';
 import { getProfileByUserId, ProfileData } from '../services/ProfileService';
 import { deriveMedia, fetchMediaRecords, DerivedMedia } from '../services/mediaService';
+import { ThemedVideo } from './ThemedVideo';
 
 export const TalentProfilePage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -160,11 +161,11 @@ export const TalentProfilePage: React.FC = () => {
               {introVideoUrl && (
                 <div>
                   <h2 className="text-sm uppercase tracking-[0.25em] text-zinc-500 mb-2">Intro Video</h2>
-                  <video
+                  <ThemedVideo
                     src={introVideoUrl}
-                    controls
-                    playsInline
-                    className="w-full rounded-2xl border border-zinc-800 bg-black"
+                    containerClassName="w-full rounded-2xl border border-zinc-800 bg-black overflow-hidden"
+                    className="w-full h-full"
+                    ariaLabel="Intro video"
                   />
                 </div>
               )}
